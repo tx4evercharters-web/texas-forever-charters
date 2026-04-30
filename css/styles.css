@@ -350,11 +350,15 @@ nav.scrolled .nav-logo img {
   }
 
   .nav-left {
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
   .nav-call {
-    display: none;
+    display: inline-flex;
+    padding: 8px 12px;
+    font-size: 11px;
+    white-space: nowrap;
   }
 
   .hero {
