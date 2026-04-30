@@ -236,8 +236,8 @@ nav.scrolled .nav-logo img {
 
 .hero-sub {
   font-family: 'Source Serif 4', serif;
-  font-style: italic;
-  font-weight: 300;
+  font-style: normal;
+  font-weight: 500;
   font-size: clamp(15px, 2vw, 20px);
   color: var(--silver);
   margin: 20px auto 36px;
