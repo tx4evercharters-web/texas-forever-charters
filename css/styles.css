@@ -304,7 +304,15 @@ nav.scrolled .nav-logo img {
   gap: 14px;
   justify-content: center;
   flex-wrap: wrap;
+  width: 100%;
+  max-width: 520px;
   animation: fadeUp 0.8s 0.6s both;
+}
+
+.hero-actions a {
+  flex: 1 1 220px;
+  min-width: 220px;
+  text-align: center;
 }
 
 .hero-scroll {
