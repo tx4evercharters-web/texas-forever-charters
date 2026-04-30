@@ -48,6 +48,28 @@ document.addEventListener('DOMContentLoaded', () => {
   // Expose toggleFaq globally for inline onclick
   window.toggleFaq = toggleFaq;
 
+  // ── Mobile Navigation Toggle ──
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinks = document.querySelector('.nav-links');
+
+  if (navToggle && navLinks) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = navLinks.classList.toggle('open');
+      navToggle.classList.toggle('active', isOpen);
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        if (navLinks.classList.contains('open')) {
+          navLinks.classList.remove('open');
+          navToggle.classList.remove('active');
+          navToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  }
+
   // ── Scroll Reveal ──
   const observer = new IntersectionObserver(entries => {
     entries.forEach(el => {

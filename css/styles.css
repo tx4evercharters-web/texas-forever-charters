@@ -113,6 +113,40 @@ nav.scrolled .nav-logo img {
   background: transparent !important;
 }
 
+.nav-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-toggle .bar {
+  width: 100%;
+  height: 3px;
+  background: var(--white);
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.nav-toggle.active .bar:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.nav-toggle.active .bar:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-toggle.active .bar:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
 /* ── 3. Hero ── */
 .hero {
   position: relative;
@@ -208,6 +242,54 @@ nav.scrolled .nav-logo img {
   max-width: 520px;
   line-height: 1.65;
   animation: fadeUp 0.8s 0.45s both;
+}
+
+@media (max-width: 768px) {
+  nav {
+    padding: 16px 24px;
+  }
+
+  .nav-toggle {
+    display: flex;
+  }
+
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 20px 24px 24px;
+    background: var(--navy);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    z-index: 490;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-links li {
+    width: 100%;
+  }
+
+  .nav-links a {
+    width: 100%;
+    padding: 12px 0;
+  }
+
+  .nav-links a {
+    text-align: left;
+  }
+
+  .nav-book {
+    width: 100%;
+    text-align: center;
+    padding: 14px 0;
+  }
 }
 
 .hero-actions {
