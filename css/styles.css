@@ -305,6 +305,10 @@ nav.scrolled .nav-logo img {
     padding: 14px 16px;
     border-radius: 0;
   }
+
+  .hero-scroll {
+    bottom: 90px;
+  }
 }
 
 .hero-actions {
