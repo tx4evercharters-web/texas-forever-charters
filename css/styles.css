@@ -80,6 +80,12 @@ nav.scrolled .nav-logo img {
   height: 38px;
 }
 
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .nav-links {
   display: flex;
   gap: 28px;
@@ -334,6 +340,10 @@ nav.scrolled .nav-logo img {
     text-align: center;
     padding: 14px 16px;
     border-radius: 0;
+  }
+
+  .nav-left {
+    gap: 12px;
   }
 
   .nav-call {
