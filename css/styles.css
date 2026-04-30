@@ -306,8 +306,18 @@ nav.scrolled .nav-logo img {
     border-radius: 0;
   }
 
+  .hero {
+    min-height: 80vh;
+    justify-content: flex-start;
+    padding-top: 100px;
+  }
+
+  .hero-content {
+    padding-bottom: 16px;
+  }
+
   .hero-scroll {
-    bottom: 120px;
+    bottom: 140px;
   }
 }
 
