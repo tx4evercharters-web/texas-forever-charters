@@ -240,14 +240,15 @@ nav.scrolled .nav-logo img {
 }
 
 .hero-sub {
-  font-family: 'Barlow', sans-serif;
+  font-family: 'Bebas Neue', sans-serif;
   font-style: normal;
-  font-weight: 700;
-  font-size: clamp(16px, 2vw, 22px);
+  font-weight: 500;
+  font-size: clamp(17px, 2vw, 20px);
+  letter-spacing: 0.08em;
   color: rgba(255,255,255,0.92);
   margin: 20px auto 36px;
-  max-width: 520px;
-  line-height: 1.75;
+  max-width: 560px;
+  line-height: 1.85;
   text-shadow: 0 2px 12px rgba(0,0,0,0.35);
   animation: fadeUp 0.8s 0.45s both;
 }
