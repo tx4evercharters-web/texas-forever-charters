@@ -524,11 +524,11 @@ section {
 
 .sec-body {
   font-family: 'Bebas Neue', sans-serif;
-  font-weight: 400;
+  font-weight: 500;
   font-style: normal;
-  font-size: 16px;
-  line-height: 1.8;
-  letter-spacing: 0.05em;
+  font-size: 18px;
+  line-height: 1.9;
+  letter-spacing: 0.08em;
   color: var(--silver);
   max-width: 540px;
 }
@@ -718,10 +718,10 @@ section {
 .fleet-desc {
   font-family: 'Bebas Neue', sans-serif;
   font-style: normal;
-  font-weight: 400;
-  font-size: 15px;
-  line-height: 1.75;
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  font-size: 17px;
+  line-height: 1.85;
+  letter-spacing: 0.08em;
   color: var(--silver);
   margin-bottom: 20px;
 }
@@ -837,10 +837,10 @@ section {
 .crew-bio {
   font-family: 'Bebas Neue', sans-serif;
   font-style: normal;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 1.75;
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.85;
+  letter-spacing: 0.08em;
   color: var(--silver);
   max-width: 340px;
   margin: 0 auto;
@@ -886,10 +886,10 @@ section {
 .review-text {
   font-family: 'Bebas Neue', sans-serif;
   font-style: normal;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 1.75;
-  letter-spacing: 0.04em;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.85;
+  letter-spacing: 0.08em;
   color: var(--silver);
 }
 
@@ -963,10 +963,10 @@ section {
 .faq-a {
   font-family: 'Bebas Neue', sans-serif;
   font-style: normal;
-  font-weight: 400;
-  font-size: 15px;
-  line-height: 1.8;
-  letter-spacing: 0.04em;
+  font-weight: 500;
+  font-size: 17px;
+  line-height: 1.9;
+  letter-spacing: 0.08em;
   color: var(--silver);
   max-height: 0;
   overflow: hidden;
@@ -1036,11 +1036,11 @@ section {
 .nl-desc {
   font-family: 'Bebas Neue', sans-serif;
   font-style: normal;
-  font-weight: 400;
-  font-size: 15px;
+  font-weight: 500;
+  font-size: 17px;
   color: var(--silver);
-  line-height: 1.7;
-  letter-spacing: 0.04em;
+  line-height: 1.85;
+  letter-spacing: 0.08em;
   margin: 18px 0 30px;
 }
 
