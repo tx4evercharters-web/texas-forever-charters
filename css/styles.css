@@ -176,9 +176,9 @@ nav.scrolled .nav-logo img {
   inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(10,16,48,0.4) 0%,
-    rgba(10,16,48,0.2) 40%,
-    rgba(10,16,48,0.85) 100%
+    rgba(10,16,48,0.65) 0%,
+    rgba(10,16,48,0.35) 40%,
+    rgba(10,16,48,0.95) 100%
   );
 }
 
@@ -239,10 +239,11 @@ nav.scrolled .nav-logo img {
   font-style: normal;
   font-weight: 700;
   font-size: clamp(16px, 2vw, 22px);
-  color: rgba(255,255,255,0.95);
+  color: rgba(255,255,255,0.92);
   margin: 20px auto 36px;
   max-width: 520px;
   line-height: 1.75;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.35);
   animation: fadeUp 0.8s 0.45s both;
 }
 
