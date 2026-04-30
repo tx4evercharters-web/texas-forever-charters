@@ -263,9 +263,10 @@ nav.scrolled .nav-logo img {
   .nav-links {
     position: absolute;
     top: calc(100% + 12px);
-    left: 50%;
-    width: min(92vw, 420px);
-    transform: translateX(-50%);
+    right: 20px;
+    left: auto;
+    width: min(320px, 85vw);
+    transform: none;
     display: none;
     flex-direction: column;
     align-items: stretch;
@@ -273,7 +274,7 @@ nav.scrolled .nav-logo img {
     padding: 18px;
     background: rgba(10,16,48,0.98);
     border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 18px;
+    border-radius: 0;
     box-shadow: 0 32px 60px rgba(0,0,0,0.28);
     z-index: 490;
   }
