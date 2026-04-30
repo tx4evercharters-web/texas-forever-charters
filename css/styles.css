@@ -186,6 +186,9 @@ nav.scrolled .nav-logo img {
   position: relative;
   z-index: 2;
   padding: 0 20px;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
 .hero-eyebrow {
@@ -302,9 +305,8 @@ nav.scrolled .nav-logo img {
 .hero-scroll {
   position: absolute;
   bottom: 40px;
-  left: 0;
-  right: 0;
-  width: 100%;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
   z-index: 2;
   display: flex;
