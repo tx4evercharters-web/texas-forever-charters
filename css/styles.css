@@ -121,7 +121,6 @@ nav.scrolled .nav-logo img {
   padding: 10px;
   width: 42px;
   height: 42px;
-  display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
@@ -268,7 +267,7 @@ nav.scrolled .nav-logo img {
     z-index: 490;
   }
 
-  .nav-links.open {
+  .nav-links.active {
     display: flex;
   }
 
@@ -302,9 +301,10 @@ nav.scrolled .nav-logo img {
 
 .hero-scroll {
   position: absolute;
-  bottom: 30px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
+  text-align: center;
   z-index: 2;
   display: flex;
   flex-direction: column;
