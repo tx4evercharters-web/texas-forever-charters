@@ -528,6 +528,7 @@ section {
   font-style: normal;
   font-size: 16px;
   line-height: 1.8;
+  letter-spacing: 0.05em;
   color: var(--silver);
   max-width: 540px;
 }
@@ -720,6 +721,7 @@ section {
   font-weight: 400;
   font-size: 15px;
   line-height: 1.75;
+  letter-spacing: 0.05em;
   color: var(--silver);
   margin-bottom: 20px;
 }
@@ -838,6 +840,7 @@ section {
   font-weight: 400;
   font-size: 14px;
   line-height: 1.75;
+  letter-spacing: 0.05em;
   color: var(--silver);
   max-width: 340px;
   margin: 0 auto;
@@ -881,11 +884,12 @@ section {
 }
 
 .review-text {
-  font-family: 'Source Serif 4', serif;
-  font-style: italic;
-  font-weight: 300;
+  font-family: 'Bebas Neue', sans-serif;
+  font-style: normal;
+  font-weight: 400;
   font-size: 14px;
   line-height: 1.75;
+  letter-spacing: 0.04em;
   color: var(--silver);
 }
 
@@ -962,6 +966,7 @@ section {
   font-weight: 400;
   font-size: 15px;
   line-height: 1.8;
+  letter-spacing: 0.04em;
   color: var(--silver);
   max-height: 0;
   overflow: hidden;
@@ -1029,12 +1034,13 @@ section {
 }
 
 .nl-desc {
-  font-family: 'Source Serif 4', serif;
-  font-style: italic;
-  font-weight: 300;
+  font-family: 'Bebas Neue', sans-serif;
+  font-style: normal;
+  font-weight: 400;
   font-size: 15px;
   color: var(--silver);
   line-height: 1.7;
+  letter-spacing: 0.04em;
   margin: 18px 0 30px;
 }
 
