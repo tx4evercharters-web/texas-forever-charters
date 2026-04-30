@@ -83,7 +83,9 @@ nav.scrolled .nav-logo img {
 .nav-left {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 16px;
+  flex: 0 0 auto;
 }
 
 .nav-links {
@@ -91,6 +93,11 @@ nav.scrolled .nav-logo img {
   gap: 28px;
   list-style: none;
   align-items: center;
+  margin-left: auto;
+}
+
+.nav-call {
+  white-space: nowrap;
 }
 
 .nav-links a {
