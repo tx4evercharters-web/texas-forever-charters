@@ -169,8 +169,9 @@ nav.scrolled .nav-logo img {
 
 .nav-book {
   background: var(--red) !important;
-  padding: 10px 22px;
+  padding: 8px 20px;
   border: 2px solid var(--red);
+  border-radius: 4px;
   transition: all 0.2s !important;
 }
 
@@ -362,9 +363,9 @@ nav.scrolled .nav-logo img {
   }
 
   .nav-book {
-    width: 100%;
+    width: fit-content;
     text-align: center;
-    padding: 14px 0;
+    padding: 10px 24px;
   }
 .hero-actions {
     flex-direction: row;
