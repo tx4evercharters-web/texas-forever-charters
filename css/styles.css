@@ -338,7 +338,7 @@ nav.scrolled .nav-logo img {
     align-items: stretch;
     gap: 16px;
     padding: 12px 20px 20px;
-    background: rgba(10,16,48,1);
+    background: #0A1030 !important;
     backdrop-filter: blur(16px);
     border-radius: 0 0 12px 12px;
     box-shadow: -4px 8px 32px rgba(0,0,0,0.4);
