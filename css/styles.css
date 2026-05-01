@@ -733,6 +733,7 @@ section {
 
 .fleet-card .btn-red {
   margin-top: auto;
+  width: fit-content;
 }
 
 .fleet-img {
