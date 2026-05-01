@@ -339,7 +339,7 @@ nav.scrolled .nav-logo img {
 
 .hero-scroll {
   position: absolute;
-  bottom: 40px;
+  bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
