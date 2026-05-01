@@ -726,6 +726,15 @@ section {
   align-items: start;
 }
 
+.fleet-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.fleet-card .btn-red {
+  margin-top: auto;
+}
+
 .fleet-img {
   position: relative;
   aspect-ratio: 16/10;
