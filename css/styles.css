@@ -498,10 +498,19 @@ nav.scrolled .nav-logo img {
   padding: 20px 32px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  overflow: hidden;
+}
+
+.trust-track {
+  display: flex;
   gap: 24px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  animation: trustScroll 20s linear infinite;
+  width: max-content;
+}
+
+@keyframes trustScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .trust-item {

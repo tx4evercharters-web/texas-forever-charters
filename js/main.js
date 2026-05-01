@@ -70,6 +70,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ── Trust Bar Ticker ──
+  const trustBar = document.querySelector('.trust-bar');
+  if (trustBar) {
+    const items = Array.from(trustBar.querySelectorAll('.trust-item'));
+    const track = document.createElement('div');
+    track.className = 'trust-track';
+    items.forEach(item => track.appendChild(item));
+    items.forEach(item => track.appendChild(item.cloneNode(true)));
+    trustBar.appendChild(track);
+  }
+
   // ── Scroll Reveal ──
   const observer = new IntersectionObserver(entries => {
     entries.forEach(el => {
@@ -81,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { threshold: 0.08 });
 
   document.querySelectorAll(
-    '.trust-item, .exp-card, .fleet-card, .interior-img, .crew-card, .review-card'
+    '.exp-card, .fleet-card, .interior-img, .crew-card, .review-card'
   ).forEach(el => {
     el.style.opacity = '0';
     el.style.transform = 'translateY(22px)';
