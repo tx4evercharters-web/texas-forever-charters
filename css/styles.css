@@ -294,15 +294,18 @@ nav.scrolled .nav-logo img {
   .nav-links {
     position: absolute;
     top: 100%;
-    left: 0;
+    left: auto;
     right: 0;
+    width: 220px;
     display: none;
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
-    padding: 20px 24px 24px;
-    background: var(--navy);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 12px 20px 20px;
+    background: rgba(10,16,48,0.97);
+    backdrop-filter: blur(16px);
+    border-radius: 0 0 12px 12px;
+    box-shadow: -4px 8px 32px rgba(0,0,0,0.4);
     z-index: 490;
   }
 
@@ -320,7 +323,7 @@ nav.scrolled .nav-logo img {
   }
 
   .nav-links a {
-    text-align: left;
+    text-align: right;
   }
 
   .nav-book {
