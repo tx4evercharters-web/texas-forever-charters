@@ -554,7 +554,7 @@ nav.scrolled .nav-logo img {
 .trust-track {
   display: flex;
   gap: 24px;
-  animation: trustScroll 20s linear infinite;
+  animation: trustScroll 35s linear infinite;
   width: max-content;
 }
 
