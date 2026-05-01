@@ -555,8 +555,8 @@ section {
 .sec-body {
   font-family: 'Bebas Neue', sans-serif;
   font-weight: 400;
-  font-size: 18px;
-  letter-spacing: 0.5px;
+  font-size: 20px;
+  letter-spacing: 2px;
   line-height: 1.8;
   color: var(--silver);
   max-width: 540px;
@@ -747,8 +747,8 @@ section {
 .fleet-desc {
   font-family: 'Bebas Neue', sans-serif;
   font-weight: 400;
-  font-size: 17px;
-  letter-spacing: 0.5px;
+  font-size: 19px;
+  letter-spacing: 2px;
   line-height: 1.75;
   color: var(--silver);
   margin-bottom: 20px;
@@ -865,8 +865,8 @@ section {
 .crew-bio {
   font-family: 'Bebas Neue', sans-serif;
   font-weight: 400;
-  font-size: 16px;
-  letter-spacing: 0.5px;
+  font-size: 18px;
+  letter-spacing: 2px;
   line-height: 1.75;
   color: var(--silver);
   max-width: 340px;
@@ -913,8 +913,8 @@ section {
 .review-text {
   font-family: 'Bebas Neue', sans-serif;
   font-weight: 400;
-  font-size: 16px;
-  letter-spacing: 0.5px;
+  font-size: 18px;
+  letter-spacing: 2px;
   line-height: 1.75;
   color: var(--silver);
 }
@@ -989,8 +989,8 @@ section {
 .faq-a {
   font-family: 'Bebas Neue', sans-serif;
   font-weight: 400;
-  font-size: 17px;
-  letter-spacing: 0.5px;
+  font-size: 19px;
+  letter-spacing: 2px;
   line-height: 1.8;
   color: var(--silver);
   max-height: 0;
@@ -1061,8 +1061,8 @@ section {
 .nl-desc {
   font-family: 'Bebas Neue', sans-serif;
   font-weight: 400;
-  font-size: 17px;
-  letter-spacing: 0.5px;
+  font-size: 19px;
+  letter-spacing: 2px;
   color: var(--silver);
   line-height: 1.7;
   margin: 18px 0 30px;
