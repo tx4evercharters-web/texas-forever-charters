@@ -1282,6 +1282,28 @@ section {
   letter-spacing: 1px;
 }
 
+/* ── Arrow Pierce ── */
+.btn-arrow-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.arrow-pierce {
+  position: absolute;
+  left: -80px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 28px;
+  color: var(--red);
+  animation: arrowPierce 1.2s 1.5s both ease-out;
+}
+
+@keyframes arrowPierce {
+  0%   { left: -120px; opacity: 0; }
+  70%  { left: 10px; opacity: 1; }
+  100% { left: -8px; opacity: 1; }
+}
+
 /* ── Animations ── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(28px); }
