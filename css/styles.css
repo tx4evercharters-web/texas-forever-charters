@@ -356,11 +356,7 @@ nav.scrolled .nav-logo img {
     white-space: nowrap;
   }
 
-  .hero-scroll {
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-  }}
+}
 
 .hero-actions {
   display: flex;
@@ -382,7 +378,6 @@ nav.scrolled .nav-logo img {
   justify-content: center;
   align-items: center;
   gap: 6px;
-  animation: fadeUp 0.8s 1s both;
 }
 
 .scroll-label {
