@@ -723,7 +723,7 @@ section {
   gap: 48px;
   max-width: 1200px;
   margin: 0 auto;
-  align-items: start;
+  align-items: stretch;
 }
 
 .fleet-card {
