@@ -31,6 +31,8 @@
 </head>
 <body>
 
+  <a href="#home" class="skip-nav">Skip to main content</a>
+
   <!-- ── NAVIGATION ── -->
   <nav id="mainNav">
     <div class="nav-left">
@@ -39,12 +41,12 @@
       </div>
       <a href="tel:+17373681669" class="nav-call" aria-label="Call Texas Forever Charters">Call Now</a>
     </div>
-    <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false">
+    <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="nav-links">
       <span class="bar"></span>
       <span class="bar"></span>
       <span class="bar"></span>
     </button>
-    <ul class="nav-links">
+    <ul class="nav-links" id="nav-links">
       <li><a href="#experiences">Experiences</a></li>
       <li><a href="#fleet">Our Fleet</a></li>
       <li><a href="#crew">The Crew</a></li>
@@ -55,7 +57,7 @@
   </nav>
 
   <!-- ── HERO ── -->
-  <div class="hero" id="home">
+  <div class="hero" id="home" role="main">
     <div class="hero-bg">
       <img src="images/hero.jpeg" alt="Lake Travis aerial view - Texas Forever Charters">
     </div>
@@ -90,7 +92,7 @@
   </div>
 
   <!-- ── TRUST BAR ── -->
-  <div class="trust-bar">
+  <div class="trust-bar" aria-hidden="true">
     <div class="trust-item"><span class="trust-icon">⚓</span>Always Captained</div>
     <div class="trust-item"><span class="trust-icon">🛥️</span>Up to 20 Guests</div>
     <div class="trust-item"><span class="trust-icon">📍</span>Volente Beach Waterpark & Resort</div>
@@ -406,7 +408,7 @@
         <div class="footer-contact">
           <a href="tel:+17373681669">📞 (737) 368-1669</a>
           <a href="mailto:tx4evercharters@gmail.com">✉️ tx4evercharters@gmail.com</a>
-          <a href="#">📍 Volente Beach Waterpark & Resort, Lake Travis, Austin TX</a>
+          <a href="#" aria-label="Location: Volente Beach Waterpark and Resort, Lake Travis, Austin TX">📍 Volente Beach Waterpark & Resort, Lake Travis, Austin TX</a>
         </div>
       </div>
     </div>

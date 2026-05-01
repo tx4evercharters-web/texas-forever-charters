@@ -44,6 +44,39 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ── Accessibility ── */
+.skip-nav {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.skip-nav:focus {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  z-index: 9999;
+  padding: 12px 24px;
+  background: var(--navy-deeper);
+  color: var(--white);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
+
 body {
   font-family: 'Barlow', sans-serif;
   background: var(--navy-deeper);
