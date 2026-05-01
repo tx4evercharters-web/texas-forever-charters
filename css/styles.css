@@ -609,6 +609,10 @@ section {
   flex-wrap: wrap;
 }
 
+.exp-header .btn-red {
+  align-self: center;
+}
+
 .exp-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
