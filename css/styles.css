@@ -495,12 +495,13 @@ nav.scrolled .nav-logo img {
 .trust-bar {
   background: var(--navy-dark);
   border-bottom: 1px solid rgba(255,255,255,0.07);
-  padding: 24px 48px;
+  padding: 20px 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28px;
-  flex-wrap: wrap;
+  gap: 24px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
 
 .trust-item {
