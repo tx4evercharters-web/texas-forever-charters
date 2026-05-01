@@ -70,15 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ── Arrow Pierce ──
-  const btnWrapper = document.querySelector('.btn-arrow-wrapper');
-  if (btnWrapper) {
-    const arrow = document.createElement('span');
-    arrow.className = 'arrow-pierce';
-    arrow.textContent = '➤';
-    btnWrapper.appendChild(arrow);
-  }
-
   // ── Trust Bar Ticker ──
   const trustBar = document.querySelector('.trust-bar');
   if (trustBar) {
