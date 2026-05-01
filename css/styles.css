@@ -327,6 +327,42 @@ nav.scrolled .nav-logo img {
     text-align: center;
     padding: 14px 0;
   }
+
+  .hero-actions {
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+
+  .btn-red,
+  .btn-outline {
+    min-width: 0;
+    width: auto;
+    padding: 14px 20px;
+    font-size: 12px;
+  }
+
+  .hero-title {
+    font-size: 72px;
+    text-align: center;
+  }
+
+  .hero-red {
+    font-size: 72px;
+  }
+
+  .hero-eyebrow {
+    font-size: 11px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .hero-scroll {
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 .hero-actions {
