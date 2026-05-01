@@ -269,7 +269,8 @@ nav.scrolled .nav-logo img {
   font-family: 'Source Serif 4', serif;
   font-style: normal;
   font-weight: 500;
-  font-size: clamp(15px, 2vw, 20px);
+  font-size: clamp(17px, 2vw, 22px);
+  letter-spacing: 0.5px;
   color: var(--silver);
   margin: 20px auto 36px;
   max-width: 520px;
@@ -553,9 +554,9 @@ section {
 
 .sec-body {
   font-family: 'Source Serif 4', serif;
-  font-weight: 300;
-  font-style: italic;
-  font-size: 16px;
+  font-weight: 400;
+  font-size: 18px;
+  letter-spacing: 0.5px;
   line-height: 1.8;
   color: var(--silver);
   max-width: 540px;
@@ -745,9 +746,9 @@ section {
 
 .fleet-desc {
   font-family: 'Source Serif 4', serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: 15px;
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: 0.5px;
   line-height: 1.75;
   color: var(--silver);
   margin-bottom: 20px;
@@ -863,9 +864,9 @@ section {
 
 .crew-bio {
   font-family: 'Source Serif 4', serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: 14px;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 0.5px;
   line-height: 1.75;
   color: var(--silver);
   max-width: 340px;
@@ -911,9 +912,9 @@ section {
 
 .review-text {
   font-family: 'Source Serif 4', serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: 14px;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 0.5px;
   line-height: 1.75;
   color: var(--silver);
 }
@@ -987,9 +988,9 @@ section {
 
 .faq-a {
   font-family: 'Source Serif 4', serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: 15px;
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: 0.5px;
   line-height: 1.8;
   color: var(--silver);
   max-height: 0;
@@ -1059,9 +1060,9 @@ section {
 
 .nl-desc {
   font-family: 'Source Serif 4', serif;
-  font-style: italic;
-  font-weight: 300;
-  font-size: 15px;
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: 0.5px;
   color: var(--silver);
   line-height: 1.7;
   margin: 18px 0 30px;
