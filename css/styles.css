@@ -266,8 +266,8 @@ nav.scrolled .nav-logo img {
   font-weight: 700;
   letter-spacing: 4px;
   text-transform: uppercase;
-  color: var(--silver);
-  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  color: var(--white);
+  text-shadow: 0 2px 12px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,0.9);
   margin-bottom: 24px;
   animation: fadeUp 0.8s 0.1s both;
 }
