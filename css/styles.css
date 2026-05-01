@@ -539,6 +539,7 @@ nav.scrolled .nav-logo img {
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--silver);
+  white-space: nowrap;
 }
 
 .trust-icon {
@@ -602,7 +603,7 @@ section {
   max-width: 1200px;
   margin: 0 auto 48px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
