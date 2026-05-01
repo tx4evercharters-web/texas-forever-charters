@@ -185,7 +185,7 @@ nav.scrolled .nav-logo img {
   align-items: center;
   justify-content: center;
   text-align: center;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .hero-bg {
@@ -327,16 +327,14 @@ nav.scrolled .nav-logo img {
     text-align: center;
     padding: 14px 0;
   }
-
-  .hero-actions {
+.hero-actions {
     flex-direction: row;
     justify-content: center;
     gap: 12px;
     flex-wrap: nowrap;
   }
 
-  .btn-red,
-  .btn-outline {
+  .btn-red, .btn-outline {
     min-width: 0;
     width: auto;
     padding: 14px 20px;
@@ -362,8 +360,7 @@ nav.scrolled .nav-logo img {
     bottom: 80px;
     left: 50%;
     transform: translateX(-50%);
-  }
-}
+  }}
 
 .hero-actions {
   display: flex;
