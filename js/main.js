@@ -73,6 +73,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Trust Bar Ticker ──
   const trustBar = document.querySelector('.trust-bar');
   if (trustBar) {
+    const extraItems = [
+      { icon: '🎬', text: 'ADD-ON: Pro Drone Footage & Photos — $200' },
+      { icon: '🏖️', text: 'ADD-ON: Towels — $8' },
+      { icon: '🧊', text: 'ADD-ON: Ice — $25' },
+      { icon: '💧', text: 'ADD-ON: Water Bottles — $25' },
+    ];
+    extraItems.forEach(({ icon, text }) => {
+      const div = document.createElement('div');
+      div.className = 'trust-item';
+      div.innerHTML = `<span class='trust-icon'>${icon}</span>${text}`;
+      trustBar.appendChild(div);
+    });
     const items = Array.from(trustBar.querySelectorAll('.trust-item'));
     const track = document.createElement('div');
     track.className = 'trust-track';
