@@ -279,9 +279,11 @@ nav.scrolled .nav-logo img {
   text-shadow: 0 2px 12px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,0.9);
   margin-bottom: 24px;
   animation: fadeUp 0.8s 0.1s both;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
-.eyebrow-main { font-size: 22px; }
+.eyebrow-main { font-size: 22px; display: block; width: 100%; }
 
 .eline {
   width: 30px;
@@ -1399,6 +1401,6 @@ section {
   .hero-title { font-size: 72px; text-align: center; }
   .hero-red { font-size: 72px; }
   .hero-eyebrow { font-size: 11px; text-align: center; white-space: nowrap; }
-  .eyebrow-main { font-size: 15px; }
+  .eyebrow-main { font-size: 13px; display: block; width: 100%; }
   .hero-scroll { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); }
 }
