@@ -268,9 +268,10 @@ nav.scrolled .nav-logo img {
 
 .hero-eyebrow {
   display: inline-flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 18px;
   font-weight: 700;
@@ -293,6 +294,9 @@ nav.scrolled .nav-logo img {
   text-transform: uppercase;
   color: var(--silver);
   text-shadow: 0 2px 12px rgba(0,0,0,1);
+  width: 100%;
+  text-align: center;
+  margin-top: 0;
 }
 
 .hero-logo {
