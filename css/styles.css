@@ -236,6 +236,15 @@ nav.scrolled .nav-logo img {
   object-position: center;
 }
 
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
 .hero-bg::after {
   content: '';
   position: absolute;
@@ -1361,6 +1370,8 @@ section {
 
 /* ── 16. Responsive ── */
 @media (max-width: 960px) {
+  .hero-video { display: block; }
+  .hero-bg img { display: none; }
   nav { padding: 14px 20px; }
   nav.scrolled { padding: 10px 20px; }
   .nav-links { display: none; }
