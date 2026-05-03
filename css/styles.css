@@ -268,8 +268,9 @@ nav.scrolled .nav-logo img {
 
 .hero-eyebrow {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 18px;
   font-weight: 700;
@@ -279,16 +280,19 @@ nav.scrolled .nav-logo img {
   text-shadow: 0 2px 12px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,0.9);
   margin-bottom: 24px;
   animation: fadeUp 0.8s 0.1s both;
-  flex-wrap: wrap;
-  justify-content: center;
+  text-align: center;
 }
 
 .eyebrow-main { font-size: 22px; display: block; width: 100%; }
 
-.eline {
-  width: 30px;
-  height: 1px;
-  background: var(--red);
+.eyebrow-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--silver);
+  text-shadow: 0 2px 12px rgba(0,0,0,1);
 }
 
 .hero-logo {
@@ -1402,5 +1406,6 @@ section {
   .hero-red { font-size: 72px; }
   .hero-eyebrow { font-size: 11px; text-align: center; white-space: nowrap; }
   .eyebrow-main { font-size: 13px; display: block; width: 100%; }
+  .eyebrow-sub { font-size: 11px; }
   .hero-scroll { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); }
 }
