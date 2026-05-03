@@ -271,7 +271,7 @@ nav.scrolled .nav-logo img {
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-family: 'Barlow Condensed', sans-serif;
   font-size: 18px;
   font-weight: 700;
@@ -279,12 +279,20 @@ nav.scrolled .nav-logo img {
   text-transform: uppercase;
   color: var(--white);
   text-shadow: 0 2px 12px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,0.9);
-  margin-bottom: 24px;
+  margin-bottom: 8px;
   animation: fadeUp 0.8s 0.1s both;
   text-align: center;
 }
 
 .eyebrow-main { font-size: 22px; display: block; width: 100%; }
+
+.eline {
+  display: inline-block;
+  width: 30px;
+  height: 2px;
+  background: var(--red);
+  vertical-align: middle;
+}
 
 .eyebrow-sub {
   font-family: 'Barlow Condensed', sans-serif;
@@ -296,7 +304,7 @@ nav.scrolled .nav-logo img {
   text-shadow: 0 2px 12px rgba(0,0,0,1);
   width: 100%;
   text-align: center;
-  margin-top: 0;
+  margin-top: 2px;
 }
 
 .hero-logo {
