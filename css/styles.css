@@ -1408,7 +1408,7 @@ section {
   .hero-title { font-size: 72px; text-align: center; }
   .hero-red { font-size: 72px; }
   .hero-eyebrow { font-size: 11px; text-align: center; }
-  .eyebrow-main { font-size: 13px; display: block; width: 100%; }
+  .eyebrow-main { font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
   .eyebrow-sub { font-size: 11px; }
   .hero-scroll { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); }
 }
