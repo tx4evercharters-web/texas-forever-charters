@@ -281,6 +281,8 @@ nav.scrolled .nav-logo img {
   animation: fadeUp 0.8s 0.1s both;
 }
 
+.eyebrow-main { font-size: 22px; }
+
 .eline {
   width: 30px;
   height: 1px;
@@ -1397,5 +1399,6 @@ section {
   .hero-title { font-size: 72px; text-align: center; }
   .hero-red { font-size: 72px; }
   .hero-eyebrow { font-size: 11px; text-align: center; white-space: nowrap; }
+  .eyebrow-main { font-size: 15px; }
   .hero-scroll { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); }
 }
