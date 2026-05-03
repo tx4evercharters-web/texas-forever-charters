@@ -284,7 +284,7 @@ nav.scrolled .nav-logo img {
   text-align: center;
 }
 
-.eyebrow-main { font-size: 22px; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+.eyebrow-main { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; font-size: 22px; }
 
 .eyebrow-sub {
   font-family: 'Barlow Condensed', sans-serif;
