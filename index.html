@@ -164,9 +164,10 @@
     </div>
     <div class="fleet-grid">
       <div class="fleet-card">
-        <div class="fleet-img">
+        <div class="fleet-img" onclick="openGallery('carver')">
           <img src="images/yacht-main-photo.JPG" alt="1996 Carver Aft Cabin Motor Yacht Lake Travis">
           <div class="fleet-badge">The Flagship</div>
+          <div class="fleet-gallery-hint">📷 View Gallery</div>
         </div>
         <div class="fleet-name">1996 Carver Aft Cabin</div>
         <div class="fleet-specs">
@@ -181,9 +182,10 @@
         <a href="https://fareharbor.com/embeds/book/texasforevercharters/?full-items=yes" target="_blank" class="btn-red">Book the Carver</a>
       </div>
       <div class="fleet-card">
-        <div class="fleet-img">
+        <div class="fleet-img" onclick="openGallery('bentley')">
           <img src="images/bentley-main-photo.jpeg" alt="24ft Bentley Navigator Pontoon Lake Travis">
           <div class="fleet-badge">The Pontoon</div>
+          <div class="fleet-gallery-hint">📷 View Gallery</div>
         </div>
         <div class="fleet-name">24ft Bentley Navigator 243</div>
         <div class="fleet-specs">
@@ -420,6 +422,21 @@
   <div class="footer-bottom">
     <div class="footer-bottom-text">© 2026 Texas Forever Charters · Lake Travis, Austin TX · All rights reserved.</div>
     <div class="footer-bottom-text">Made in Texas ★</div>
+  </div>
+
+  <!-- ── BOAT GALLERY MODAL ── -->
+  <div id="boatGallery" class="gallery-modal" role="dialog" aria-modal="true" aria-label="Boat photo gallery">
+    <div class="gallery-modal-inner">
+      <button class="gallery-close" onclick="closeGallery()" aria-label="Close gallery">&#10005;</button>
+      <div class="gallery-modal-title" id="galleryTitle"></div>
+      <div class="gallery-grid-modal" id="galleryGrid"></div>
+    </div>
+    <div class="gallery-lightbox" id="galleryLightbox">
+      <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close photo">&#10005;</button>
+      <button class="lightbox-prev" onclick="lightboxNav(-1)" aria-label="Previous photo">&#8249;</button>
+      <img class="lightbox-img" id="lightboxImg" src="" alt="">
+      <button class="lightbox-next" onclick="lightboxNav(1)" aria-label="Next photo">&#8250;</button>
+    </div>
   </div>
 
   <!-- JavaScript -->

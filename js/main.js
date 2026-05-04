@@ -2,6 +2,90 @@
    TEXAS FOREVER CHARTERS - Main JavaScript
    ============================================================ */
 
+// ── Boat Gallery ──
+const galleryData = {
+  carver: {
+    title: '1996 Carver Aft Cabin — Photo Gallery',
+    images: [
+      { src: 'images/salon.jpg',       alt: 'Salon interior' },
+      { src: 'images/guestbed.jpg',    alt: 'Guest bedroom' },
+      { src: 'images/kitchenette.jpg', alt: 'Kitchenette' },
+      { src: 'images/aftdeck.jpg',     alt: 'Aft deck' },
+      { src: 'images/aftdeck2.jpg',    alt: 'Aft deck view' },
+      { src: 'images/stern1.jpg',      alt: 'Stern' },
+      { src: 'images/stern2.jpg',      alt: 'Stern view' },
+    ]
+  },
+  bentley: {
+    title: '24ft Bentley Navigator — Photo Gallery',
+    images: [
+      { src: 'images/bentley-main-photo.jpeg', alt: 'Bentley Navigator pontoon' },
+      { src: 'images/bentley.jpeg',            alt: 'Bentley Navigator on Lake Travis' },
+      { src: 'images/bentley2.jpeg',           alt: 'Bentley Navigator' },
+      { src: 'images/bentley-drone.jpeg',      alt: 'Bentley Navigator aerial view' },
+    ]
+  }
+};
+
+let currentLightboxImages = [];
+let currentLightboxIndex = 0;
+
+function openGallery(id) {
+  const data = galleryData[id];
+  if (!data) return;
+  document.getElementById('galleryTitle').textContent = data.title;
+  const grid = document.getElementById('galleryGrid');
+  grid.innerHTML = '';
+  data.images.forEach((img, i) => {
+    const el = document.createElement('img');
+    el.src = img.src;
+    el.alt = img.alt;
+    el.onclick = () => openLightbox(data.images, i);
+    grid.appendChild(el);
+  });
+  document.getElementById('boatGallery').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeGallery() {
+  document.getElementById('boatGallery').classList.remove('active');
+  closeLightbox();
+  document.body.style.overflow = '';
+}
+
+function openLightbox(images, index) {
+  currentLightboxImages = images;
+  currentLightboxIndex = index;
+  const img = document.getElementById('lightboxImg');
+  img.src = images[index].src;
+  img.alt = images[index].alt;
+  document.getElementById('galleryLightbox').classList.add('active');
+}
+
+function closeLightbox() {
+  document.getElementById('galleryLightbox').classList.remove('active');
+}
+
+function lightboxNav(dir) {
+  currentLightboxIndex = (currentLightboxIndex + dir + currentLightboxImages.length) % currentLightboxImages.length;
+  const img = document.getElementById('lightboxImg');
+  img.src = currentLightboxImages[currentLightboxIndex].src;
+  img.alt = currentLightboxImages[currentLightboxIndex].alt;
+}
+
+document.addEventListener('keydown', e => {
+  const lightbox = document.getElementById('galleryLightbox');
+  const modal = document.getElementById('boatGallery');
+  if (e.key === 'Escape') {
+    if (lightbox && lightbox.classList.contains('active')) closeLightbox();
+    else if (modal && modal.classList.contains('active')) closeGallery();
+  }
+  if (lightbox && lightbox.classList.contains('active')) {
+    if (e.key === 'ArrowLeft')  lightboxNav(-1);
+    if (e.key === 'ArrowRight') lightboxNav(1);
+  }
+});
+
 // ── Sticky Nav on Scroll ──
 window.addEventListener('scroll', () => {
   const nav = document.getElementById('mainNav');
