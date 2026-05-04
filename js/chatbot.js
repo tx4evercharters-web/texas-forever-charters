@@ -39,7 +39,14 @@
     "FEES & DAMAGE POLICY:\n" +
     "If a guest feels seasick or needs to vomit, please do so in the lake or in a trash bag. Vomiting in the toilet causes plumbing damage and carries a $200 fee. " +
     "No feminine hygiene products in the toilets — a $200 fee applies. " +
-    "If a guest breaks something on the boat, they are responsible for the cost of replacement or repair.";
+    "If a guest breaks something on the boat, they are responsible for the cost of replacement or repair." +
+    "\n\n" +
+    "CANCELLATION & WEATHER POLICY:\n" +
+    "All charters must be paid in full one week in advance. Deposits are non-refundable within two weeks of the charter date. " +
+    "If a guest cancels 5 or more days before the charter, we will reimburse 50% of the total. After that it is non-refundable unless weather is the reason for cancellation. " +
+    "On weather: the owners personally monitor all conditions and will never take guests out in a dangerous situation. " +
+    "Lake Travis is unique — even when it's raining in Austin, the rain often bypasses the lake entirely due to local land formations and wind patterns. A high chance of rain in the forecast does not mean the charter will be affected. " +
+    "Thunderstorms are different: we will issue a full refund for any time lost on the water due to thunderstorms.";
 
   const GREETING =
     "Hey there! ⚓ Welcome to Texas Forever Charters. I can help with rates, availability, " +
