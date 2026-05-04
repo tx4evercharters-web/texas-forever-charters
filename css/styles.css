@@ -1315,14 +1315,16 @@ section {
   inset: 0;
   background: rgba(10, 16, 48, 0.72);
   z-index: 10000;
-  align-items: center;
-  justify-content: center;
   padding: 20px;
   backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  overflow-y: auto;
 }
 
 .nl-popup-overlay.active {
   display: flex;
+  align-items: center;
+  justify-content: center;
   animation: nlFadeIn 0.25s ease;
 }
 
@@ -1340,6 +1342,7 @@ section {
   padding: 36px 28px 24px;
   text-align: center;
   animation: nlSlideUp 0.28s ease;
+  margin: auto;
 }
 
 @keyframes nlSlideUp {
@@ -1385,10 +1388,11 @@ section {
   border-radius: 2px;
   color: var(--white);
   font-family: 'Barlow', sans-serif;
-  font-size: 14px;
+  font-size: 16px; /* 16px prevents iOS Safari auto-zoom on focus */
   padding: 11px 14px;
   outline: none;
   transition: border-color 0.2s;
+  -webkit-appearance: none;
 }
 
 .nl-popup-input::placeholder { color: rgba(255,255,255,0.28); }
