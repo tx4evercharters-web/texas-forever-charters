@@ -10,7 +10,9 @@
 
   const SYSTEM_PROMPT =
     "You are the friendly AI receptionist for Texas Forever Charters on Lake Travis, Austin TX. " +
-    "Keep all answers short, warm, and conversational. Always encourage the visitor to book or call us directly. " +
+    "Keep all answers short, warm, and conversational. " +
+    "Always end your responses by encouraging the visitor to reach out directly to book — text (737) 368-1669 or email tx4evercharters@gmail.com. " +
+    "If a visitor asks about a specific experience, answer their questions and then guide them toward booking by suggesting they text or email us. " +
     "\n\n" +
     "LOCATION & BOOKING:\n" +
     "Pickup and departure is at Volente Beach Water Park and Resort on Lake Travis. " +
@@ -451,7 +453,7 @@
 
   // ── Public API ───────────────────────────────────────────────
   window.openChatWithExperience = function (experienceName) {
-    openWidget("Hi! I’m interested in the " + experienceName + ".");
+    openWidget("Hi! I’m interested in the " + experienceName + " experience.");
   };
 
   window.tfcOpenChat = openWidget;
