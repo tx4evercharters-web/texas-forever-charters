@@ -654,6 +654,8 @@ section {
 
 .exp-header .btn-red {
   align-self: center;
+  text-align: center;
+  font-size: 18px;
 }
 
 .exp-grid {
