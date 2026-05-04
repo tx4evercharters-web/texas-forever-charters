@@ -1,0 +1,2310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Your Charter | Texas Forever Charters</title>
+  <meta name="description" content="Book a captained boat charter on Lake Travis with Texas Forever Charters. Choose your vessel, experience, and date.">
+
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500;600;700&family=Source+Serif+4:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    /* ── Booking Page Base ── */
+    .booking-page {
+      min-height: 100vh;
+      background: var(--navy-deeper);
+      padding-top: 90px;
+    }
+
+    .booking-hero {
+      background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-deeper) 100%);
+      border-bottom: 1px solid rgba(200,16,46,0.25);
+      padding: 36px 24px 32px;
+      text-align: center;
+    }
+
+    .booking-hero-eyebrow {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 8px;
+    }
+
+    .booking-hero h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(36px, 6vw, 56px);
+      letter-spacing: 3px;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .booking-hero h1 span { color: var(--red); }
+
+    .booking-hero-sub {
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 8px;
+    }
+
+    /* ── Progress Bar ── */
+    .progress-wrap {
+      background: var(--navy-dark);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      padding: 20px 24px 16px;
+      position: sticky;
+      top: 70px;
+      z-index: 100;
+    }
+
+    .progress-steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 860px;
+      margin: 0 auto 12px;
+      gap: 0;
+    }
+
+    .ps-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      position: relative;
+    }
+
+    .ps-item::before {
+      content: '';
+      position: absolute;
+      top: 16px;
+      left: calc(50% + 16px);
+      right: calc(-50% + 16px);
+      height: 2px;
+      background: rgba(255,255,255,0.12);
+      transition: background 0.4s;
+    }
+
+    .ps-item:last-child::before { display: none; }
+
+    .ps-item.completed::before { background: var(--red); }
+
+    .ps-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: var(--navy-deeper);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.4);
+      transition: all 0.3s;
+      position: relative;
+      z-index: 1;
+    }
+
+    .ps-item.active .ps-dot {
+      border-color: var(--red);
+      background: var(--red);
+      color: var(--white);
+      box-shadow: 0 0 14px rgba(200,16,46,0.5);
+    }
+
+    .ps-item.completed .ps-dot {
+      border-color: var(--red);
+      background: var(--red);
+      color: var(--white);
+    }
+
+    .ps-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      margin-top: 5px;
+      text-align: center;
+      white-space: nowrap;
+      transition: color 0.3s;
+    }
+
+    .ps-item.active .ps-label,
+    .ps-item.completed .ps-label { color: rgba(255,255,255,0.7); }
+
+    .progress-bar-track {
+      max-width: 860px;
+      margin: 0 auto;
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--red-dark), var(--red));
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    /* ── Form Container ── */
+    .booking-form-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 24px 100px;
+    }
+
+    /* ── Step ── */
+    .step { display: none; }
+
+    .step.active {
+      display: block;
+      animation: stepIn 0.35s ease both;
+    }
+
+    .step.exit {
+      animation: stepOut 0.25s ease both;
+    }
+
+    @keyframes stepIn {
+      from { opacity: 0; transform: translateX(28px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes stepIn-back {
+      from { opacity: 0; transform: translateX(-28px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes stepOut {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(-28px); }
+    }
+
+    .step.active.going-back { animation: stepIn-back 0.35s ease both; }
+
+    .step-header {
+      margin-bottom: 32px;
+    }
+
+    .step-number {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 6px;
+    }
+
+    .step-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(28px, 5vw, 42px);
+      letter-spacing: 2px;
+      color: var(--white);
+      line-height: 1.1;
+    }
+
+    .step-desc {
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: rgba(255,255,255,0.55);
+      margin-top: 6px;
+    }
+
+    /* ── Vessel Cards (Step 1) ── */
+    .vessel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .vessel-card {
+      background: var(--navy-dark);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.25s;
+      position: relative;
+    }
+
+    .vessel-card:hover {
+      border-color: rgba(200,16,46,0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    }
+
+    .vessel-card.selected {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(200,16,46,0.2), 0 12px 32px rgba(0,0,0,0.4);
+    }
+
+    .vessel-card-check {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 2;
+    }
+
+    .vessel-card.selected .vessel-card-check { opacity: 1; }
+
+    .vessel-card-check svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: white;
+      stroke-width: 2.5;
+    }
+
+    .vessel-img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s;
+    }
+
+    .vessel-card:hover .vessel-img { transform: scale(1.03); }
+
+    .vessel-img-wrap { overflow: hidden; }
+
+    .vessel-info {
+      padding: 20px 20px 22px;
+    }
+
+    .vessel-badge {
+      display: inline-block;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--red);
+      background: rgba(200,16,46,0.12);
+      border: 1px solid rgba(200,16,46,0.3);
+      padding: 3px 9px;
+      border-radius: 3px;
+      margin-bottom: 10px;
+    }
+
+    .vessel-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 1.5px;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+
+    .vessel-sub {
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 14px;
+    }
+
+    .vessel-specs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .vessel-spec {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.07);
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    /* ── Experience Cards (Step 2) ── */
+    .exp-select-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .exp-select-card {
+      background: var(--navy-dark);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 18px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      position: relative;
+    }
+
+    .exp-select-card:hover {
+      border-color: rgba(200,16,46,0.4);
+      background: rgba(27,42,107,0.8);
+    }
+
+    .exp-select-card.selected {
+      border-color: var(--red);
+      background: rgba(200,16,46,0.08);
+    }
+
+    .exp-select-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .exp-select-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--white);
+    }
+
+    .exp-select-check {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .exp-select-card.selected .exp-select-check { opacity: 1; }
+
+    .exp-select-check svg {
+      width: 10px;
+      height: 10px;
+      fill: none;
+      stroke: white;
+      stroke-width: 2.5;
+    }
+
+    /* ── Duration Buttons (Step 3) ── */
+    .duration-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .duration-btn {
+      background: var(--navy-dark);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 20px 28px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      min-width: 110px;
+      color: var(--white);
+    }
+
+    .duration-btn:hover {
+      border-color: rgba(200,16,46,0.4);
+    }
+
+    .duration-btn.selected {
+      border-color: var(--red);
+      background: rgba(200,16,46,0.1);
+      box-shadow: 0 0 0 2px rgba(200,16,46,0.15);
+    }
+
+    .duration-hrs {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 1px;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .duration-btn.selected .duration-hrs { color: #ff6b7a; }
+
+    .duration-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      margin-top: 4px;
+    }
+
+    /* ── Calendar (Step 4) ── */
+    .cal-wrap {
+      background: var(--navy-dark);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      overflow: hidden;
+      max-width: 480px;
+    }
+
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .cal-month-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 2px;
+      color: var(--white);
+    }
+
+    .cal-nav-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      color: var(--white);
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 16px;
+    }
+
+    .cal-nav-btn:hover { background: rgba(200,16,46,0.15); border-color: rgba(200,16,46,0.4); }
+
+    .cal-grid {
+      padding: 12px 16px 20px;
+    }
+
+    .cal-days-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .cal-day-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      padding: 4px 0;
+    }
+
+    .cal-cells {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+
+    .cal-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--white);
+      position: relative;
+    }
+
+    .cal-cell:hover:not(.disabled):not(.empty) {
+      background: rgba(200,16,46,0.2);
+    }
+
+    .cal-cell.today {
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+
+    .cal-cell.selected {
+      background: var(--red) !important;
+      color: white;
+      font-weight: 700;
+    }
+
+    .cal-cell.disabled {
+      color: rgba(255,255,255,0.15);
+      cursor: not-allowed;
+    }
+
+    .cal-cell.empty { cursor: default; }
+
+    .cal-cell.holiday::after {
+      content: '';
+      position: absolute;
+      bottom: 3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #ff9500;
+    }
+
+    .cal-legend {
+      display: flex;
+      gap: 16px;
+      padding: 12px 16px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .cal-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .cal-legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .cal-selected-display {
+      margin-top: 16px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--white);
+    }
+
+    .cal-selected-display span { color: var(--red); }
+
+    /* ── Time Slots (Step 5) ── */
+    .time-section {
+      margin-bottom: 28px;
+    }
+
+    .time-section-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 12px;
+    }
+
+    .time-slots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .time-btn {
+      background: var(--navy-dark);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 14px 22px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--white);
+    }
+
+    .time-btn:hover { border-color: rgba(200,16,46,0.4); }
+
+    .time-btn.selected {
+      border-color: var(--red);
+      background: rgba(200,16,46,0.1);
+    }
+
+    /* ── Party Details (Step 6) ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-field.full { grid-column: 1 / -1; }
+
+    .form-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .form-label span { color: var(--red); }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+      background: var(--navy-dark);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 13px 16px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: var(--white);
+      transition: border-color 0.2s;
+      outline: none;
+      width: 100%;
+    }
+
+    .form-input::placeholder,
+    .form-textarea::placeholder { color: rgba(255,255,255,0.25); }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+      border-color: var(--red);
+      background: rgba(27,42,107,0.6);
+    }
+
+    .form-input.error,
+    .form-textarea.error { border-color: #ff4444; }
+
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .form-select { cursor: pointer; -webkit-appearance: none; }
+
+    .form-select option { background: var(--navy-dark); }
+
+    .party-size-wrap {
+      position: relative;
+    }
+
+    .party-size-max {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: rgba(255,255,255,0.3);
+      pointer-events: none;
+    }
+
+    .form-checks {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .form-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .form-check input[type="checkbox"] { display: none; }
+
+    .form-check-box {
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      border-radius: 5px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: var(--navy-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      margin-top: 1px;
+    }
+
+    .form-check input:checked + .form-check-box {
+      background: var(--red);
+      border-color: var(--red);
+    }
+
+    .form-check-box svg {
+      width: 11px;
+      height: 11px;
+      fill: none;
+      stroke: white;
+      stroke-width: 2.5;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .form-check input:checked + .form-check-box svg { opacity: 1; }
+
+    .form-check-label {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.45;
+    }
+
+    .form-check-label strong { color: var(--white); }
+
+    /* ── Add-Ons (Step 7) ── */
+    .addon-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .addon-item {
+      background: var(--navy-dark);
+      border: 2px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+
+    .addon-item:hover { border-color: rgba(200,16,46,0.25); }
+
+    .addon-item.selected { border-color: var(--red); background: rgba(200,16,46,0.06); }
+
+    .addon-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .addon-check {
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border-radius: 6px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: var(--navy-deeper);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .addon-item.selected .addon-check {
+      background: var(--red);
+      border-color: var(--red);
+    }
+
+    .addon-check svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: white;
+      stroke-width: 2.5;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .addon-item.selected .addon-check svg { opacity: 1; }
+
+    .addon-icon { font-size: 22px; }
+
+    .addon-info { flex: 1; }
+
+    .addon-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--white);
+    }
+
+    .addon-desc {
+      font-family: 'Barlow', sans-serif;
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      margin-top: 2px;
+    }
+
+    .addon-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .addon-price {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 1px;
+      color: var(--white);
+      white-space: nowrap;
+    }
+
+    .qty-control {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--navy-deeper);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .qty-btn {
+      background: transparent;
+      border: none;
+      color: var(--white);
+      width: 34px;
+      height: 34px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      font-family: 'Barlow', sans-serif;
+    }
+
+    .qty-btn:hover { background: rgba(200,16,46,0.2); }
+
+    .qty-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .running-total {
+      background: linear-gradient(135deg, rgba(200,16,46,0.15), rgba(27,42,107,0.4));
+      border: 1px solid rgba(200,16,46,0.3);
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .running-total-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .running-total-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px;
+      letter-spacing: 1px;
+      color: var(--white);
+    }
+
+    /* ── Summary (Step 8) ── */
+    .summary-card {
+      background: var(--navy-dark);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .summary-card-header {
+      background: rgba(200,16,46,0.1);
+      border-bottom: 1px solid rgba(200,16,46,0.2);
+      padding: 14px 22px;
+    }
+
+    .summary-card-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .summary-rows {
+      padding: 4px 0;
+    }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 22px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .summary-row:last-child { border-bottom: none; }
+
+    .summary-row-label {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: rgba(255,255,255,0.65);
+    }
+
+    .summary-row-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .summary-row.total {
+      background: rgba(200,16,46,0.08);
+      border-top: 1px solid rgba(200,16,46,0.2);
+    }
+
+    .summary-row.total .summary-row-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--white);
+      font-size: 16px;
+    }
+
+    .summary-row.total .summary-row-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 1px;
+    }
+
+    .summary-row.deposit .summary-row-value { color: #4cbb7a; }
+
+    .summary-row.discount .summary-row-value { color: #4cbb7a; }
+
+    .summary-row.tax-row .summary-row-label { color: rgba(255,255,255,0.4); font-size: 13px; }
+    .summary-row.tax-row .summary-row-value { color: rgba(255,255,255,0.5); font-size: 14px; }
+
+    .promo-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .promo-input {
+      flex: 1;
+      background: var(--navy-dark);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--white);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .promo-input::placeholder {
+      color: rgba(255,255,255,0.25);
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+    }
+
+    .promo-input:focus { border-color: var(--red); }
+    .promo-input.applied { border-color: #4cbb7a; }
+
+    .promo-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--white);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .promo-btn:hover { background: rgba(200,16,46,0.15); border-color: var(--red); }
+
+    .promo-msg {
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      margin-top: 6px;
+      display: none;
+    }
+
+    .promo-msg.success { color: #4cbb7a; display: block; }
+    .promo-msg.error { color: #ff6666; display: block; }
+
+    .terms-box {
+      background: var(--navy-dark);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .terms-box-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 14px;
+    }
+
+    .terms-text {
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      color: rgba(255,255,255,0.5);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .terms-text strong { color: rgba(255,255,255,0.8); }
+
+    .payment-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .pay-btn {
+      border-radius: 10px;
+      padding: 18px 20px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pay-btn-deposit {
+      background: transparent;
+      border: 2px solid var(--red);
+      color: var(--white);
+    }
+
+    .pay-btn-deposit:hover { background: rgba(200,16,46,0.12); }
+
+    .pay-btn-full {
+      background: var(--red);
+      border: 2px solid var(--red);
+      color: var(--white);
+    }
+
+    .pay-btn-full:hover { background: var(--red-dark); border-color: var(--red-dark); }
+
+    .pay-btn-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 1px;
+    }
+
+    .pay-btn-label {
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      opacity: 0.8;
+    }
+
+    /* ── Nav Buttons ── */
+    .step-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(10,16,48,0.97);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 14px 24px;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .step-nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      gap: 12px;
+    }
+
+    .btn-back {
+      background: transparent;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 13px 24px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-back:hover { border-color: rgba(255,255,255,0.4); color: var(--white); }
+    .btn-back:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-next {
+      background: var(--red);
+      border: 2px solid var(--red);
+      border-radius: 8px;
+      padding: 13px 32px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--white);
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+      max-width: 280px;
+    }
+
+    .btn-next:hover { background: var(--red-dark); border-color: var(--red-dark); }
+
+    .step-counter-nav {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.35);
+      white-space: nowrap;
+    }
+
+    /* ── Error Toast ── */
+    .error-toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #b91c1c;
+      color: white;
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 300;
+      pointer-events: none;
+      white-space: nowrap;
+      max-width: calc(100vw - 48px);
+      text-align: center;
+    }
+
+    .error-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .progress-wrap { top: 60px; padding: 12px 16px 10px; }
+      .ps-label { display: none; }
+      .ps-dot { width: 26px; height: 26px; font-size: 11px; }
+      .ps-item::before { top: 13px; }
+
+      .booking-form-wrap { padding: 28px 16px 100px; }
+
+      .vessel-grid { grid-template-columns: 1fr; gap: 14px; }
+      .exp-select-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .payment-buttons { grid-template-columns: 1fr; }
+
+      .duration-grid { gap: 8px; }
+      .duration-btn { min-width: 90px; padding: 16px 20px; }
+      .duration-hrs { font-size: 28px; }
+
+      .time-slots { gap: 8px; }
+      .time-btn { padding: 12px 16px; font-size: 15px; }
+
+      .step-nav { padding: 10px 16px; }
+      .btn-next { max-width: none; }
+    }
+
+    @media (max-width: 480px) {
+      .exp-select-grid { grid-template-columns: repeat(2, 1fr); }
+      .addon-desc { display: none; }
+    }
+
+    /* ── Footer mini ── */
+    .booking-footer {
+      background: var(--navy-deeper);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 20px 24px;
+      text-align: center;
+    }
+
+    .booking-footer p {
+      font-family: 'Barlow', sans-serif;
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .booking-footer a { color: rgba(255,255,255,0.5); text-decoration: none; }
+    .booking-footer a:hover { color: var(--white); }
+
+    /* Holiday info tooltip */
+    .holiday-note {
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      color: #ff9500;
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .holiday-note svg {
+      width: 14px;
+      height: 14px;
+      fill: #ff9500;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── NAVIGATION ── -->
+  <nav id="mainNav" class="scrolled">
+    <div class="nav-left">
+      <div class="nav-logo">
+        <a href="index.html"><img src="images/New_Tx4Ever_Logo.png" alt="Texas Forever Charters Logo"></a>
+      </div>
+      <a href="tel:+17373681669" class="nav-call" aria-label="Call Texas Forever Charters">Call Now</a>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="nav-links">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html#experiences">Experiences</a></li>
+      <li><a href="index.html#fleet">Our Fleet</a></li>
+      <li><a href="index.html#crew">The Crew</a></li>
+      <li><a href="index.html#reviews">Reviews</a></li>
+      <li><a href="index.html#faq">FAQ</a></li>
+      <li><a href="booking.html" class="nav-book">Book Now</a></li>
+    </ul>
+  </nav>
+
+  <div class="booking-page">
+
+    <!-- ── HERO ── -->
+    <div class="booking-hero">
+      <div class="booking-hero-eyebrow">Texas Forever Charters</div>
+      <h1>Book Your <span>Charter</span></h1>
+      <p class="booking-hero-sub">Lake Travis · Austin, TX · Captained Charters</p>
+    </div>
+
+    <!-- ── PROGRESS BAR ── -->
+    <div class="progress-wrap">
+      <div class="progress-steps" id="progressSteps">
+        <div class="ps-item" data-step="1">
+          <div class="ps-dot">1</div>
+          <div class="ps-label">Vessel</div>
+        </div>
+        <div class="ps-item" data-step="2">
+          <div class="ps-dot">2</div>
+          <div class="ps-label">Experience</div>
+        </div>
+        <div class="ps-item" data-step="3">
+          <div class="ps-dot">3</div>
+          <div class="ps-label">Duration</div>
+        </div>
+        <div class="ps-item" data-step="4">
+          <div class="ps-dot">4</div>
+          <div class="ps-label">Date</div>
+        </div>
+        <div class="ps-item" data-step="5">
+          <div class="ps-dot">5</div>
+          <div class="ps-label">Time</div>
+        </div>
+        <div class="ps-item" data-step="6">
+          <div class="ps-dot">6</div>
+          <div class="ps-label">Details</div>
+        </div>
+        <div class="ps-item" data-step="7">
+          <div class="ps-dot">7</div>
+          <div class="ps-label">Add-Ons</div>
+        </div>
+        <div class="ps-item" data-step="8">
+          <div class="ps-dot">8</div>
+          <div class="ps-label">Summary</div>
+        </div>
+      </div>
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <!-- ── FORM ── -->
+    <div class="booking-form-wrap">
+
+      <!-- STEP 1: VESSEL -->
+      <div class="step active" id="step1">
+        <div class="step-header">
+          <div class="step-number">Step 1 of 8</div>
+          <h2 class="step-title">Choose Your Vessel</h2>
+          <p class="step-desc">Both boats come with a licensed captain and all safety equipment.</p>
+        </div>
+        <div class="vessel-grid">
+
+          <div class="vessel-card" id="card-yacht" onclick="selectVessel('yacht')">
+            <div class="vessel-card-check">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="vessel-img-wrap">
+              <img class="vessel-img" src="images/yacht-main-photo.JPG" alt="40ft Carver Aft Cabin Yacht">
+            </div>
+            <div class="vessel-info">
+              <div class="vessel-badge">The Yacht</div>
+              <div class="vessel-name">40ft Carver Aft Cabin</div>
+              <div class="vessel-sub">1996 Carver · Full cabin · Upper deck</div>
+              <div class="vessel-specs">
+                <span class="vessel-spec">Up to 20 guests</span>
+                <span class="vessel-spec">Salon & Galley</span>
+                <span class="vessel-spec">Master Cabin</span>
+                <span class="vessel-spec">Upper Deck</span>
+                <span class="vessel-spec">14ft Jump</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="vessel-card" id="card-pontoon" onclick="selectVessel('pontoon')">
+            <div class="vessel-card-check">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="vessel-img-wrap">
+              <img class="vessel-img" src="images/bentley-main-photo.jpeg" alt="24ft Bentley Navigator 243 Pontoon">
+            </div>
+            <div class="vessel-info">
+              <div class="vessel-badge">The Pontoon</div>
+              <div class="vessel-name">24ft Bentley Navigator 243</div>
+              <div class="vessel-sub">Bentley · Open-air · Party platform</div>
+              <div class="vessel-specs">
+                <span class="vessel-spec">Up to 13 guests</span>
+                <span class="vessel-spec">Bimini Top</span>
+                <span class="vessel-spec">Bluetooth Audio</span>
+                <span class="vessel-spec">Float Mats</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STEP 2: EXPERIENCE -->
+      <div class="step" id="step2">
+        <div class="step-header">
+          <div class="step-number">Step 2 of 8</div>
+          <h2 class="step-title">Choose Your Experience</h2>
+          <p class="step-desc">What's the occasion? We tailor every charter to your vibe.</p>
+        </div>
+        <div class="exp-select-grid" id="experienceGrid">
+          <div class="exp-select-card" onclick="selectExperience('Sunset Cruise', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">🌅</span>
+            <div class="exp-select-name">Sunset Cruise</div>
+          </div>
+          <div class="exp-select-card" onclick="selectExperience('Boat Tour', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">🗺️</span>
+            <div class="exp-select-name">Boat Tour</div>
+          </div>
+          <div class="exp-select-card" onclick="selectExperience('Bachelorette Party', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">💍</span>
+            <div class="exp-select-name">Bachelorette Party</div>
+          </div>
+          <div class="exp-select-card" onclick="selectExperience('Birthday Party', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">🎂</span>
+            <div class="exp-select-name">Birthday Party</div>
+          </div>
+          <div class="exp-select-card" onclick="selectExperience('Private Party', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">🥂</span>
+            <div class="exp-select-name">Private Party</div>
+          </div>
+          <div class="exp-select-card" onclick="selectExperience('Lake Day', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">☀️</span>
+            <div class="exp-select-name">Lake Day</div>
+          </div>
+          <div class="exp-select-card" onclick="selectExperience('Proposal', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">💍</span>
+            <div class="exp-select-name">Proposal</div>
+          </div>
+          <div class="exp-select-card" onclick="selectExperience('Graduation Party', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">🎓</span>
+            <div class="exp-select-name">Graduation Party</div>
+          </div>
+          <div class="exp-select-card" onclick="selectExperience('Corporate Outing', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">💼</span>
+            <div class="exp-select-name">Corporate Outing</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3: DURATION -->
+      <div class="step" id="step3">
+        <div class="step-header">
+          <div class="step-number">Step 3 of 8</div>
+          <h2 class="step-title">Choose Your Duration</h2>
+          <p class="step-desc" id="durationDesc">Select how many hours you'd like to be on the water.</p>
+        </div>
+        <div class="duration-grid" id="durationGrid"></div>
+      </div>
+
+      <!-- STEP 4: DATE -->
+      <div class="step" id="step4">
+        <div class="step-header">
+          <div class="step-number">Step 4 of 8</div>
+          <h2 class="step-title">Choose Your Date</h2>
+          <p class="step-desc">Select your preferred date. Advance booking recommended for weekends.</p>
+        </div>
+        <div class="cal-wrap" id="calendarWrap">
+          <div class="cal-header">
+            <button class="cal-nav-btn" onclick="calNav(-1)" aria-label="Previous month">&#8249;</button>
+            <div class="cal-month-label" id="calMonthLabel"></div>
+            <button class="cal-nav-btn" onclick="calNav(1)" aria-label="Next month">&#8250;</button>
+          </div>
+          <div class="cal-grid">
+            <div class="cal-days-header">
+              <div class="cal-day-name">Su</div>
+              <div class="cal-day-name">Mo</div>
+              <div class="cal-day-name">Tu</div>
+              <div class="cal-day-name">We</div>
+              <div class="cal-day-name">Th</div>
+              <div class="cal-day-name">Fr</div>
+              <div class="cal-day-name">Sa</div>
+            </div>
+            <div class="cal-cells" id="calCells"></div>
+          </div>
+          <div class="cal-legend">
+            <div class="cal-legend-item">
+              <div class="cal-legend-dot" style="background:#ff9500"></div>
+              Bank Holiday (+$100/hr)
+            </div>
+            <div class="cal-legend-item">
+              <div class="cal-legend-dot" style="background:var(--red)"></div>
+              Selected
+            </div>
+          </div>
+        </div>
+        <div class="cal-selected-display" id="calSelectedDisplay"></div>
+        <div class="holiday-note" id="holidayNote" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 9v4m0-8v1"/></svg>
+          Bank holiday surcharge of $100/hr applies to this date.
+        </div>
+      </div>
+
+      <!-- STEP 5: TIME -->
+      <div class="step" id="step5">
+        <div class="step-header">
+          <div class="step-number">Step 5 of 8</div>
+          <h2 class="step-title">Choose Your Time Slot</h2>
+          <p class="step-desc" id="timeDesc">All times are Central Time. Charter departs from Volente Beach.</p>
+        </div>
+        <div id="timeSlotsWrap"></div>
+      </div>
+
+      <!-- STEP 6: PARTY DETAILS -->
+      <div class="step" id="step6">
+        <div class="step-header">
+          <div class="step-number">Step 6 of 8</div>
+          <h2 class="step-title">Party Details</h2>
+          <p class="step-desc">Tell us about your group so we can make it perfect.</p>
+        </div>
+        <div class="form-grid">
+          <div class="form-field full">
+            <label class="form-label" for="charterName">Charter / Event Name <span>*</span></label>
+            <input class="form-input" id="charterName" type="text" placeholder='e.g. "Smith Bachelorette Cruise"' autocomplete="off">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="fullName">Your Full Name <span>*</span></label>
+            <input class="form-input" id="fullName" type="text" placeholder="First & Last Name" autocomplete="name">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="emailInput">Email Address <span>*</span></label>
+            <input class="form-input" id="emailInput" type="email" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="phoneInput">Phone Number <span>*</span></label>
+            <input class="form-input" id="phoneInput" type="tel" placeholder="(555) 000-0000" autocomplete="tel">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="partySizeInput">Party Size <span>*</span></label>
+            <div class="party-size-wrap">
+              <input class="form-input" id="partySizeInput" type="number" min="1" placeholder="# of guests" autocomplete="off">
+              <div class="party-size-max" id="partySizeMax"></div>
+            </div>
+          </div>
+          <div class="form-field full">
+            <label class="form-label" for="specialRequests">Special Requests</label>
+            <textarea class="form-textarea" id="specialRequests" placeholder="Dietary needs, decorations, music preferences, anything you'd like us to know…"></textarea>
+          </div>
+        </div>
+        <div class="form-checks">
+          <label class="form-check" id="check-over21">
+            <input type="checkbox" id="over21Check">
+            <div class="form-check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="form-check-label"><strong>I confirm I am 21 years of age or older</strong> and will be the designated organizer for this charter. Required by Texas law.</span>
+          </label>
+          <label class="form-check">
+            <input type="checkbox" id="smsCheck">
+            <div class="form-check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="form-check-label">Send me SMS updates about my booking, weather alerts, and trip reminders. (Optional)</span>
+          </label>
+          <label class="form-check">
+            <input type="checkbox" id="newsletterCheck">
+            <div class="form-check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="form-check-label">Sign me up for the Texas Forever Charters newsletter — deals, availability, and lake life. (Optional)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- STEP 7: ADD-ONS -->
+      <div class="step" id="step7">
+        <div class="step-header">
+          <div class="step-number">Step 7 of 8</div>
+          <h2 class="step-title">Add-Ons</h2>
+          <p class="step-desc">Upgrade your experience. All add-ons confirmed at time of booking.</p>
+        </div>
+        <div class="addon-list">
+
+          <div class="addon-item" id="addon-drone" onclick="toggleAddon('drone')">
+            <div class="addon-left">
+              <div class="addon-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span class="addon-icon">🚁</span>
+              <div class="addon-info">
+                <div class="addon-name">Drone Footage</div>
+                <div class="addon-desc">Cinematic aerial video of your charter on Lake Travis</div>
+              </div>
+            </div>
+            <div class="addon-right">
+              <div class="addon-price">$200</div>
+            </div>
+          </div>
+
+          <div class="addon-item" id="addon-towels" style="cursor:default" onclick="toggleAddon('towels')">
+            <div class="addon-left">
+              <div class="addon-check" id="towels-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span class="addon-icon">🏖️</span>
+              <div class="addon-info">
+                <div class="addon-name">Towels</div>
+                <div class="addon-desc">Premium lake towels, $8 each</div>
+              </div>
+            </div>
+            <div class="addon-right">
+              <div class="qty-control" onclick="event.stopPropagation()">
+                <button class="qty-btn" onclick="changeQty('towels', -1)">−</button>
+                <div class="qty-val" id="qty-towels">0</div>
+                <button class="qty-btn" onclick="changeQty('towels', 1)">+</button>
+              </div>
+              <div class="addon-price" id="price-towels">$0</div>
+            </div>
+          </div>
+
+          <div class="addon-item" id="addon-water" onclick="toggleAddon('water')">
+            <div class="addon-left">
+              <div class="addon-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span class="addon-icon">💧</span>
+              <div class="addon-info">
+                <div class="addon-name">Water Bottles</div>
+                <div class="addon-desc">Case of bottled water for the crew</div>
+              </div>
+            </div>
+            <div class="addon-right">
+              <div class="addon-price">$25</div>
+            </div>
+          </div>
+
+          <div class="addon-item" id="addon-ice" onclick="toggleAddon('ice')">
+            <div class="addon-left">
+              <div class="addon-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span class="addon-icon">🧊</span>
+              <div class="addon-info">
+                <div class="addon-name">Ice</div>
+                <div class="addon-desc">Bagged ice for coolers — enough for your whole crew</div>
+              </div>
+            </div>
+            <div class="addon-right">
+              <div class="addon-price">$50</div>
+            </div>
+          </div>
+
+          <div class="addon-item" id="addon-beerpong" onclick="toggleAddon('beerpong')">
+            <div class="addon-left">
+              <div class="addon-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span class="addon-icon">🏓</span>
+              <div class="addon-info">
+                <div class="addon-name">Beer Pong Setup</div>
+                <div class="addon-desc">Table, balls, and cups — ready to go</div>
+              </div>
+            </div>
+            <div class="addon-right">
+              <div class="addon-price">$50</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="running-total">
+          <div class="running-total-label">Running Total (before tax)</div>
+          <div class="running-total-amount" id="runningTotal">$0</div>
+        </div>
+      </div>
+
+      <!-- STEP 8: SUMMARY -->
+      <div class="step" id="step8">
+        <div class="step-header">
+          <div class="step-number">Step 8 of 8</div>
+          <h2 class="step-title">Summary & <span style="color:var(--red)">Terms</span></h2>
+          <p class="step-desc">Review your booking details and choose your payment option.</p>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-card-header">
+            <div class="summary-card-title">Booking Summary</div>
+          </div>
+          <div class="summary-rows" id="summaryRows"></div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-card-header">
+            <div class="summary-card-title">Price Breakdown</div>
+          </div>
+          <div class="summary-rows" id="priceRows"></div>
+        </div>
+
+        <!-- Promo Code -->
+        <div>
+          <div class="form-label" style="margin-bottom:8px">Promo Code</div>
+          <div class="promo-row">
+            <input class="promo-input" id="promoInput" type="text" placeholder="Enter promo code">
+            <button class="promo-btn" onclick="applyPromo()">Apply</button>
+          </div>
+          <div class="promo-msg" id="promoMsg"></div>
+        </div>
+
+        <!-- Terms -->
+        <div class="terms-box" style="margin-top:20px">
+          <div class="terms-box-title">Policies &amp; Terms</div>
+          <div class="terms-text">
+            <strong>Cancellation Policy:</strong> Cancellations made 14+ days before charter date receive a full refund. 7–13 days: 50% refund. Less than 7 days: no refund. Rescheduling is permitted once with 72 hours notice.
+          </div>
+          <div class="terms-text">
+            <strong>Damage Policy:</strong> Guest is responsible for any damage to the vessel, equipment, or third-party property caused by the charter group. A credit card hold may be placed for incidentals.
+          </div>
+          <div class="terms-text">
+            <strong>Liability Waiver:</strong> All guests acknowledge participation in water activities involves inherent risks. Texas Forever Charters and its captains are not liable for injury, illness, or loss of personal property during the charter.
+          </div>
+          <div class="terms-text" style="margin-bottom:0">
+            <strong>BYOB Policy:</strong> Guests may bring their own alcohol. No glass bottles permitted on deck. Organizer is responsible for ensuring no guest under 21 consumes alcohol.
+          </div>
+          <div class="form-checks" style="margin-top:16px">
+            <label class="form-check" id="termsCheckWrap">
+              <input type="checkbox" id="termsCheck">
+              <div class="form-check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+              <span class="form-check-label"><strong>I have read and agree to the cancellation policy, damage policy, and liability waiver.</strong> I understand and accept all terms.</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Payment -->
+        <div class="payment-buttons" id="paymentButtons">
+          <button class="pay-btn pay-btn-deposit" onclick="handlePayment('deposit')">
+            <div class="pay-btn-label">Pay Deposit</div>
+            <div class="pay-btn-amount" id="depositAmountBtn">$0</div>
+            <div class="pay-btn-label">10% of total · holds your date</div>
+          </button>
+          <button class="pay-btn pay-btn-full" onclick="handlePayment('full')">
+            <div class="pay-btn-label">Pay In Full</div>
+            <div class="pay-btn-amount" id="fullAmountBtn">$0</div>
+            <div class="pay-btn-label">Total amount due today</div>
+          </button>
+        </div>
+
+      </div>
+
+    </div><!-- /booking-form-wrap -->
+
+  </div><!-- /booking-page -->
+
+  <!-- ── STEP NAV ── -->
+  <div class="step-nav">
+    <div class="step-nav-inner">
+      <button class="btn-back" id="btnBack" onclick="goBack()" disabled>← Back</button>
+      <div class="step-counter-nav" id="stepCounterNav">Step 1 of 8</div>
+      <button class="btn-next" id="btnNext" onclick="goNext()">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ── ERROR TOAST ── -->
+  <div class="error-toast" id="errorToast"></div>
+
+  <!-- Nav JS (hamburger + scroll) -->
+  <script>
+    window.addEventListener('scroll', () => {
+      const nav = document.getElementById('mainNav');
+      if (nav) nav.classList.toggle('scrolled', window.scrollY > 60);
+    });
+    const toggle = document.querySelector('.nav-toggle');
+    const navLinks = document.getElementById('nav-links');
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        const open = toggle.classList.toggle('active');
+        toggle.setAttribute('aria-expanded', open);
+        navLinks.classList.toggle('active', open);
+      });
+    }
+  </script>
+
+  <!-- ── BOOKING LOGIC ── -->
+  <script>
+    /* ── State ── */
+    const booking = {
+      vessel: null,
+      experience: null,
+      duration: null,
+      date: null,
+      timeSlot: null,
+      charterName: '',
+      fullName: '',
+      email: '',
+      phone: '',
+      partySize: null,
+      specialRequests: '',
+      over21: false,
+      smsAlerts: false,
+      newsletter: false,
+      addOns: {
+        drone: false,
+        towels: 0,
+        water: false,
+        ice: false,
+        beerpong: false,
+      },
+      promoApplied: false,
+    };
+
+    let currentStep = 1;
+    let goingBack = false;
+    let calendarDate = new Date();
+    calendarDate.setDate(1);
+
+    /* ── US Bank Holidays 2025–2027 ── */
+    const bankHolidays = new Set([
+      '2025-01-01','2025-01-20','2025-02-17','2025-05-26',
+      '2025-06-19','2025-07-04','2025-09-01','2025-10-13',
+      '2025-11-11','2025-11-27','2025-12-25',
+      '2026-01-01','2026-01-19','2026-02-16','2026-05-25',
+      '2026-06-19','2026-07-04','2026-07-03','2026-09-07',
+      '2026-10-12','2026-11-11','2026-11-26','2026-12-25',
+      '2027-01-01','2027-01-18','2027-02-15','2027-05-31',
+      '2027-06-18','2027-07-05','2027-09-06','2027-11-11',
+      '2027-11-25','2027-12-24',
+    ]);
+
+    function dateKey(d) {
+      return d.getFullYear() + '-' +
+        String(d.getMonth()+1).padStart(2,'0') + '-' +
+        String(d.getDate()).padStart(2,'0');
+    }
+
+    function isHoliday(d) { return bankHolidays.has(dateKey(d)); }
+
+    /* ── Toast ── */
+    let toastTimer;
+    function showToast(msg) {
+      const t = document.getElementById('errorToast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    /* ── Progress ── */
+    function updateProgress() {
+      const items = document.querySelectorAll('.ps-item');
+      items.forEach(item => {
+        const s = parseInt(item.dataset.step);
+        item.classList.remove('active','completed');
+        if (s === currentStep) item.classList.add('active');
+        else if (s < currentStep) item.classList.add('completed');
+      });
+      const pct = ((currentStep - 1) / 7) * 100;
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('stepCounterNav').textContent = 'Step ' + currentStep + ' of 8';
+      document.getElementById('btnBack').disabled = currentStep === 1;
+      document.getElementById('btnNext').textContent =
+        currentStep === 8 ? '' : 'Continue →';
+      document.getElementById('btnNext').style.display =
+        currentStep === 8 ? 'none' : '';
+    }
+
+    /* ── Navigation ── */
+    function showStep(n, back) {
+      const old = document.getElementById('step' + currentStep);
+      goingBack = back;
+      old.classList.remove('active');
+      currentStep = n;
+      const nw = document.getElementById('step' + n);
+      nw.classList.remove('going-back');
+      if (back) nw.classList.add('going-back');
+      nw.classList.add('active');
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function goNext() {
+      if (!validateStep(currentStep)) return;
+      if (currentStep < 8) showStep(currentStep + 1, false);
+    }
+
+    function goBack() {
+      if (currentStep > 1) showStep(currentStep - 1, true);
+    }
+
+    /* ── Validation ── */
+    function validateStep(s) {
+      if (s === 1) {
+        if (!booking.vessel) { showToast('Please choose a vessel'); return false; }
+      }
+      if (s === 2) {
+        if (!booking.experience) { showToast('Please select an experience'); return false; }
+        buildDurationStep();
+      }
+      if (s === 3) {
+        if (!booking.duration) { showToast('Please select a duration'); return false; }
+        renderCalendar();
+      }
+      if (s === 4) {
+        if (!booking.date) { showToast('Please select a date'); return false; }
+        buildTimeSlots();
+      }
+      if (s === 5) {
+        if (!booking.timeSlot) { showToast('Please choose a time slot'); return false; }
+        const max = booking.vessel === 'yacht' ? 20 : 13;
+        document.getElementById('partySizeMax').textContent = 'max ' + max;
+      }
+      if (s === 6) {
+        const cn = document.getElementById('charterName').value.trim();
+        const fn = document.getElementById('fullName').value.trim();
+        const em = document.getElementById('emailInput').value.trim();
+        const ph = document.getElementById('phoneInput').value.trim();
+        const ps = parseInt(document.getElementById('partySizeInput').value);
+        const max = booking.vessel === 'yacht' ? 20 : 13;
+        if (!cn) { showToast('Please enter a charter name'); document.getElementById('charterName').classList.add('error'); return false; }
+        if (!fn) { showToast('Please enter your full name'); document.getElementById('fullName').classList.add('error'); return false; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { showToast('Please enter a valid email address'); document.getElementById('emailInput').classList.add('error'); return false; }
+        if (!ph || ph.replace(/\D/g,'').length < 10) { showToast('Please enter a valid phone number'); document.getElementById('phoneInput').classList.add('error'); return false; }
+        if (!ps || ps < 1 || ps > max) { showToast('Party size must be 1–' + max + ' for this vessel'); document.getElementById('partySizeInput').classList.add('error'); return false; }
+        if (!document.getElementById('over21Check').checked) { showToast('You must confirm you are 21 or older'); return false; }
+        booking.charterName = cn;
+        booking.fullName = fn;
+        booking.email = em;
+        booking.phone = ph;
+        booking.partySize = ps;
+        booking.specialRequests = document.getElementById('specialRequests').value.trim();
+        booking.over21 = true;
+        booking.smsAlerts = document.getElementById('smsCheck').checked;
+        booking.newsletter = document.getElementById('newsletterCheck').checked;
+        updateRunningTotal();
+      }
+      if (s === 7) {
+        buildSummary();
+      }
+      if (s === 8) {
+        if (!document.getElementById('termsCheck').checked) { showToast('Please agree to the terms and policies'); return false; }
+      }
+      return true;
+    }
+
+    /* ── Step 1: Vessel ── */
+    function selectVessel(v) {
+      booking.vessel = v;
+      document.getElementById('card-yacht').classList.toggle('selected', v === 'yacht');
+      document.getElementById('card-pontoon').classList.toggle('selected', v === 'pontoon');
+      // Reset downstream if vessel changes
+      booking.duration = null;
+      booking.timeSlot = null;
+    }
+
+    /* ── Step 2: Experience ── */
+    function selectExperience(exp, el) {
+      booking.experience = exp;
+      document.querySelectorAll('.exp-select-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      // Reset duration if experience type changed (short vs long)
+      booking.duration = null;
+      booking.timeSlot = null;
+    }
+
+    /* ── Step 3: Duration ── */
+    const SHORT_EXPS = ['Sunset Cruise', 'Boat Tour'];
+
+    function buildDurationStep() {
+      const isShort = SHORT_EXPS.includes(booking.experience);
+      const min = isShort ? 2 : 3;
+      const desc = isShort
+        ? 'Sunset Cruises and Boat Tours: 2–8 hours available.'
+        : 'Parties and events: minimum 3 hours.';
+      document.getElementById('durationDesc').textContent = desc;
+      const grid = document.getElementById('durationGrid');
+      grid.innerHTML = '';
+      for (let h = min; h <= 8; h++) {
+        const btn = document.createElement('div');
+        btn.className = 'duration-btn' + (booking.duration === h ? ' selected' : '');
+        btn.innerHTML = '<div class="duration-hrs">' + h + '</div><div class="duration-label">' + (h === 1 ? 'Hour' : 'Hours') + '</div>';
+        btn.onclick = () => {
+          booking.duration = h;
+          booking.timeSlot = null;
+          document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+        };
+        grid.appendChild(btn);
+      }
+    }
+
+    /* ── Step 4: Calendar ── */
+    function calNav(dir) {
+      calendarDate.setMonth(calendarDate.getMonth() + dir);
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const year = calendarDate.getFullYear();
+      const month = calendarDate.getMonth();
+      const monthNames = ['January','February','March','April','May','June',
+        'July','August','September','October','November','December'];
+      document.getElementById('calMonthLabel').textContent = monthNames[month] + ' ' + year;
+
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const cells = document.getElementById('calCells');
+      cells.innerHTML = '';
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'cal-cell empty';
+        cells.appendChild(empty);
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(year, month, d);
+        date.setHours(0,0,0,0);
+        const cell = document.createElement('div');
+        const isPast = date < today;
+        const isToday = date.getTime() === today.getTime();
+        const isSelected = booking.date && date.getTime() === booking.date.getTime();
+        const holiday = isHoliday(date);
+
+        cell.className = 'cal-cell' +
+          (isPast ? ' disabled' : '') +
+          (isToday ? ' today' : '') +
+          (isSelected ? ' selected' : '') +
+          (holiday ? ' holiday' : '');
+        cell.textContent = d;
+
+        if (!isPast) {
+          cell.onclick = () => selectDate(date);
+        }
+        cells.appendChild(cell);
+      }
+    }
+
+    function selectDate(date) {
+      booking.date = date;
+      booking.timeSlot = null;
+      renderCalendar();
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const display = document.getElementById('calSelectedDisplay');
+      display.innerHTML = 'Selected: <span>' +
+        days[date.getDay()] + ', ' + months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear() +
+        '</span>';
+      const hNote = document.getElementById('holidayNote');
+      hNote.style.display = isHoliday(date) ? 'flex' : 'none';
+    }
+
+    /* ── Step 5: Time Slots ── */
+    const MORNING_SLOTS = ['9:00am','9:30am','10:00am','10:30am','11:00am'];
+    const AFTERNOON_SLOTS = ['2:30pm','3:00pm','4:00pm','5:00pm'];
+
+    function buildTimeSlots() {
+      const wrap = document.getElementById('timeSlotsWrap');
+      wrap.innerHTML = '';
+      const dur = booking.duration || 2;
+      const isShort = dur <= 3;
+
+      if (isShort) {
+        wrap.appendChild(makeTimeSection('Morning', MORNING_SLOTS));
+        wrap.appendChild(makeTimeSection('Afternoon', AFTERNOON_SLOTS));
+      } else {
+        const all = MORNING_SLOTS.concat(AFTERNOON_SLOTS);
+        wrap.appendChild(makeTimeSection('All Available Start Times', all));
+      }
+    }
+
+    function makeTimeSection(label, slots) {
+      const sec = document.createElement('div');
+      sec.className = 'time-section';
+      sec.innerHTML = '<div class="time-section-label">' + label + '</div>';
+      const row = document.createElement('div');
+      row.className = 'time-slots';
+      slots.forEach(slot => {
+        const btn = document.createElement('div');
+        btn.className = 'time-btn' + (booking.timeSlot === slot ? ' selected' : '');
+        btn.textContent = slot;
+        btn.onclick = () => {
+          booking.timeSlot = slot;
+          document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+        };
+        row.appendChild(btn);
+      });
+      sec.appendChild(row);
+      return sec;
+    }
+
+    /* ── Step 6: Inputs — clear error on input ── */
+    ['charterName','fullName','emailInput','phoneInput','partySizeInput'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => el.classList.remove('error'));
+    });
+
+    /* ── Step 7: Add-Ons ── */
+    const ADDON_PRICES = { drone: 200, water: 25, ice: 50, beerpong: 50 };
+
+    function toggleAddon(key) {
+      if (key === 'towels') return;
+      booking.addOns[key] = !booking.addOns[key];
+      const item = document.getElementById('addon-' + key);
+      if (item) item.classList.toggle('selected', booking.addOns[key]);
+      updateRunningTotal();
+    }
+
+    function changeQty(key, delta) {
+      booking.addOns[key] = Math.max(0, (booking.addOns[key] || 0) + delta);
+      document.getElementById('qty-' + key).textContent = booking.addOns[key];
+      const price = booking.addOns[key] * 8;
+      document.getElementById('price-' + key).textContent = '$' + price;
+      const item = document.getElementById('addon-' + key);
+      if (item) item.classList.toggle('selected', booking.addOns[key] > 0);
+      const check = document.getElementById(key + '-check');
+      if (check) check.parentElement.classList.toggle('selected', booking.addOns[key] > 0);
+      updateRunningTotal();
+    }
+
+    function getCharterBaseTotal() {
+      const { vessel, duration, date } = booking;
+      if (!vessel || !duration || !date) return 0;
+      const day = date.getDay();
+      let rate;
+      if (vessel === 'yacht') {
+        rate = day === 6 ? 350 : (day === 0 || day === 5) ? 300 : 250;
+      } else {
+        rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
+      }
+      if (isHoliday(date)) rate += 100;
+      return rate * duration;
+    }
+
+    function getAddOnsTotal() {
+      let t = 0;
+      if (booking.addOns.drone) t += 200;
+      t += booking.addOns.towels * 8;
+      if (booking.addOns.water) t += 25;
+      if (booking.addOns.ice) t += 50;
+      if (booking.addOns.beerpong) t += 50;
+      return t;
+    }
+
+    function updateRunningTotal() {
+      const base = getCharterBaseTotal();
+      const addons = getAddOnsTotal();
+      const sub = base + addons;
+      const discount = booking.promoApplied ? Math.round(sub * 0.1) : 0;
+      const taxable = sub - discount;
+      document.getElementById('runningTotal').textContent = '$' + sub.toLocaleString();
+    }
+
+    /* ── Step 8: Summary ── */
+    function buildSummary() {
+      const { vessel, experience, duration, date, timeSlot, charterName, fullName, partySize } = booking;
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+      const sumRows = document.getElementById('summaryRows');
+      sumRows.innerHTML = '';
+      const bookingDetails = [
+        ['Vessel', vessel === 'yacht' ? '40ft Carver Aft Cabin' : '24ft Bentley Navigator 243'],
+        ['Experience', experience],
+        ['Duration', duration + ' hours'],
+        ['Date', date ? days[date.getDay()] + ', ' + months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear() : '—'],
+        ['Start Time', timeSlot || '—'],
+        ['Charter Name', charterName],
+        ['Organizer', fullName],
+        ['Party Size', partySize + ' guests'],
+      ];
+      bookingDetails.forEach(([label, value]) => {
+        sumRows.innerHTML += '<div class="summary-row"><div class="summary-row-label">' + label + '</div><div class="summary-row-value">' + value + '</div></div>';
+      });
+
+      buildPriceBreakdown();
+    }
+
+    function buildPriceBreakdown() {
+      const { vessel, duration, date } = booking;
+      const day = date ? date.getDay() : 1;
+      let rate;
+      if (vessel === 'yacht') {
+        rate = day === 6 ? 350 : (day === 0 || day === 5) ? 300 : 250;
+      } else {
+        rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
+      }
+      const holidaySurcharge = date && isHoliday(date) ? 100 : 0;
+      const effectiveRate = rate + holidaySurcharge;
+      const charterBase = effectiveRate * duration;
+
+      const addOnsTotal = getAddOnsTotal();
+      let subtotal = charterBase + addOnsTotal;
+      const discount = booking.promoApplied ? Math.round(subtotal * 0.1) : 0;
+      const discounted = subtotal - discount;
+      const tax = Math.round(discounted * 0.085 * 100) / 100;
+      const grandTotal = Math.round((discounted + tax) * 100) / 100;
+      const deposit = Math.round(grandTotal * 0.1 * 100) / 100;
+
+      const dayLabel = day === 6 ? 'Saturday rate' : (day === 0 || day === 5) ? 'Fri/Sun rate' : 'Mon–Thu rate';
+      const rows = document.getElementById('priceRows');
+      rows.innerHTML = '';
+
+      const add = (label, val, cls) => {
+        rows.innerHTML += '<div class="summary-row' + (cls ? ' ' + cls : '') + '"><div class="summary-row-label">' + label + '</div><div class="summary-row-value">' + val + '</div></div>';
+      };
+
+      add('Charter (' + duration + ' hrs × $' + effectiveRate + '/hr · ' + dayLabel + ')', '$' + charterBase.toLocaleString());
+      if (holidaySurcharge) add('Bank Holiday Surcharge (+$100/hr)', '+$' + (holidaySurcharge * duration));
+      if (booking.addOns.drone) add('Drone Footage', '$200');
+      if (booking.addOns.towels > 0) add('Towels (' + booking.addOns.towels + ' × $8)', '$' + booking.addOns.towels * 8);
+      if (booking.addOns.water) add('Water Bottles', '$25');
+      if (booking.addOns.ice) add('Ice', '$50');
+      if (booking.addOns.beerpong) add('Beer Pong Setup', '$50');
+      if (discount > 0) add('Promo Discount (10%)', '−$' + discount, 'discount');
+      add('Sales Tax (8.5%)', '+$' + tax.toFixed(2), 'tax-row');
+      add('Total', '$' + grandTotal.toFixed(2), 'total');
+      add('Deposit (10%)', '$' + deposit.toFixed(2), 'deposit');
+
+      document.getElementById('depositAmountBtn').textContent = '$' + deposit.toFixed(2);
+      document.getElementById('fullAmountBtn').textContent = '$' + grandTotal.toFixed(2);
+    }
+
+    /* ── Promo Code ── */
+    function applyPromo() {
+      const code = document.getElementById('promoInput').value.trim().toUpperCase();
+      const msg = document.getElementById('promoMsg');
+      const input = document.getElementById('promoInput');
+      if (code === 'LAKELIFE10' || code === 'FOREVER10' || code === 'TXF10') {
+        booking.promoApplied = true;
+        input.classList.add('applied');
+        msg.className = 'promo-msg success';
+        msg.textContent = '10% discount applied!';
+        buildPriceBreakdown();
+      } else {
+        booking.promoApplied = false;
+        input.classList.remove('applied');
+        msg.className = 'promo-msg error';
+        msg.textContent = 'Invalid promo code. Try again.';
+        buildPriceBreakdown();
+      }
+    }
+
+    document.getElementById('promoInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') applyPromo();
+    });
+
+    /* ── Payment placeholder ── */
+    function handlePayment(type) {
+      if (!document.getElementById('termsCheck').checked) {
+        showToast('Please agree to the terms and policies');
+        return;
+      }
+      showToast('Payment processing coming soon — we\'ll contact you to confirm!');
+    }
+
+    /* ── Init ── */
+    renderCalendar();
+    updateProgress();
+  </script>
+
+</body>
+</html>
