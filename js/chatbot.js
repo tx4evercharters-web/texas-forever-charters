@@ -1,12 +1,12 @@
 /* ============================================================
    TEXAS FOREVER CHARTERS — AI Chat Widget
-   Powered by Claude (claude-sonnet-4-20250514)
+   Powered by Claude (claude-sonnet-4-6)
    API calls proxied through /api/chat (Vercel serverless)
    ============================================================ */
 (function () {
   'use strict';
 
-  const MODEL = 'claude-sonnet-4-20250514';
+  const MODEL = 'claude-sonnet-4-6';
 
   const SYSTEM_PROMPT =
     "You are the friendly AI receptionist for Texas Forever Charters on Lake Travis, Austin TX. " +
