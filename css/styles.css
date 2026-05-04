@@ -1420,7 +1420,129 @@ section {
   .hero-scroll { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); }
 }
 
-/* ── 17. Boat Gallery Modal ── */
+/* ── 17. Experience Contact Modal ── */
+.exp-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 16, 48, 0.88);
+  z-index: 8000;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.exp-modal.active {
+  display: flex;
+}
+
+.exp-modal-box {
+  background: var(--navy-dark);
+  border-top: 4px solid var(--red);
+  max-width: 480px;
+  width: 100%;
+  padding: 48px 40px 40px;
+  position: relative;
+}
+
+.exp-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--white);
+  font-size: 1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.exp-modal-close:hover {
+  background: var(--red);
+  border-color: var(--red);
+}
+
+.exp-modal-eyebrow {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 10px;
+}
+
+.exp-modal-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 3rem;
+  letter-spacing: 2px;
+  color: var(--white);
+  line-height: 1;
+  margin-bottom: 20px;
+}
+
+.exp-modal-divider {
+  width: 48px;
+  height: 2px;
+  background: var(--red);
+  margin-bottom: 20px;
+}
+
+.exp-modal-body {
+  font-family: 'Barlow', sans-serif;
+  font-size: 15px;
+  color: var(--silver);
+  line-height: 1.6;
+  margin-bottom: 32px;
+}
+
+.exp-modal-phone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--white);
+  text-decoration: none;
+  margin-bottom: 16px;
+  transition: color 0.2s;
+}
+
+.exp-modal-phone:hover {
+  color: var(--red);
+}
+
+.exp-modal-sms {
+  display: block;
+  background: var(--red);
+  color: var(--white);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-decoration: none;
+  text-align: center;
+  padding: 16px 32px;
+  border: 2px solid var(--red);
+  border-radius: 2px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.exp-modal-sms:hover {
+  background: var(--red-dark);
+  border-color: var(--red-dark);
+}
+
+/* ── 18. Boat Gallery Modal ── */
 .fleet-img {
   cursor: pointer;
 }

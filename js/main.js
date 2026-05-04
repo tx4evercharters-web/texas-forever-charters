@@ -2,6 +2,27 @@
    TEXAS FOREVER CHARTERS - Main JavaScript
    ============================================================ */
 
+// ── Experience Contact Modal ──
+const expModalMessages = {
+  'Sunset Cruise':    "Hi! I'm interested in booking the Sunset Cruise experience with Texas Forever Charters.",
+  'Private Party':    "Hi! I'm interested in booking the Private Party experience with Texas Forever Charters.",
+  'Full Day Charter': "Hi! I'm interested in booking the Full Day Charter experience with Texas Forever Charters.",
+  'Family & Fun':     "Hi! I'm interested in booking the Family & Fun experience with Texas Forever Charters."
+};
+
+function openExpModal(experience) {
+  document.getElementById('expModalTitle').textContent = experience;
+  const msg = encodeURIComponent(expModalMessages[experience] || `Hi! I'm interested in booking the ${experience} experience with Texas Forever Charters.`);
+  document.getElementById('expModalSms').href = `sms:+17373681669?body=${msg}`;
+  document.getElementById('expModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeExpModal() {
+  document.getElementById('expModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
 // ── Boat Gallery ──
 const galleryData = {
   carver: {
@@ -76,9 +97,11 @@ function lightboxNav(dir) {
 document.addEventListener('keydown', e => {
   const lightbox = document.getElementById('galleryLightbox');
   const modal = document.getElementById('boatGallery');
+  const expModal = document.getElementById('expModal');
   if (e.key === 'Escape') {
     if (lightbox && lightbox.classList.contains('active')) closeLightbox();
     else if (modal && modal.classList.contains('active')) closeGallery();
+    else if (expModal && expModal.classList.contains('active')) closeExpModal();
   }
   if (lightbox && lightbox.classList.contains('active')) {
     if (e.key === 'ArrowLeft')  lightboxNav(-1);

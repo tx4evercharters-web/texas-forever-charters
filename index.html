@@ -111,7 +111,7 @@
       <a href="https://fareharbor.com/embeds/book/texasforevercharters/?full-items=yes" target="_blank" class="btn-red">Book Now</a>
     </div>
     <div class="exp-grid">
-      <div class="exp-card">
+      <div class="exp-card" onclick="openExpModal('Sunset Cruise')">
         <img src="images/sunset-cruise-main-photo.jpg" alt="Sunset cruise on Lake Travis">
         <div class="exp-overlay"></div>
         <div class="exp-content">
@@ -121,7 +121,7 @@
           <div class="exp-price">From $300/hr</div>
         </div>
       </div>
-      <div class="exp-card">
+      <div class="exp-card" onclick="openExpModal('Private Party')">
         <img src="images/bachparty-bow.jpeg" alt="Private party charter Lake Travis bachelorette">
         <div class="exp-overlay"></div>
         <div class="exp-content">
@@ -133,7 +133,7 @@
       </div>
     </div>
     <div class="exp-grid-bottom">
-      <div class="exp-card">
+      <div class="exp-card" onclick="openExpModal('Full Day Charter')">
         <img src="images/groupshot-bow.jpeg" alt="Float mats anchored on Lake Travis">
         <div class="exp-overlay"></div>
         <div class="exp-content">
@@ -143,7 +143,7 @@
           <div class="exp-price">Custom Pricing</div>
         </div>
       </div>
-      <div class="exp-card">
+      <div class="exp-card" onclick="openExpModal('Family & Fun')">
         <img src="images/aerial2.jpeg" alt="Floating mat fun on Lake Travis pontoon charter">
         <div class="exp-overlay"></div>
         <div class="exp-content">
@@ -422,6 +422,21 @@
   <div class="footer-bottom">
     <div class="footer-bottom-text">© 2026 Texas Forever Charters · Lake Travis, Austin TX · All rights reserved.</div>
     <div class="footer-bottom-text">Made in Texas ★</div>
+  </div>
+
+  <!-- ── EXPERIENCE CONTACT MODAL ── -->
+  <div id="expModal" class="exp-modal" onclick="closeExpModal()">
+    <div class="exp-modal-box" onclick="event.stopPropagation()">
+      <button class="exp-modal-close" onclick="closeExpModal()" aria-label="Close">&#10005;</button>
+      <p class="exp-modal-eyebrow">Ready to Book?</p>
+      <h3 class="exp-modal-title" id="expModalTitle"></h3>
+      <div class="exp-modal-divider"></div>
+      <p class="exp-modal-body">Reach out directly — no forms, no waiting. We'll get you on the water.</p>
+      <a class="exp-modal-phone" href="tel:+17373681669">
+        <span>📞</span> (737) 368-1669
+      </a>
+      <a class="exp-modal-sms" id="expModalSms" href="#">Text Us to Book</a>
+    </div>
   </div>
 
   <!-- ── BOAT GALLERY MODAL ── -->
