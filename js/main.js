@@ -7,7 +7,8 @@ const expModalMessages = {
   'Sunset Cruise':    "Hi! I'm interested in booking the Sunset Cruise experience with Texas Forever Charters.",
   'Private Party':    "Hi! I'm interested in booking the Private Party experience with Texas Forever Charters.",
   'Full Day Charter': "Hi! I'm interested in booking the Full Day Charter experience with Texas Forever Charters.",
-  'Family & Fun':     "Hi! I'm interested in booking the Family & Fun experience with Texas Forever Charters."
+  'Family & Fun':     "Hi! I'm interested in booking the Family & Fun experience with Texas Forever Charters.",
+  'Boat Tours':       "Hi! I'm interested in booking a Boat Tour with Texas Forever Charters."
 };
 
 function openExpModal(experience) {
