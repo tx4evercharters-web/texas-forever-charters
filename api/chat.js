@@ -7,6 +7,8 @@ const CORS_HEADERS = {
 };
 
 module.exports = async function handler(req, res) {
+  console.log('env keys:', Object.keys(process.env).join(', '));
+
   // Set CORS headers on every response
   Object.entries(CORS_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
 
