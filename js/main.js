@@ -92,10 +92,12 @@ document.addEventListener('keydown', e => {
   const lightbox = document.getElementById('galleryLightbox');
   const modal = document.getElementById('boatGallery');
   const expModal = document.getElementById('expModal');
+  const nlPopup = document.getElementById('nlPopup');
   if (e.key === 'Escape') {
     if (lightbox && lightbox.classList.contains('active')) closeLightbox();
     else if (modal && modal.classList.contains('active')) closeGallery();
     else if (expModal && expModal.classList.contains('active')) closeContactModal();
+    else if (nlPopup && nlPopup.classList.contains('active')) closeNewsletterPopup();
   }
   if (lightbox && lightbox.classList.contains('active')) {
     if (e.key === 'ArrowLeft')  lightboxNav(-1);
@@ -111,23 +113,94 @@ window.addEventListener('scroll', () => {
   }
 });
 
-// ── Newsletter Form ──
-function handleSubscribe() {
+// ── Newsletter Subscription ──
+async function callSubscribeApi(email) {
+  const res = await fetch('/api/subscribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  return res.ok && data.success;
+}
+
+function showEmailError(input, placeholder) {
+  input.style.outline = '2px solid #C8102E';
+  input.placeholder = placeholder;
+  setTimeout(() => {
+    input.style.outline = '';
+    input.placeholder = 'Your email address';
+  }, 2500);
+}
+
+// ── Bottom newsletter section ──
+async function handleSubscribe() {
   const input = document.getElementById('emailInput');
   const email = input.value.trim();
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    input.style.outline = '2px solid #C8102E';
-    input.placeholder = 'Please enter a valid email';
-    setTimeout(() => {
-      input.style.outline = '';
-      input.placeholder = 'Your email address';
-    }, 2500);
+    showEmailError(input, 'Please enter a valid email');
     return;
   }
 
-  document.getElementById('nlForm').style.display = 'none';
-  document.getElementById('nlSuccess').style.display = 'block';
+  const btn = document.querySelector('#nlForm .nl-btn');
+  if (btn) { btn.textContent = 'Subscribing...'; btn.disabled = true; }
+
+  const ok = await callSubscribeApi(email);
+
+  if (ok) {
+    localStorage.setItem('nl_subscribed', '1');
+    document.getElementById('nlForm').style.display = 'none';
+    document.getElementById('nlSuccess').style.display = 'block';
+  } else {
+    if (btn) { btn.textContent = 'Get On The List'; btn.disabled = false; }
+    showEmailError(input, 'Something went wrong — try again');
+  }
+}
+
+// ── Newsletter popup ──
+function showNewsletterPopup() {
+  if (localStorage.getItem('nl_subscribed') || localStorage.getItem('nl_dismissed')) return;
+  const popup = document.getElementById('nlPopup');
+  if (popup) {
+    popup.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function closeNewsletterPopup() {
+  const popup = document.getElementById('nlPopup');
+  if (popup) popup.classList.remove('active');
+  document.body.style.overflow = '';
+  localStorage.setItem('nl_dismissed', '1');
+}
+
+async function handlePopupSubscribe() {
+  const input = document.getElementById('nlPopupEmail');
+  const email = input.value.trim();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showEmailError(input, 'Please enter a valid email');
+    return;
+  }
+
+  const btn = document.getElementById('nlPopupBtn');
+  btn.textContent = 'Subscribing...';
+  btn.disabled = true;
+
+  const ok = await callSubscribeApi(email);
+
+  if (ok) {
+    localStorage.setItem('nl_subscribed', '1');
+    document.getElementById('nlPopupForm').style.display = 'none';
+    document.getElementById('nlPopupFine').style.display = 'none';
+    document.getElementById('nlPopupSuccess').style.display = 'block';
+    setTimeout(closeNewsletterPopup, 3000);
+  } else {
+    btn.textContent = 'Get On The List';
+    btn.disabled = false;
+    showEmailError(input, 'Something went wrong — try again');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -135,6 +208,26 @@ document.addEventListener('DOMContentLoaded', () => {
   if (emailInput) {
     emailInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') handleSubscribe();
+    });
+  }
+
+  // Show newsletter popup after 10 seconds
+  setTimeout(showNewsletterPopup, 10000);
+
+  const popupClose = document.getElementById('nlPopupClose');
+  if (popupClose) popupClose.addEventListener('click', closeNewsletterPopup);
+
+  const nlPopup = document.getElementById('nlPopup');
+  if (nlPopup) {
+    nlPopup.addEventListener('click', e => {
+      if (e.target === nlPopup) closeNewsletterPopup();
+    });
+  }
+
+  const nlPopupEmail = document.getElementById('nlPopupEmail');
+  if (nlPopupEmail) {
+    nlPopupEmail.addEventListener('keydown', e => {
+      if (e.key === 'Enter') handlePopupSubscribe();
     });
   }
 

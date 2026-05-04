@@ -1274,7 +1274,98 @@ section {
   color: var(--dim);
 }
 
-/* ── 15. Footer ── */
+/* ── 15. Newsletter Popup ── */
+.nl-popup-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 16, 48, 0.88);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.nl-popup-overlay.active {
+  display: flex;
+}
+
+.nl-popup-box {
+  background: var(--navy);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-top: 3px solid var(--red);
+  border-radius: 4px;
+  max-width: 460px;
+  width: 100%;
+  padding: 40px 36px 32px;
+  position: relative;
+}
+
+.nl-popup-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.45);
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.nl-popup-close:hover { color: var(--white); }
+
+.nl-popup-strips {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 22px;
+}
+
+.nl-popup-strip {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+}
+
+.nl-popup-eyebrow {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--red);
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.nl-popup-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 9vw, 50px);
+  line-height: 1;
+  color: var(--white);
+  margin: 0 0 14px;
+}
+
+.nl-popup-red { color: var(--red); }
+
+.nl-popup-desc {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin: 0 0 22px;
+  line-height: 1.6;
+}
+
+.nl-popup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nl-popup-form .nl-btn { width: 100%; }
+
+/* ── 16. Footer ── */
 .footer-top {
   background: var(--navy-deeper);
   border-top: 3px solid var(--red);
