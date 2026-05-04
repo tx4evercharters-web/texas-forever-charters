@@ -111,17 +111,7 @@
       <a href="https://fareharbor.com/embeds/book/texasforevercharters/?full-items=yes" target="_blank" class="btn-red">Book Now</a>
     </div>
     <div class="exp-grid">
-      <div class="exp-card" onclick="openExpModal('Sunset Cruise')">
-        <img src="images/sunset-cruise-main-photo.jpg" alt="Sunset cruise on Lake Travis">
-        <div class="exp-overlay"></div>
-        <div class="exp-content">
-          <span class="exp-tag">Most Popular</span>
-          <h3 class="exp-title">Sunset Cruise</h3>
-          <p class="exp-desc">Texas sunsets hit different from the water. Cold drinks, warm skies, anchored at Devil's Cove with nowhere to be.</p>
-          <div class="exp-price">From $300/hr</div>
-        </div>
-      </div>
-      <div class="exp-card" onclick="openExpModal('Private Party')">
+      <div class="exp-card" onclick="openContactModal('Private Party')">
         <img src="images/bachparty-bow.jpeg" alt="Private party charter Lake Travis bachelorette">
         <div class="exp-overlay"></div>
         <div class="exp-content">
@@ -131,29 +121,7 @@
           <div class="exp-price">From $350/hr</div>
         </div>
       </div>
-    </div>
-    <div class="exp-grid-bottom">
-      <div class="exp-card" onclick="openExpModal('Full Day Charter')">
-        <img src="images/groupshot-bow.jpeg" alt="Float mats anchored on Lake Travis">
-        <div class="exp-overlay"></div>
-        <div class="exp-content">
-          <span class="exp-tag">All Day</span>
-          <h3 class="exp-title">Full Day Charter</h3>
-          <p class="exp-desc">Coves, sandbanks, float mats, lunch at Volente Beach — an entire day on Lake Travis, entirely on your terms.</p>
-          <div class="exp-price">Custom Pricing</div>
-        </div>
-      </div>
-      <div class="exp-card" onclick="openExpModal('Family & Fun')">
-        <img src="images/aerial2.jpeg" alt="Floating mat fun on Lake Travis pontoon charter">
-        <div class="exp-overlay"></div>
-        <div class="exp-content">
-          <span class="exp-tag">Pontoon</span>
-          <h3 class="exp-title">Family & Fun</h3>
-          <p class="exp-desc">Sunset cruises, family outings, and inner tube pulls on our 24ft Bentley Navigator. Laid-back lake life at its best.</p>
-          <div class="exp-price">Ask About Rates</div>
-        </div>
-      </div>
-      <div class="exp-card" onclick="openExpModal('Boat Tours')">
+      <div class="exp-card" onclick="openContactModal('Boat Tours')">
         <img src="images/bentley-drone.jpeg" alt="Aerial view of Lake Travis boat tour">
         <div class="exp-overlay"></div>
         <div class="exp-content">
@@ -161,6 +129,28 @@
           <h3 class="exp-title">Boat Tours</h3>
           <p class="exp-desc">Guided tours of Lake Travis — Devil's Cove, Mansfield Dam, and hidden coves. Perfect for visitors and first-timers on the water.</p>
           <div class="exp-price">Ask About Rates</div>
+        </div>
+      </div>
+    </div>
+    <div class="exp-grid-bottom">
+      <div class="exp-card" onclick="openContactModal('Sunset Cruise')">
+        <img src="images/sunset-cruise-main-photo.jpg" alt="Sunset cruise on Lake Travis">
+        <div class="exp-overlay"></div>
+        <div class="exp-content">
+          <span class="exp-tag">Most Popular</span>
+          <h3 class="exp-title">Sunset Cruise</h3>
+          <p class="exp-desc">Texas sunsets hit different from the water. Cold drinks, warm skies, anchored at Devil's Cove with nowhere to be.</p>
+          <div class="exp-price">From $300/hr</div>
+        </div>
+      </div>
+      <div class="exp-card" onclick="openContactModal('Corporate Outings')">
+        <img src="images/groupshot-bow.jpeg" alt="Corporate team outing on Lake Travis">
+        <div class="exp-overlay"></div>
+        <div class="exp-content">
+          <span class="exp-tag">Teams</span>
+          <h3 class="exp-title">Corporate Outings</h3>
+          <p class="exp-desc">Take the team off-site and onto the water. No conference rooms, no slides — just Lake Travis and a crew that actually connects.</p>
+          <div class="exp-price">Custom Pricing</div>
         </div>
       </div>
     </div>
@@ -436,17 +426,15 @@
   </div>
 
   <!-- ── EXPERIENCE CONTACT MODAL ── -->
-  <div id="expModal" class="exp-modal" onclick="closeExpModal()">
+  <div id="expModal" class="exp-modal" onclick="closeContactModal()">
     <div class="exp-modal-box" onclick="event.stopPropagation()">
-      <button class="exp-modal-close" onclick="closeExpModal()" aria-label="Close">&#10005;</button>
-      <p class="exp-modal-eyebrow">Ready to Book?</p>
+      <button class="exp-modal-close" onclick="closeContactModal()" aria-label="Close">&#10005;</button>
+      <p class="exp-modal-eyebrow">Get In Touch</p>
       <h3 class="exp-modal-title" id="expModalTitle"></h3>
       <div class="exp-modal-divider"></div>
       <p class="exp-modal-body">Reach out directly — no forms, no waiting. We'll get you on the water.</p>
-      <a class="exp-modal-phone" href="tel:+17373681669">
-        <span>📞</span> (737) 368-1669
-      </a>
-      <a class="exp-modal-sms" id="expModalSms" href="#">Text Us to Book</a>
+      <a class="exp-modal-sms" id="expModalSms" href="#">Text Us &rarr; (737) 368-1669</a>
+      <a class="exp-modal-email" id="expModalEmail" href="#">Email Us &rarr; tx4evercharters@gmail.com</a>
     </div>
   </div>
 

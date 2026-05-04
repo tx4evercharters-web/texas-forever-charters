@@ -3,23 +3,16 @@
    ============================================================ */
 
 // ── Experience Contact Modal ──
-const expModalMessages = {
-  'Sunset Cruise':    "Hi! I'm interested in booking the Sunset Cruise experience with Texas Forever Charters.",
-  'Private Party':    "Hi! I'm interested in booking the Private Party experience with Texas Forever Charters.",
-  'Full Day Charter': "Hi! I'm interested in booking the Full Day Charter experience with Texas Forever Charters.",
-  'Family & Fun':     "Hi! I'm interested in booking the Family & Fun experience with Texas Forever Charters.",
-  'Boat Tours':       "Hi! I'm interested in booking a Boat Tour with Texas Forever Charters."
-};
-
-function openExpModal(experience) {
+function openContactModal(experience) {
   document.getElementById('expModalTitle').textContent = experience;
-  const msg = encodeURIComponent(expModalMessages[experience] || `Hi! I'm interested in booking the ${experience} experience with Texas Forever Charters.`);
-  document.getElementById('expModalSms').href = `sms:+17373681669?body=${msg}`;
+  const body = "Hi! I'm interested in the " + experience + " with Texas Forever Charters.";
+  document.getElementById('expModalSms').href   = 'sms:+17373681669?body=' + encodeURIComponent(body);
+  document.getElementById('expModalEmail').href = 'mailto:tx4evercharters@gmail.com?subject=' + encodeURIComponent('Inquiry: ' + experience) + '&body=' + encodeURIComponent(body);
   document.getElementById('expModal').classList.add('active');
   document.body.style.overflow = 'hidden';
 }
 
-function closeExpModal() {
+function closeContactModal() {
   document.getElementById('expModal').classList.remove('active');
   document.body.style.overflow = '';
 }
@@ -102,7 +95,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (lightbox && lightbox.classList.contains('active')) closeLightbox();
     else if (modal && modal.classList.contains('active')) closeGallery();
-    else if (expModal && expModal.classList.contains('active')) closeExpModal();
+    else if (expModal && expModal.classList.contains('active')) closeContactModal();
   }
   if (lightbox && lightbox.classList.contains('active')) {
     if (e.key === 'ArrowLeft')  lightboxNav(-1);
