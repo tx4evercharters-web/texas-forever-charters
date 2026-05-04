@@ -1477,6 +1477,11 @@
             <span class="exp-select-icon">💍</span>
             <div class="exp-select-name">Bachelorette Party</div>
           </div>
+          <div class="exp-select-card" onclick="selectExperience('Bachelor Party', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">🍺</span>
+            <div class="exp-select-name">Bachelor Party</div>
+          </div>
           <div class="exp-select-card" onclick="selectExperience('Birthday Party', this)">
             <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
             <span class="exp-select-icon">🎂</span>
@@ -1614,11 +1619,6 @@
             <input type="checkbox" id="over21Check">
             <div class="form-check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
             <span class="form-check-label"><strong>I confirm I am 21 years of age or older</strong> and will be the designated organizer for this charter. Required by Texas law.</span>
-          </label>
-          <label class="form-check">
-            <input type="checkbox" id="smsCheck">
-            <div class="form-check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <span class="form-check-label">Send me SMS updates about my booking, weather alerts, and trip reminders. (Optional)</span>
           </label>
           <label class="form-check">
             <input type="checkbox" id="newsletterCheck">
@@ -1973,8 +1973,7 @@
         booking.partySize = ps;
         booking.specialRequests = document.getElementById('specialRequests').value.trim();
         booking.over21 = true;
-        booking.smsAlerts = document.getElementById('smsCheck').checked;
-        booking.newsletter = document.getElementById('newsletterCheck').checked;
+booking.newsletter = document.getElementById('newsletterCheck').checked;
         updateRunningTotal();
       }
       if (s === 7) {
