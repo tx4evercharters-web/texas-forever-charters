@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Booking Confirmed | Texas Forever Charters</title>
+  <meta name="robots" content="noindex">
+
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    .confirm-page {
+      min-height: 100vh;
+      background: var(--navy-deeper);
+      padding-top: 90px;
+      padding-bottom: 80px;
+    }
+
+    /* ── Loading ── */
+    .confirm-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 20px;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .confirm-loading p {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* ── Error state ── */
+    .confirm-error {
+      display: none;
+      text-align: center;
+      padding: 60px 24px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .confirm-error-icon {
+      font-size: 52px;
+      margin-bottom: 20px;
+    }
+
+    .confirm-error h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 2px;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+
+    .confirm-error p {
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.6;
+    }
+
+    /* ── Success content ── */
+    .confirm-content {
+      display: none;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Hero ── */
+    .confirm-hero {
+      text-align: center;
+      padding: 48px 24px 40px;
+      background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-deeper) 100%);
+      border-bottom: 1px solid rgba(200,16,46,0.2);
+      margin-bottom: 40px;
+    }
+
+    .confirm-check {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      animation: checkPop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;
+    }
+
+    @keyframes checkPop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    .confirm-check svg {
+      width: 36px;
+      height: 36px;
+      fill: none;
+      stroke: white;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .confirm-eyebrow {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #22c55e;
+      margin-bottom: 8px;
+    }
+
+    .confirm-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(36px, 7vw, 60px);
+      letter-spacing: 3px;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .confirm-title span { color: var(--red); }
+
+    .confirm-subtitle {
+      font-family: 'Barlow', sans-serif;
+      font-size: 16px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    .confirm-ref {
+      display: inline-block;
+      margin-top: 14px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+    }
+
+    .confirm-ref span { color: rgba(255,255,255,0.6); }
+
+    /* ── Cards ── */
+    .confirm-card {
+      background: var(--navy-dark);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .confirm-card:nth-child(2) { animation-delay: 0.1s; }
+    .confirm-card:nth-child(3) { animation-delay: 0.2s; }
+    .confirm-card:nth-child(4) { animation-delay: 0.3s; }
+
+    .confirm-card-header {
+      background: rgba(200,16,46,0.08);
+      border-bottom: 1px solid rgba(200,16,46,0.15);
+      padding: 13px 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .confirm-card-icon { font-size: 16px; }
+
+    .confirm-card-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+    }
+
+    .confirm-rows { padding: 4px 0; }
+
+    .confirm-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 11px 22px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      gap: 16px;
+    }
+
+    .confirm-row:last-child { border-bottom: none; }
+
+    .confirm-row-label {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: rgba(255,255,255,0.5);
+      flex-shrink: 0;
+    }
+
+    .confirm-row-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white);
+      text-align: right;
+    }
+
+    /* ── Payment summary ── */
+    .payment-summary {
+      background: linear-gradient(135deg, rgba(22,163,74,0.12), rgba(27,42,107,0.6));
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 14px;
+      padding: 24px 22px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s 0.25s ease both;
+    }
+
+    .payment-summary-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 16px;
+    }
+
+    .payment-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .payment-cell {
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+
+    .payment-cell-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 6px;
+    }
+
+    .payment-cell-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px;
+      letter-spacing: 1px;
+      color: var(--white);
+    }
+
+    .payment-cell.paid .payment-cell-amount { color: #4ade80; }
+    .payment-cell.balance .payment-cell-amount { color: #fbbf24; }
+    .payment-cell.cleared .payment-cell-amount { color: #4ade80; }
+
+    .payment-cell-note {
+      font-family: 'Barlow', sans-serif;
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      margin-top: 4px;
+    }
+
+    /* ── Balance alert ── */
+    .balance-alert {
+      background: rgba(251,191,36,0.08);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .balance-alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    .balance-alert-text {
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.5;
+    }
+
+    .balance-alert-text strong { color: #fbbf24; }
+
+    /* ── Next steps ── */
+    .next-steps {
+      background: var(--navy-dark);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 14px;
+      padding: 24px 22px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s 0.35s ease both;
+    }
+
+    .next-steps-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 2px;
+      color: var(--white);
+      margin-bottom: 16px;
+    }
+
+    .next-step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .next-step-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .next-step-num {
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      border-radius: 50%;
+      background: rgba(200,16,46,0.15);
+      border: 1px solid rgba(200,16,46,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--red);
+      margin-top: 1px;
+    }
+
+    .next-step-text {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.5;
+    }
+
+    .next-step-text strong { color: var(--white); }
+
+    /* ── CTA buttons ── */
+    .confirm-ctas {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.5s 0.4s ease both;
+    }
+
+    .confirm-btn-home {
+      background: var(--red);
+      border: 2px solid var(--red);
+      border-radius: 8px;
+      padding: 14px 28px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--white);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .confirm-btn-home:hover { background: var(--red-dark); border-color: var(--red-dark); }
+
+    .confirm-btn-call {
+      background: transparent;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 14px 28px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .confirm-btn-call:hover { border-color: rgba(255,255,255,0.5); color: var(--white); }
+
+    @media (max-width: 600px) {
+      .payment-grid { grid-template-columns: 1fr; }
+      .confirm-ctas { flex-direction: column; }
+      .confirm-btn-home, .confirm-btn-call { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── NAVIGATION ── -->
+  <nav id="mainNav" class="scrolled">
+    <div class="nav-left">
+      <div class="nav-logo">
+        <a href="index.html"><img src="images/New_Tx4Ever_Logo.png" alt="Texas Forever Charters Logo"></a>
+      </div>
+      <a href="tel:+17373681669" class="nav-call" aria-label="Call Texas Forever Charters">Call Now</a>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="nav-links">
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html#experiences">Experiences</a></li>
+      <li><a href="index.html#fleet">Our Fleet</a></li>
+      <li><a href="index.html#crew">The Crew</a></li>
+      <li><a href="index.html#reviews">Reviews</a></li>
+      <li><a href="index.html#faq">FAQ</a></li>
+      <li><a href="booking.html" class="nav-book">Book Now</a></li>
+    </ul>
+  </nav>
+
+  <div class="confirm-page">
+
+    <!-- Loading state -->
+    <div class="confirm-loading" id="confirmLoading">
+      <div class="spinner"></div>
+      <p>Confirming your booking…</p>
+    </div>
+
+    <!-- Error state -->
+    <div class="confirm-error" id="confirmError">
+      <div class="confirm-error-icon">⚠️</div>
+      <h2>Something Went Wrong</h2>
+      <p id="confirmErrorMsg">We couldn't retrieve your booking details. Please contact us directly at <a href="tel:+17373681669" style="color:var(--red)">(737) 368-1669</a> or <a href="mailto:tx4evercharters@gmail.com" style="color:var(--red)">tx4evercharters@gmail.com</a> and we'll sort you out.</p>
+      <a href="index.html" class="confirm-btn-home" style="display:inline-block;margin-top:24px">Back to Home</a>
+    </div>
+
+    <!-- Success hero -->
+    <div class="confirm-hero" id="confirmHero" style="display:none">
+      <div class="confirm-check">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="confirm-eyebrow">Booking Confirmed</div>
+      <h1 class="confirm-title">You're on the <span>Water</span></h1>
+      <p class="confirm-subtitle">
+        A confirmation email has been sent to <strong id="confirmEmail" style="color:var(--white)"></strong>.<br>
+        We'll reach out 48 hours before your charter with final details.
+      </p>
+      <div class="confirm-ref">Booking reference: <span id="confirmRef"></span></div>
+    </div>
+
+    <!-- Main content -->
+    <div class="confirm-content" id="confirmContent">
+
+      <!-- Payment summary -->
+      <div class="payment-summary" id="paymentSummary">
+        <div class="payment-summary-title">Payment Summary</div>
+        <div class="payment-grid" id="paymentGrid"></div>
+        <div class="balance-alert" id="balanceAlert" style="display:none">
+          <div class="balance-alert-icon">📅</div>
+          <div class="balance-alert-text">
+            <strong id="balanceAlertAmount"></strong> remaining balance is due on the day of your charter.
+            We accept cash, Venmo, or card on board.
+          </div>
+        </div>
+      </div>
+
+      <!-- Booking details -->
+      <div class="confirm-card">
+        <div class="confirm-card-header">
+          <span class="confirm-card-icon">⛵</span>
+          <span class="confirm-card-title">Booking Details</span>
+        </div>
+        <div class="confirm-rows" id="bookingRows"></div>
+      </div>
+
+      <!-- Add-ons (only if any selected) -->
+      <div class="confirm-card" id="addOnsCard" style="display:none">
+        <div class="confirm-card-header">
+          <span class="confirm-card-icon">✨</span>
+          <span class="confirm-card-title">Add-Ons</span>
+        </div>
+        <div class="confirm-rows" id="addOnsRows"></div>
+      </div>
+
+      <!-- Next steps -->
+      <div class="next-steps">
+        <div class="next-steps-title">What Happens Next</div>
+        <div class="next-step-list">
+          <div class="next-step-item">
+            <div class="next-step-num">1</div>
+            <div class="next-step-text"><strong>Check your inbox</strong> — A confirmation receipt from Stripe is on its way. Check your spam folder if you don't see it within a few minutes.</div>
+          </div>
+          <div class="next-step-item">
+            <div class="next-step-num">2</div>
+            <div class="next-step-text"><strong>We'll be in touch</strong> — Expect a call or text from your captain 48 hours before departure to confirm the details and answer any last-minute questions.</div>
+          </div>
+          <div class="next-step-item">
+            <div class="next-step-num">3</div>
+            <div class="next-step-text"><strong>Show up and enjoy</strong> — Meet at <strong>Volente Beach Waterpark &amp; Resort</strong>, Austin TX. Arrive 15 minutes early. BYOB, wear sunscreen, bring good vibes.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTAs -->
+      <div class="confirm-ctas">
+        <a href="index.html" class="confirm-btn-home">Back to Home</a>
+        <a href="tel:+17373681669" class="confirm-btn-call">Call Us: (737) 368-1669</a>
+      </div>
+
+    </div><!-- /confirm-content -->
+  </div><!-- /confirm-page -->
+
+  <script>
+    // Nav toggle
+    const toggle = document.querySelector('.nav-toggle');
+    const navLinks = document.getElementById('nav-links');
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        const open = toggle.classList.toggle('active');
+        toggle.setAttribute('aria-expanded', open);
+        navLinks.classList.toggle('active', open);
+      });
+    }
+
+    // ── Helpers ──
+    function fmt(cents) {
+      return '$' + (cents / 100).toFixed(2);
+    }
+
+    function addRow(container, label, value) {
+      const row = document.createElement('div');
+      row.className = 'confirm-row';
+      row.innerHTML = '<div class="confirm-row-label">' + label + '</div>' +
+                      '<div class="confirm-row-value">' + value + '</div>';
+      container.appendChild(row);
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      const d = new Date(dateStr + 'T12:00:00');
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const months = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+      return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    function vesselLabel(v) {
+      return v === 'yacht' ? '40ft Carver Aft Cabin' : '24ft Bentley Navigator 243';
+    }
+
+    // ── Fetch session ──
+    async function loadSession() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session_id');
+
+      if (!sessionId) {
+        showError('No booking session found. If you just completed a payment, please contact us directly.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/get-checkout-session?session_id=' + encodeURIComponent(sessionId));
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+          showError(data.error || 'Could not load booking details.');
+          return;
+        }
+
+        if (data.payment_status !== 'paid') {
+          showError('Your payment is still processing or was not completed. Please contact us if you believe this is an error.');
+          return;
+        }
+
+        renderConfirmation(data);
+      } catch (err) {
+        showError('Network error loading your booking. Please contact us directly.');
+      }
+    }
+
+    function showError(msg) {
+      document.getElementById('confirmLoading').style.display = 'none';
+      const errEl = document.getElementById('confirmError');
+      errEl.style.display = 'block';
+      if (msg) document.getElementById('confirmErrorMsg').textContent = msg;
+    }
+
+    function renderConfirmation(session) {
+      document.getElementById('confirmLoading').style.display = 'none';
+
+      const meta = session.metadata || {};
+      const amountPaid = session.amount_total; // cents
+      const grandTotal = parseFloat(meta.grand_total || 0);
+      const depositAmount = parseFloat(meta.deposit_amount || 0);
+      const paymentType = meta.payment_type || 'full';
+
+      // Hero
+      document.getElementById('confirmHero').style.display = 'block';
+      document.getElementById('confirmEmail').textContent = session.customer_email || meta.email || '';
+      document.getElementById('confirmRef').textContent = session.id.slice(-12).toUpperCase();
+
+      // Payment grid
+      const paymentGrid = document.getElementById('paymentGrid');
+      paymentGrid.innerHTML = '';
+
+      const paidCell = document.createElement('div');
+      paidCell.className = 'payment-cell paid';
+      paidCell.innerHTML = '<div class="payment-cell-label">Amount Paid Today</div>' +
+        '<div class="payment-cell-amount">' + fmt(amountPaid) + '</div>' +
+        '<div class="payment-cell-note">' + (paymentType === 'deposit' ? 'Deposit — holds your date' : 'Full payment — you\'re all set') + '</div>';
+      paymentGrid.appendChild(paidCell);
+
+      const remaining = grandTotal > 0 ? Math.max(0, grandTotal - (amountPaid / 100)) : 0;
+
+      if (paymentType === 'deposit' && remaining > 0) {
+        const balCell = document.createElement('div');
+        balCell.className = 'payment-cell balance';
+        balCell.innerHTML = '<div class="payment-cell-label">Remaining Balance</div>' +
+          '<div class="payment-cell-amount">$' + remaining.toFixed(2) + '</div>' +
+          '<div class="payment-cell-note">Due on the day of charter</div>';
+        paymentGrid.appendChild(balCell);
+
+        const alert = document.getElementById('balanceAlert');
+        alert.style.display = 'flex';
+        document.getElementById('balanceAlertAmount').textContent = '$' + remaining.toFixed(2);
+      } else {
+        const clearedCell = document.createElement('div');
+        clearedCell.className = 'payment-cell cleared';
+        clearedCell.innerHTML = '<div class="payment-cell-label">Remaining Balance</div>' +
+          '<div class="payment-cell-amount">$0.00</div>' +
+          '<div class="payment-cell-note">Paid in full — nothing owed</div>';
+        paymentGrid.appendChild(clearedCell);
+      }
+
+      // Booking rows
+      const bookingRows = document.getElementById('bookingRows');
+      const details = [
+        ['Charter Name',  meta.charter_name || '—'],
+        ['Vessel',        vesselLabel(meta.vessel)],
+        ['Experience',    meta.experience || '—'],
+        ['Date',          formatDate(meta.date)],
+        ['Start Time',    meta.time_slot || '—'],
+        ['Duration',      meta.duration ? meta.duration + ' hours' : '—'],
+        ['Organizer',     meta.full_name || '—'],
+        ['Party Size',    meta.party_size ? meta.party_size + ' guests' : '—'],
+        ['Contact Phone', meta.phone || '—'],
+      ];
+      if (meta.special_requests) {
+        details.push(['Special Requests', meta.special_requests]);
+      }
+      details.forEach(([label, value]) => addRow(bookingRows, label, value));
+
+      // Add-ons
+      let addOns = {};
+      try { addOns = JSON.parse(meta.add_ons || '{}'); } catch {}
+
+      const addOnLabels = {
+        drone:    { label: 'Drone Footage',   price: 200 },
+        water:    { label: 'Water Bottles',   price: 25 },
+        ice:      { label: 'Ice',             price: 50 },
+        beerpong: { label: 'Beer Pong Setup', price: 50 },
+      };
+
+      const addOnsRows = document.getElementById('addOnsRows');
+      let hasAddOns = false;
+
+      Object.entries(addOnLabels).forEach(([key, info]) => {
+        if (addOns[key]) {
+          addRow(addOnsRows, info.label, '$' + info.price);
+          hasAddOns = true;
+        }
+      });
+
+      if (addOns.towels > 0) {
+        addRow(addOnsRows, 'Towels (' + addOns.towels + ' × $8)', '$' + (addOns.towels * 8));
+        hasAddOns = true;
+      }
+
+      if (hasAddOns) {
+        document.getElementById('addOnsCard').style.display = 'block';
+      }
+
+      // Show content
+      document.getElementById('confirmContent').style.display = 'block';
+    }
+
+    loadSession();
+  </script>
+
+</body>
+</html>

@@ -1856,6 +1856,8 @@
     let currentStep = 1;
     let goingBack = false;
     let calendarDate = new Date();
+    let calGrandTotal = 0;
+    let calDepositAmount = 0;
     calendarDate.setDate(1);
 
     /* ── US Bank Holidays 2025–2027 ── */
@@ -2240,8 +2242,8 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       const discount = booking.promoApplied ? Math.round(subtotal * 0.1) : 0;
       const discounted = subtotal - discount;
       const tax = Math.round(discounted * 0.085 * 100) / 100;
-      const grandTotal = Math.round((discounted + tax) * 100) / 100;
-      const deposit = Math.round(grandTotal * 0.1 * 100) / 100;
+      calGrandTotal = Math.round((discounted + tax) * 100) / 100;
+      calDepositAmount = Math.round(calGrandTotal * 0.1 * 100) / 100;
 
       const dayLabel = day === 6 ? 'Saturday rate' : (day === 0 || day === 5) ? 'Fri/Sun rate' : 'Mon–Thu rate';
       const rows = document.getElementById('priceRows');
@@ -2260,11 +2262,11 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       if (booking.addOns.beerpong) add('Beer Pong Setup', '$50');
       if (discount > 0) add('Promo Discount (10%)', '−$' + discount, 'discount');
       add('Sales Tax (8.5%)', '+$' + tax.toFixed(2), 'tax-row');
-      add('Total', '$' + grandTotal.toFixed(2), 'total');
-      add('Deposit (10%)', '$' + deposit.toFixed(2), 'deposit');
+      add('Total', '$' + calGrandTotal.toFixed(2), 'total');
+      add('Deposit (10%)', '$' + calDepositAmount.toFixed(2), 'deposit');
 
-      document.getElementById('depositAmountBtn').textContent = '$' + deposit.toFixed(2);
-      document.getElementById('fullAmountBtn').textContent = '$' + grandTotal.toFixed(2);
+      document.getElementById('depositAmountBtn').textContent = '$' + calDepositAmount.toFixed(2);
+      document.getElementById('fullAmountBtn').textContent = '$' + calGrandTotal.toFixed(2);
     }
 
     /* ── Promo Code ── */
@@ -2291,13 +2293,66 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       if (e.key === 'Enter') applyPromo();
     });
 
-    /* ── Payment placeholder ── */
-    function handlePayment(type) {
+    /* ── Payment ── */
+    async function handlePayment(type) {
       if (!document.getElementById('termsCheck').checked) {
         showToast('Please agree to the terms and policies');
         return;
       }
-      showToast('Payment processing coming soon — we\'ll contact you to confirm!');
+
+      const amount = type === 'deposit' ? calDepositAmount : calGrandTotal;
+      const isDeposit = type === 'deposit';
+      const btnDeposit = document.querySelector('.pay-btn-deposit');
+      const btnFull    = document.querySelector('.pay-btn-full');
+      const btn = isDeposit ? btnDeposit : btnFull;
+      const originalHTML = btn.innerHTML;
+
+      btn.disabled = true;
+      btnDeposit.disabled = true;
+      btnFull.disabled = true;
+      btn.innerHTML = '<div class="pay-btn-label" style="font-size:13px;letter-spacing:1px">Redirecting to checkout…</div>';
+
+      try {
+        const res = await fetch('/api/create-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paymentType:   type,
+            amount:        amount,
+            grandTotal:    calGrandTotal,
+            depositAmount: calDepositAmount,
+            booking: {
+              charterName:     booking.charterName,
+              vessel:          booking.vessel,
+              experience:      booking.experience,
+              date:            booking.date ? booking.date.toISOString().split('T')[0] : '',
+              timeSlot:        booking.timeSlot,
+              duration:        booking.duration,
+              fullName:        booking.fullName,
+              email:           booking.email,
+              phone:           booking.phone,
+              partySize:       booking.partySize,
+              specialRequests: booking.specialRequests,
+              addOns:          booking.addOns,
+              promoApplied:    booking.promoApplied,
+              newsletter:      booking.newsletter,
+            },
+          }),
+        });
+
+        const data = await res.json();
+
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Unexpected error from payment server');
+        }
+      } catch (err) {
+        showToast('Payment error: ' + err.message + '. Please try again or call us.');
+        btn.innerHTML = originalHTML;
+        btnDeposit.disabled = false;
+        btnFull.disabled = false;
+      }
     }
 
     /* ── Init ── */
