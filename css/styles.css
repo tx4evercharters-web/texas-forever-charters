@@ -779,6 +779,7 @@ section {
 .fleet-card .btn-red {
   margin-top: auto;
   width: fit-content;
+  font-size: 18px;
 }
 
 .fleet-img {
