@@ -505,26 +505,18 @@
   <!-- ── NEWSLETTER POPUP ── -->
   <div id="nlPopup" class="nl-popup-overlay" role="dialog" aria-modal="true" aria-label="Newsletter signup">
     <div class="nl-popup-box">
-      <button class="nl-popup-close" id="nlPopupClose" aria-label="Close newsletter popup">&times;</button>
-      <div class="nl-popup-strips">
-        <div class="nl-popup-strip" style="background: var(--navy-dark)"></div>
-        <div class="nl-popup-strip" style="background: var(--red)"></div>
-        <div class="nl-popup-strip" style="background: var(--white)"></div>
-        <div class="nl-popup-strip" style="background: var(--red)"></div>
-        <div class="nl-popup-strip" style="background: var(--navy-dark)"></div>
-      </div>
-      <p class="nl-popup-eyebrow">★ Lake Travis ★</p>
-      <h2 class="nl-popup-title">Never Miss<br><span class="nl-popup-red">A Charter</span></h2>
-      <p class="nl-popup-desc">Early access to new dates, last-minute deals, and dispatches straight from the water.</p>
+      <div class="nl-popup-anchor">⚓</div>
+      <h2 class="nl-popup-title">Get 10% Off<br><span class="nl-popup-red">Your Charter</span></h2>
+      <p class="nl-popup-desc">Sign up for our newsletter — it's that simple.</p>
       <div class="nl-popup-form" id="nlPopupForm">
-        <input class="nl-input" type="email" id="nlPopupEmail" placeholder="Your email address" aria-label="Email address">
-        <button class="nl-btn" id="nlPopupBtn" onclick="handlePopupSubscribe()">Get On The List</button>
+        <input class="nl-popup-input" type="email" id="nlPopupEmail" placeholder="Your email address" aria-label="Email address">
+        <button class="nl-popup-btn" id="nlPopupBtn" onclick="handlePopupSubscribe()">Claim My Discount</button>
       </div>
       <div class="nl-success" id="nlPopupSuccess">
         <div class="nl-success-title">⚓ You're on the crew list.</div>
         <div class="nl-success-sub">We'll be in touch, see you on the water.</div>
       </div>
-      <p class="nl-fine" id="nlPopupFine">We respect your inbox. Unsubscribe anytime.</p>
+      <button class="nl-popup-nothanks" id="nlPopupClose" onclick="closeNewsletterPopup()">No thanks</button>
     </div>
   </div>
 

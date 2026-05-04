@@ -1279,91 +1279,127 @@ section {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(10, 16, 48, 0.88);
+  background: rgba(10, 16, 48, 0.72);
   z-index: 10000;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(3px);
 }
 
 .nl-popup-overlay.active {
   display: flex;
+  animation: nlFadeIn 0.25s ease;
+}
+
+@keyframes nlFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .nl-popup-box {
   background: var(--navy);
-  border: 1px solid rgba(255,255,255,0.1);
   border-top: 3px solid var(--red);
   border-radius: 4px;
-  max-width: 460px;
+  max-width: 360px;
   width: 100%;
-  padding: 40px 36px 32px;
-  position: relative;
+  padding: 36px 28px 24px;
+  text-align: center;
+  animation: nlSlideUp 0.28s ease;
 }
 
-.nl-popup-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.45);
-  font-size: 22px;
-  cursor: pointer;
+@keyframes nlSlideUp {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.nl-popup-anchor {
+  font-size: 30px;
   line-height: 1;
-  padding: 4px 8px;
-  transition: color 0.2s;
-}
-
-.nl-popup-close:hover { color: var(--white); }
-
-.nl-popup-strips {
-  display: flex;
-  gap: 3px;
-  margin-bottom: 22px;
-}
-
-.nl-popup-strip {
-  height: 4px;
-  flex: 1;
-  border-radius: 2px;
-}
-
-.nl-popup-eyebrow {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  color: var(--red);
-  margin: 0 0 10px;
-  text-transform: uppercase;
+  margin-bottom: 14px;
 }
 
 .nl-popup-title {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(38px, 9vw, 50px);
+  font-size: 40px;
   line-height: 1;
   color: var(--white);
-  margin: 0 0 14px;
+  margin: 0 0 10px;
 }
 
 .nl-popup-red { color: var(--red); }
 
 .nl-popup-desc {
   font-size: 13px;
-  color: rgba(255,255,255,0.6);
-  margin: 0 0 22px;
-  line-height: 1.6;
+  color: rgba(255,255,255,0.58);
+  margin: 0 0 20px;
+  line-height: 1.5;
 }
 
 .nl-popup-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
+  margin-bottom: 14px;
 }
 
-.nl-popup-form .nl-btn { width: 100%; }
+.nl-popup-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 2px;
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  font-size: 14px;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.nl-popup-input::placeholder { color: rgba(255,255,255,0.28); }
+.nl-popup-input:focus { border-color: rgba(255,255,255,0.4); }
+
+.nl-popup-btn {
+  width: 100%;
+  background: var(--red);
+  color: var(--white);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 17px;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: 2px;
+  padding: 13px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nl-popup-btn:hover { background: var(--red-dark); }
+.nl-popup-btn:disabled { opacity: 0.7; cursor: default; }
+
+.nl-popup-nothanks {
+  display: block;
+  margin: 0 auto;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.32);
+  font-family: 'Barlow', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.nl-popup-nothanks:hover { color: rgba(255,255,255,0.6); }
+
+@media (max-width: 480px) {
+  .nl-popup-box {
+    max-width: 320px;
+    padding: 28px 20px 20px;
+  }
+  .nl-popup-title { font-size: 34px; }
+  .nl-popup-anchor { font-size: 26px; }
+}
 
 /* ── 16. Footer ── */
 .footer-top {

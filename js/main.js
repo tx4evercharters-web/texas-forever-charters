@@ -193,9 +193,8 @@ async function handlePopupSubscribe() {
   if (ok) {
     localStorage.setItem('nl_subscribed', '1');
     document.getElementById('nlPopupForm').style.display = 'none';
-    document.getElementById('nlPopupFine').style.display = 'none';
     document.getElementById('nlPopupSuccess').style.display = 'block';
-    setTimeout(closeNewsletterPopup, 3000);
+    setTimeout(closeNewsletterPopup, 2800);
   } else {
     btn.textContent = 'Get On The List';
     btn.disabled = false;
@@ -211,8 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Show newsletter popup after 10 seconds
-  setTimeout(showNewsletterPopup, 10000);
+  // Show newsletter popup after 3 seconds
+  setTimeout(showNewsletterPopup, 3000);
 
   const popupClose = document.getElementById('nlPopupClose');
   if (popupClose) popupClose.addEventListener('click', closeNewsletterPopup);
