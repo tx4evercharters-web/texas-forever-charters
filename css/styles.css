@@ -1420,6 +1420,181 @@ section {
   .hero-scroll { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); }
 }
 
+/* ── 19. Inner Pages ── */
+.inner-hero {
+  position: relative;
+  background: var(--navy-deeper);
+  padding: 140px 32px 96px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.inner-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.inner-hero-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.15;
+}
+
+.inner-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.inner-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 18px;
+}
+
+.inner-eyebrow::before,
+.inner-eyebrow::after {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 1px;
+  background: var(--red);
+}
+
+.inner-hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 7vw, 84px);
+  color: var(--white);
+  letter-spacing: 2px;
+  line-height: 1;
+  margin-bottom: 24px;
+}
+
+.inner-hero-sub {
+  font-family: 'Barlow', sans-serif;
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--silver);
+  max-width: 580px;
+  margin: 0 auto 36px;
+  line-height: 1.7;
+}
+
+.inner-breadcrumb {
+  background: var(--navy-deeper);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 14px 32px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(200, 208, 232, 0.6);
+}
+
+.inner-breadcrumb a {
+  color: rgba(200, 208, 232, 0.6);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.inner-breadcrumb a:hover { color: var(--red); }
+.inner-breadcrumb span { margin: 0 8px; }
+
+.inner-section {
+  padding: 88px 32px;
+  background: var(--navy-dark);
+}
+
+.inner-section.alt {
+  background: var(--navy-deeper);
+}
+
+.inner-wrap {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.inner-section h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.4rem;
+  letter-spacing: 2px;
+  color: var(--white);
+  margin-bottom: 18px;
+}
+
+.inner-section p {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  color: var(--silver);
+  line-height: 1.85;
+  margin-bottom: 20px;
+}
+
+.inner-list {
+  list-style: none;
+  margin: 24px 0 32px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.inner-list li {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--red);
+  padding: 13px 18px;
+}
+
+.inner-cta {
+  background: var(--navy-deeper);
+  border-top: 3px solid var(--red);
+  padding: 96px 32px;
+  text-align: center;
+}
+
+.inner-cta h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  letter-spacing: 2px;
+  color: var(--white);
+  margin-bottom: 18px;
+}
+
+.inner-cta p {
+  font-family: 'Barlow', sans-serif;
+  font-size: 17px;
+  color: var(--silver);
+  margin-bottom: 36px;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
+}
+
+@media (max-width: 768px) {
+  .inner-hero { padding: 110px 20px 72px; }
+  .inner-section { padding: 60px 20px; }
+  .inner-cta { padding: 64px 20px; }
+  .inner-list { grid-template-columns: 1fr; }
+  .inner-breadcrumb { padding: 14px 20px; }
+}
+
 /* ── 17. Experience Contact Modal ── */
 .exp-modal {
   display: none;
