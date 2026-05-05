@@ -1,5 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { sendConfirmationEmails } = require('../lib/send-emails');
+const { saveBooking } = require('../lib/storage');
 
 // Vercel must not parse the body — Stripe signature verification needs the raw bytes.
 module.exports.config = { api: { bodyParser: false } };
@@ -50,6 +51,43 @@ module.exports = async function handler(req, res) {
   }
 
   const meta = session.metadata || {};
+
+  // Persist booking to storage for the admin dashboard
+  const grandTotal = parseFloat(meta.grand_total || 0);
+  const amountPaidDollars = session.amount_total / 100;
+  const remaining = meta.payment_type === 'deposit'
+    ? Math.max(0, grandTotal - amountPaidDollars)
+    : 0;
+
+  try {
+    await saveBooking({
+      session_id:       session.id,
+      customer_email:   session.customer_email,
+      amount_total:     session.amount_total,
+      charter_name:     meta.charter_name,
+      vessel:           meta.vessel,
+      experience:       meta.experience,
+      date:             meta.date,
+      time_slot:        meta.time_slot,
+      duration:         meta.duration,
+      full_name:        meta.full_name,
+      party_size:       meta.party_size,
+      phone:            meta.phone,
+      payment_type:     meta.payment_type,
+      grand_total:      meta.grand_total,
+      deposit_amount:   meta.deposit_amount,
+      add_ons:          meta.add_ons,
+      special_requests: meta.special_requests,
+      promo_applied:    meta.promo_applied,
+      newsletter:       meta.newsletter,
+      paid_in_full:     meta.payment_type !== 'deposit',
+      remaining_balance: remaining,
+      booked_at:        new Date().toISOString(),
+    });
+    console.log('Booking saved to storage for session:', session.id);
+  } catch (err) {
+    console.error('Failed to save booking to storage:', err.message);
+  }
 
   const emailData = {
     // From Stripe session

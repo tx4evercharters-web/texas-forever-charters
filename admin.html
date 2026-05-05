@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Texas Forever Charters</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:   #1B2A6B;
+      --navy-dark: #0F1A45;
+      --red:    #C8102E;
+      --white:  #FFFFFF;
+      --gray-50: #F8F9FC;
+      --gray-100: #F0F2F8;
+      --gray-200: #E5E7EB;
+      --gray-400: #9CA3AF;
+      --gray-600: #4B5563;
+      --gray-700: #374151;
+      --green:  #16A34A;
+      --green-bg: #F0FDF4;
+      --green-border: #BBF7D0;
+      --amber:  #D97706;
+      --amber-bg: #FFFBEB;
+      --amber-border: #FDE68A;
+      --red-bg: #FEF2F2;
+      --red-border: #FECACA;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--gray-100);
+      color: var(--gray-700);
+      min-height: 100vh;
+    }
+
+    /* ── Login ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--navy-dark);
+    }
+
+    .login-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .login-logo .brand {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--navy);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .login-logo .sub {
+      font-size: 11px;
+      color: var(--gray-400);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .login-logo .bar {
+      width: 40px;
+      height: 3px;
+      background: var(--red);
+      margin: 12px auto 0;
+      border-radius: 2px;
+    }
+
+    .login-card label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+    }
+
+    .login-card input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .login-card input[type="password"]:focus {
+      border-color: var(--navy);
+    }
+
+    .btn-login {
+      width: 100%;
+      margin-top: 18px;
+      padding: 13px;
+      background: var(--navy);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-login:hover { background: var(--navy-dark); }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .login-error {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--red);
+      display: none;
+    }
+
+    /* ── App shell ── */
+    #app { display: none; }
+
+    header {
+      background: var(--navy);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 58px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+
+    .header-brand {
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--white);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .header-brand span {
+      color: var(--red);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .header-right .date-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 1px;
+    }
+
+    .btn-logout {
+      background: rgba(255,255,255,0.1);
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 5px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-logout:hover { background: rgba(255,255,255,0.18); }
+
+    main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
+
+    /* ── Stats ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 700px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+
+    .stat-card {
+      background: var(--white);
+      border-radius: 10px;
+      padding: 22px 24px;
+      border: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .stat-icon.navy { background: var(--navy); }
+    .stat-icon.red  { background: var(--red);  }
+    .stat-icon.green { background: var(--green); }
+
+    .stat-info { flex: 1; }
+
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--navy);
+    }
+
+    /* ── Sections ── */
+    .section {
+      background: var(--white);
+      border-radius: 10px;
+      border: 1px solid var(--gray-200);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--navy);
+    }
+
+    .section-title.red { color: var(--red); }
+
+    .btn-sm {
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+
+    .btn-sm:hover { opacity: 0.85; }
+    .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-navy { background: var(--navy); color: var(--white); }
+    .btn-red  { background: var(--red);  color: var(--white); }
+    .btn-green { background: var(--green); color: var(--white); }
+    .btn-gray { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-200); }
+
+    /* ── Table ── */
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 1100px;
+    }
+
+    thead th {
+      background: var(--gray-50);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--gray-600);
+      border-bottom: 1px solid var(--gray-200);
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--gray-100);
+      transition: background 0.1s;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--gray-50); }
+
+    tbody td {
+      padding: 11px 14px;
+      vertical-align: top;
+      color: var(--gray-700);
+    }
+
+    .td-primary {
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
+    .badge-amber  { background: var(--amber-bg);  color: var(--amber);  border: 1px solid var(--amber-border); }
+    .badge-red    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border); }
+
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      color: var(--gray-400);
+      font-size: 14px;
+    }
+
+    /* ── Overdue alert ── */
+    .overdue-banner {
+      background: var(--red-bg);
+      border-bottom: 1px solid var(--red-border);
+      padding: 14px 24px;
+      font-size: 13px;
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    /* ── Blackouts ── */
+    .blackout-form {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .blackout-form input[type="date"] {
+      padding: 8px 12px;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .blackout-form input[type="date"]:focus {
+      border-color: var(--navy);
+    }
+
+    .blackout-list {
+      padding: 12px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .blackout-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--navy);
+      color: var(--white);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .blackout-remove {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: var(--white);
+      border-radius: 3px;
+      width: 18px;
+      height: 18px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .blackout-remove:hover { background: rgba(255,255,255,0.35); }
+
+    .blackout-empty {
+      padding: 20px 24px;
+      color: var(--gray-400);
+      font-size: 13px;
+    }
+
+    /* ── Misc ── */
+    .addon-list { font-size: 11px; color: var(--gray-600); line-height: 1.7; }
+    .loading { padding: 40px; text-align: center; color: var(--gray-400); }
+    .error-bar {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 18px;
+      font-size: 13px;
+      color: var(--red);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Login ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="brand">Texas Forever Charters</div>
+      <div class="sub">Admin Dashboard</div>
+      <div class="bar"></div>
+    </div>
+    <label for="pwd-input">Password</label>
+    <input type="password" id="pwd-input" placeholder="Enter admin password" autocomplete="current-password">
+    <button class="btn-login" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app">
+  <header>
+    <div class="header-brand">Texas Forever <span>Charters</span></div>
+    <div class="header-right">
+      <span class="date-label" id="header-date"></span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="error-bar" id="error-bar"></div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon navy">&#128197;</div>
+        <div class="stat-info">
+          <div class="stat-label">Upcoming Bookings</div>
+          <div class="stat-value" id="stat-count">—</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">&#36;</div>
+        <div class="stat-info">
+          <div class="stat-label">Revenue Collected</div>
+          <div class="stat-value" id="stat-revenue">—</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red">&#9888;</div>
+        <div class="stat-info">
+          <div class="stat-label">Outstanding Balances</div>
+          <div class="stat-value" id="stat-outstanding">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overdue section -->
+    <div class="section" id="overdue-section" style="display:none">
+      <div class="section-header">
+        <div class="section-title red">&#9888; Overdue Payments — Charter Within 7 Days</div>
+      </div>
+      <div class="overdue-banner" id="overdue-banner"></div>
+      <div class="table-wrap">
+        <table id="overdue-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Charter</th>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Paid</th>
+              <th>Remaining</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="overdue-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Upcoming bookings -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Upcoming Bookings</div>
+        <button class="btn-sm btn-gray" onclick="loadData()">&#8635; Refresh</button>
+      </div>
+      <div class="table-wrap" id="bookings-wrap">
+        <div class="loading">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Blackout dates -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Blackout Dates</div>
+      </div>
+      <div class="blackout-form">
+        <input type="date" id="blackout-input" min="">
+        <button class="btn-sm btn-navy" onclick="addBlackout()">+ Block Date</button>
+      </div>
+      <div id="blackout-list-wrap"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const TOKEN_KEY = 'tfc_admin_token';
+
+  /* ── Helpers ── */
+  function getToken() { return localStorage.getItem(TOKEN_KEY); }
+  function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
+  function clearToken() { localStorage.removeItem(TOKEN_KEY); }
+
+  function fmtDate(str) {
+    if (!str) return '—';
+    const d = new Date(str + 'T12:00:00');
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+
+  function fmtMoney(cents) {
+    return '$' + (cents / 100).toFixed(2);
+  }
+
+  function fmtDollars(n) {
+    const v = parseFloat(n || 0);
+    return '$' + v.toFixed(2);
+  }
+
+  function vesselLabel(v) {
+    return v === 'yacht' ? '40ft Carver' : '24ft Bentley';
+  }
+
+  function parseAddOns(json) {
+    try { return JSON.parse(json || '{}'); } catch { return {}; }
+  }
+
+  function addOnText(json) {
+    const a = parseAddOns(json);
+    const lines = [];
+    if (a.drone)      lines.push('Drone Footage');
+    if (a.towels > 0) lines.push('Towels x' + a.towels);
+    if (a.water)      lines.push('Water Bottles');
+    if (a.ice)        lines.push('Ice');
+    if (a.beerpong)   lines.push('Beer Pong');
+    return lines.length ? lines.join(', ') : '—';
+  }
+
+  function showError(msg) {
+    const bar = document.getElementById('error-bar');
+    bar.textContent = msg;
+    bar.style.display = 'block';
+    setTimeout(() => { bar.style.display = 'none'; }, 8000);
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Auth ── */
+  async function doLogin() {
+    const pwd = document.getElementById('pwd-input').value.trim();
+    if (!pwd) return;
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+    const errEl = document.getElementById('login-error');
+    errEl.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      setToken(data.token);
+      showApp();
+      loadData();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  }
+
+  function logout() {
+    clearToken();
+    showLogin();
+  }
+
+  /* ── Screen switching ── */
+  function showLogin() {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+
+  function showApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    const now = new Date();
+    document.getElementById('header-date').textContent =
+      now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('blackout-input').min = now.toISOString().split('T')[0];
+  }
+
+  /* ── API wrapper ── */
+  async function api(path, options = {}) {
+    const token = getToken();
+    const res = await fetch(path, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        ...(options.headers || {}),
+      },
+    });
+    if (res.status === 401) { logout(); return null; }
+    const text = await res.text();
+    try { return JSON.parse(text); } catch { return null; }
+  }
+
+  /* ── Load data ── */
+  async function loadData() {
+    document.getElementById('bookings-wrap').innerHTML = '<div class="loading">Loading bookings...</div>';
+    const [bookingData, blackouts] = await Promise.all([
+      api('/api/admin-bookings'),
+      api('/api/admin-blackouts'),
+    ]);
+    if (!bookingData) return;
+    renderStats(bookingData.upcoming || []);
+    renderOverdue(bookingData.upcoming || []);
+    renderBookings(bookingData.upcoming || []);
+    renderBlackouts(blackouts || []);
+  }
+
+  /* ── Stats ── */
+  function renderStats(upcoming) {
+    let revenue = 0, outstanding = 0;
+    upcoming.forEach(b => {
+      revenue += (b.amount_total || 0) / 100;
+      outstanding += parseFloat(b.remaining_balance || 0);
+    });
+    document.getElementById('stat-count').textContent = upcoming.length;
+    document.getElementById('stat-revenue').textContent = '$' + revenue.toFixed(2);
+    document.getElementById('stat-outstanding').textContent = '$' + outstanding.toFixed(2);
+  }
+
+  /* ── Overdue ── */
+  function renderOverdue(upcoming) {
+    const now = new Date();
+    const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const overdue = upcoming.filter(b => {
+      if (b.paid_in_full) return false;
+      if (b.payment_type !== 'deposit') return false;
+      if (!(parseFloat(b.remaining_balance) > 0)) return false;
+      const d = new Date((b.date || '') + 'T12:00:00');
+      return d <= in7;
+    });
+
+    const sec = document.getElementById('overdue-section');
+    if (overdue.length === 0) { sec.style.display = 'none'; return; }
+    sec.style.display = 'block';
+
+    document.getElementById('overdue-banner').textContent =
+      overdue.length + ' booking' + (overdue.length > 1 ? 's' : '') +
+      ' with outstanding deposits due within 7 days.';
+
+    const tbody = document.getElementById('overdue-tbody');
+    tbody.innerHTML = overdue.map(b => `
+      <tr>
+        <td class="td-primary">${esc(fmtDate(b.date))}</td>
+        <td>${esc(b.charter_name || '—')}</td>
+        <td>
+          <div style="font-weight:600">${esc(b.full_name || '—')}</div>
+          <div style="font-size:11px;color:var(--gray-400)">${esc(b.customer_email || '')}</div>
+        </td>
+        <td>${esc(b.phone || '—')}</td>
+        <td>${fmtMoney(b.amount_total || 0)}</td>
+        <td style="color:var(--red);font-weight:700">${fmtDollars(b.remaining_balance)}</td>
+        <td>
+          <button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}', this)">
+            Mark Paid
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  /* ── Bookings table ── */
+  function renderBookings(upcoming) {
+    const wrap = document.getElementById('bookings-wrap');
+    if (upcoming.length === 0) {
+      wrap.innerHTML = '<div class="empty-state">No upcoming bookings.</div>';
+      return;
+    }
+    const rows = upcoming.map(b => {
+      const paidFull = b.paid_in_full || b.payment_type === 'full';
+      const badge = paidFull
+        ? '<span class="badge badge-green">Paid in Full</span>'
+        : '<span class="badge badge-amber">Deposit Only</span>';
+      return `
+        <tr>
+          <td class="td-primary" style="white-space:nowrap">${esc(fmtDate(b.date))}</td>
+          <td>${esc(b.charter_name || '—')}</td>
+          <td>
+            <div style="font-weight:600">${esc(b.full_name || '—')}</div>
+          </td>
+          <td>
+            <div>${esc(b.customer_email || '—')}</div>
+          </td>
+          <td style="white-space:nowrap">${esc(b.phone || '—')}</td>
+          <td style="white-space:nowrap">${esc(vesselLabel(b.vessel))}</td>
+          <td>${esc(b.experience || '—')}</td>
+          <td style="white-space:nowrap">${esc(b.time_slot || '—')}</td>
+          <td>${esc(b.duration ? b.duration + ' hrs' : '—')}</td>
+          <td>${esc(b.party_size ? b.party_size + ' guests' : '—')}</td>
+          <td class="addon-list">${esc(addOnText(b.add_ons))}</td>
+          <td style="white-space:nowrap;font-weight:700">${fmtMoney(b.amount_total || 0)}</td>
+          <td style="white-space:nowrap;color:${parseFloat(b.remaining_balance) > 0 ? 'var(--amber)' : 'var(--green)'}">
+            ${fmtDollars(b.remaining_balance)}
+          </td>
+          <td>${badge}</td>
+          <td>
+            ${paidFull
+              ? '<span style="font-size:12px;color:var(--gray-400)">—</span>'
+              : `<button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}', this)">Mark Paid</button>`
+            }
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    wrap.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Charter</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Vessel</th>
+            <th>Experience</th>
+            <th>Time</th>
+            <th>Duration</th>
+            <th>Party</th>
+            <th>Add-Ons</th>
+            <th>Paid</th>
+            <th>Remaining</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  /* ── Mark paid ── */
+  async function markPaid(session_id, btn) {
+    if (!confirm('Mark this booking as paid in full?')) return;
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    const result = await api('/api/admin-mark-paid', {
+      method: 'POST',
+      body: JSON.stringify({ session_id }),
+    });
+    if (result && result.ok) {
+      loadData();
+    } else {
+      showError('Failed to mark as paid. Check logs.');
+      btn.disabled = false;
+      btn.textContent = 'Mark Paid';
+    }
+  }
+
+  /* ── Blackouts ── */
+  async function addBlackout() {
+    const input = document.getElementById('blackout-input');
+    const date = input.value;
+    if (!date) { showError('Select a date to block.'); return; }
+    const result = await api('/api/admin-blackouts', {
+      method: 'POST',
+      body: JSON.stringify({ date }),
+    });
+    if (Array.isArray(result)) {
+      input.value = '';
+      renderBlackouts(result);
+    } else {
+      showError('Failed to add blackout date.');
+    }
+  }
+
+  async function removeBlackout(date) {
+    const result = await api('/api/admin-blackouts?date=' + encodeURIComponent(date), {
+      method: 'DELETE',
+    });
+    if (Array.isArray(result)) {
+      renderBlackouts(result);
+    } else {
+      showError('Failed to remove blackout date.');
+    }
+  }
+
+  function renderBlackouts(blackouts) {
+    const wrap = document.getElementById('blackout-list-wrap');
+    if (!blackouts || blackouts.length === 0) {
+      wrap.innerHTML = '<div class="blackout-empty">No blackout dates set.</div>';
+      return;
+    }
+    wrap.innerHTML = '<div class="blackout-list">' +
+      blackouts.map(d => `
+        <div class="blackout-chip">
+          <span>${esc(fmtDate(d))}</span>
+          <button class="blackout-remove" onclick="removeBlackout('${esc(d)}')" title="Remove">&times;</button>
+        </div>
+      `).join('') +
+      '</div>';
+  }
+
+  /* ── Enter key on login ── */
+  document.getElementById('pwd-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  /* ── Init ── */
+  if (getToken()) {
+    showApp();
+    loadData();
+  } else {
+    showLogin();
+  }
+</script>
+</body>
+</html>
