@@ -51,6 +51,9 @@ module.exports = async function handler(req, res) {
   }
 
   const meta = session.metadata || {};
+  const billingAddress = session.customer_details?.address || {};
+  const city = billingAddress.city || null;
+  const state = billingAddress.state || null;
 
   // Persist booking to storage for the admin dashboard
   const grandTotal = parseFloat(meta.grand_total || 0);
@@ -80,6 +83,8 @@ module.exports = async function handler(req, res) {
       special_requests: meta.special_requests,
       promo_applied:    meta.promo_applied,
       newsletter:       meta.newsletter,
+      city:  city,
+      state: state,
       paid_in_full:     meta.payment_type !== 'deposit',
       remaining_balance: remaining,
       booked_at:        new Date().toISOString(),

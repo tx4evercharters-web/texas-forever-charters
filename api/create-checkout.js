@@ -42,6 +42,7 @@ module.exports = async function handler(req, res) {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
+      billing_address_collection: 'required',
       mode: 'payment',
       line_items: [
         {
