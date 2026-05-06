@@ -1,1 +1,7 @@
 .vercel
+
+# Large video files — host externally, do not commit
+images/*.mp4
+images/*.mov
+images/*.webm
+images/*.avi
