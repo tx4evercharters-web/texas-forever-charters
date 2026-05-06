@@ -1750,6 +1750,15 @@
 
         <!-- Promo Code -->
         <div>
+          <div id="nl-unlock-banner" style="display:none;background:linear-gradient(135deg,rgba(200,16,46,0.15),rgba(27,42,107,0.4));border:1px solid rgba(200,16,46,0.3);border-radius:12px;padding:18px 20px;margin-bottom:16px;">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px;">🎉 Unlock 10% Off</div>
+            <div style="font-family:'Barlow',sans-serif;font-size:14px;color:rgba(255,255,255,0.8);margin-bottom:12px;">Enter your email to get your promo code instantly.</div>
+            <div style="display:flex;gap:10px;">
+              <input type="email" id="nl-unlock-email" placeholder="Your email address" style="flex:1;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:8px;padding:11px 14px;font-family:'Barlow',sans-serif;font-size:15px;color:#fff;outline:none;">
+              <button onclick="handleUnlockSubscribe()" id="nl-unlock-btn" style="background:#C8102E;border:none;border-radius:8px;padding:11px 20px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#fff;cursor:pointer;white-space:nowrap;">Get Code</button>
+            </div>
+            <div id="nl-unlock-msg" style="font-family:'Barlow',sans-serif;font-size:13px;margin-top:8px;display:none;"></div>
+          </div>
           <div class="form-label" style="margin-bottom:8px">Promo Code</div>
           <div class="promo-row">
             <input class="promo-input" id="promoInput" type="text" placeholder="Enter promo code">
@@ -2273,6 +2282,60 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
 
       document.getElementById('depositAmountBtn').textContent = '$' + calDepositAmount.toFixed(2);
       document.getElementById('fullAmountBtn').textContent = '$' + calGrandTotal.toFixed(2);
+      checkShowUnlockBanner();
+    }
+
+    /* ── Newsletter unlock on Step 8 ── */
+    function checkShowUnlockBanner() {
+      const subscribed = localStorage.getItem('nl_subscribed');
+      const banner = document.getElementById('nl-unlock-banner');
+      if (!subscribed && banner) banner.style.display = 'block';
+    }
+
+    async function handleUnlockSubscribe() {
+      const input = document.getElementById('nl-unlock-email');
+      const btn = document.getElementById('nl-unlock-btn');
+      const msg = document.getElementById('nl-unlock-msg');
+      const email = input.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        msg.style.display = 'block';
+        msg.style.color = '#ff6666';
+        msg.textContent = 'Please enter a valid email address.';
+        return;
+      }
+      btn.textContent = 'Sending...';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          localStorage.setItem('nl_subscribed', '1');
+          document.getElementById('nl-unlock-banner').innerHTML = `
+            <div style="text-align:center;padding:8px 0;">
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#C8102E;letter-spacing:4px;">LAKELIFE10</div>
+              <div style="font-family:'Barlow',sans-serif;font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px;">Code sent to your email too! Enter it below for 10% off.</div>
+            </div>
+          `;
+          document.getElementById('promoInput').value = 'LAKELIFE10';
+          applyPromo();
+        } else {
+          msg.style.display = 'block';
+          msg.style.color = '#ff6666';
+          msg.textContent = 'Something went wrong — try again.';
+          btn.textContent = 'Get Code';
+          btn.disabled = false;
+        }
+      } catch {
+        msg.style.display = 'block';
+        msg.style.color = '#ff6666';
+        msg.textContent = 'Something went wrong — try again.';
+        btn.textContent = 'Get Code';
+        btn.disabled = false;
+      }
     }
 
     /* ── Promo Code ── */

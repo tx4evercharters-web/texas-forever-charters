@@ -196,7 +196,7 @@ async function handlePopupSubscribe() {
     document.getElementById('nlPopupSuccess').style.display = 'block';
     setTimeout(closeNewsletterPopup, 2800);
   } else {
-    btn.textContent = 'Get On The List';
+    btn.textContent = 'Claim My Discount';
     btn.disabled = false;
     showEmailError(input, 'Something went wrong — try again');
   }
