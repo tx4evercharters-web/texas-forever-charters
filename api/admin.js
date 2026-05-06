@@ -12,6 +12,8 @@ const {
   searchCustomers,
   addManualBooking,
   updateBookingPayment,
+  listCustomers,
+  updateCustomer,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails } = require('../lib/send-emails');
 
@@ -323,6 +325,65 @@ async function handleAddBooking(req, res) {
   }
 }
 
+async function handleListCustomers(req, res) {
+  if (req.method !== 'GET') return res.status(405).end();
+  try {
+    const [customers, bookings] = await Promise.all([listCustomers(), getBookings()]);
+
+    // Index bookings by lowercase email
+    const byEmail = {};
+    for (const b of bookings) {
+      const e = (b.customer_email || '').toLowerCase();
+      if (!e) continue;
+      (byEmail[e] || (byEmail[e] = [])).push(b);
+    }
+
+    // Enrich each customer with derived stats from booking history
+    const enriched = customers.map(c => {
+      const bk = byEmail[(c.email || '').toLowerCase()] || [];
+      // Sort ascending for first/last
+      bk.sort((a, b) => (a.date || a.booked_at || '').localeCompare(b.date || b.booked_at || ''));
+      const firstBooking = bk[0] || null;
+      const lastBooking  = bk[bk.length - 1] || null;
+      // Derive source from earliest booking
+      const source = firstBooking ? (firstBooking.source || 'website') : null;
+      // Sum of grand_total across bookings as a fallback / canonical lifetime
+      const computedLifetime = bk.reduce((s, b) => {
+        const v = b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
+        return s + (isFinite(v) ? v : 0);
+      }, 0);
+      return {
+        ...c,
+        derived_source:        source,
+        derived_total_bookings: bk.length,
+        derived_first_date:    firstBooking ? (firstBooking.date || firstBooking.booked_at) : c.first_booking_date,
+        derived_last_date:     lastBooking  ? (lastBooking.date  || lastBooking.booked_at)  : c.last_booking_date,
+        derived_lifetime:      computedLifetime || parseFloat(c.lifetime_value || c.total_spent || 0),
+        bookings:              bk,
+      };
+    });
+
+    return res.status(200).json({ customers: enriched });
+  } catch (err) {
+    console.error('List customers error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleUpdateCustomer(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { id, ...fields } = req.body || {};
+  if (!id) return res.status(400).json({ error: 'Missing customer id' });
+  try {
+    const updated = await updateCustomer(id, fields);
+    if (!updated) return res.status(404).json({ error: 'Customer not found or no allowed fields' });
+    return res.status(200).json({ ok: true, customer: updated });
+  } catch (err) {
+    console.error('Update customer error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 async function handleUpdatePayment(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const { session_id, ...fields } = req.body || {};
@@ -355,6 +416,8 @@ const ROUTES = {
   'customer-search':   handleCustomerSearch,
   'add-booking':       handleAddBooking,
   'update-payment':    handleUpdatePayment,
+  'customers':         handleListCustomers,
+  'update-customer':   handleUpdateCustomer,
 };
 
 module.exports = async function handler(req, res) {

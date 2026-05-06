@@ -480,6 +480,150 @@
     .badge-teal   { background: var(--teal-bg); color: var(--teal); border: 1px solid #A5F3FC; }
     .badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid #DDD6FE; }
 
+    /* ── Customers tab ── */
+    .cust-filter-bar {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--gray-200);
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto auto;
+      gap: 16px;
+      align-items: start;
+    }
+    .cust-search {
+      grid-column: 1 / -1;
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .cust-search:focus { border-color: var(--navy); }
+    .cust-filter-group { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
+    .cust-filter-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-600); }
+    .cust-multi { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 0; max-width: 420px; }
+    .cust-multi-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-700);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .cust-multi-chip:hover { border-color: var(--navy); }
+    .cust-multi-chip.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+    .cust-filter-toggles { display: flex; flex-direction: column; gap: 8px; align-self: end; }
+    .cust-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray-700); cursor: pointer; white-space: nowrap; }
+    .cust-toggle input { accent-color: var(--navy); width: 16px; height: 16px; }
+
+    /* Sortable headers */
+    .cust-sort { cursor: pointer; user-select: none; position: relative; }
+    .cust-sort:hover { background: var(--gray-100); }
+    .cust-sort.active { color: var(--navy); }
+    .cust-sort.active::after {
+      content: ' ▾';
+      font-size: 9px;
+      vertical-align: middle;
+    }
+    .cust-sort.active.asc::after { content: ' ▴'; }
+
+    /* Customer rows */
+    #cust-table tbody tr.cust-row { cursor: pointer; }
+    #cust-table tbody tr.cust-row.expanded { background: var(--gray-50); }
+    .cust-tag {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin: 1px 2px 1px 0;
+      background: var(--gray-100);
+      color: var(--gray-700);
+      border: 1px solid var(--gray-200);
+    }
+    .cust-tag.vip { background: #FEF3C7; color: #92400E; border-color: #FDE68A; }
+    .cust-tag.frequent { background: var(--teal-bg); color: var(--teal); border-color: #A5F3FC; }
+    .cust-tag.lapsed { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+    .cust-tag.needs_followup { background: var(--purple-bg); color: var(--purple); border-color: #DDD6FE; }
+    .cust-tag.removable { padding-right: 4px; }
+    .cust-tag-x { background: rgba(0,0,0,0.1); border: none; color: inherit; font-size: 10px; cursor: pointer; padding: 0 4px; margin-left: 2px; border-radius: 100px; }
+    .cust-tag-x:hover { background: rgba(0,0,0,0.2); }
+
+    /* Detail panel (expanded row) */
+    .cust-detail-row > td { padding: 0 !important; background: var(--gray-50) !important; }
+    .cust-detail {
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+      border-top: 1px solid var(--gray-200);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .cust-detail h4 { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--navy); letter-spacing: 2px; margin-bottom: 10px; }
+    .cust-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .cust-bookings-mini { width: 100%; font-size: 12px; border-collapse: collapse; }
+    .cust-bookings-mini th { background: var(--white); text-align: left; padding: 6px 8px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--gray-400); border-bottom: 1px solid var(--gray-200); }
+    .cust-bookings-mini td { padding: 8px; border-bottom: 1px solid var(--gray-200); background: var(--white); }
+    .cust-bookings-mini tr:last-child td { border-bottom: none; }
+    .cust-bookings-mini td:first-child, .cust-bookings-mini th:first-child { padding-left: 12px; }
+    .cust-bookings-mini td:last-child, .cust-bookings-mini th:last-child { padding-right: 12px; }
+
+    .cust-side { display: flex; flex-direction: column; gap: 14px; }
+    .cust-notes-box textarea {
+      width: 100%;
+      min-height: 90px;
+      padding: 10px 12px;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      resize: vertical;
+      outline: none;
+    }
+    .cust-notes-box textarea:focus { border-color: var(--navy); }
+    .cust-tag-input {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .cust-tag-input input {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+    }
+    .cust-tag-input input:focus { border-color: var(--navy); }
+    .cust-tag-suggestions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .cust-tag-suggest {
+      font-size: 10px;
+      padding: 2px 8px;
+      border: 1px dashed var(--gray-200);
+      border-radius: 100px;
+      background: transparent;
+      color: var(--gray-600);
+      cursor: pointer;
+    }
+    .cust-tag-suggest:hover { border-color: var(--navy); color: var(--navy); }
+    .cust-detail-empty { padding: 14px; text-align: center; color: var(--gray-400); font-size: 12px; background: var(--white); border-radius: 6px; }
+
+    @media (max-width: 800px) {
+      .cust-filter-bar { grid-template-columns: 1fr; }
+      .cust-detail { grid-template-columns: 1fr; }
+    }
+
     .overdue-banner { background: var(--red-bg); border-bottom: 1px solid var(--red-border); padding: 14px 24px; font-size: 13px; color: var(--red); font-weight: 600; }
     .addon-list { font-size: 11px; color: var(--gray-600); line-height: 1.7; }
     .loading { padding: 40px; text-align: center; color: var(--gray-400); }
@@ -524,6 +668,7 @@
     <button class="tab-btn active" onclick="switchTab('bookings')">📋 Bookings</button>
     <button class="tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
     <button class="tab-btn" onclick="switchTab('calendar')">📅 Calendar</button>
+    <button class="tab-btn" onclick="switchTab('customers')">👥 Customers</button>
   </div>
 
   <main>
@@ -730,6 +875,84 @@
 
     <!-- Calendar context menu / popover -->
     <div class="cal-ctx-menu" id="cal-ctx-menu"></div>
+
+    <!-- ══ CUSTOMERS TAB ══ -->
+    <div class="tab-panel" id="tab-customers">
+
+      <!-- Stats row -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Customers</div>
+          <div class="stat-value" id="cust-stat-total">—</div>
+          <div class="stat-sub">all-time</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">New This Period</div>
+          <div class="stat-value" id="cust-stat-new">—</div>
+          <div class="stat-sub" id="cust-stat-new-sub">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Returning</div>
+          <div class="stat-value" id="cust-stat-returning">—</div>
+          <div class="stat-sub">2+ bookings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">VIP Customers</div>
+          <div class="stat-value" id="cust-stat-vip">—</div>
+          <div class="stat-sub">4+ bookings or $5k+</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Customers</div>
+          <div class="period-filter">
+            <button class="period-btn" onclick="setCustPeriod('week',this)">Week</button>
+            <button class="period-btn" onclick="setCustPeriod('month',this)">Month</button>
+            <button class="period-btn active" onclick="setCustPeriod('year',this)">Year</button>
+            <button class="period-btn" onclick="setCustPeriod('all',this)">All Time</button>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="cust-filter-bar">
+          <input class="cust-search" id="cust-search" type="search" placeholder="🔎 Search name, email, or phone…">
+          <div class="cust-filter-group">
+            <label class="cust-filter-label">Source</label>
+            <div class="cust-multi" id="cust-source-filter"></div>
+          </div>
+          <div class="cust-filter-group">
+            <label class="cust-filter-label">Tags</label>
+            <div class="cust-multi" id="cust-tags-filter"></div>
+          </div>
+          <div class="cust-filter-toggles">
+            <label class="cust-toggle"><input type="checkbox" id="cust-toggle-lapsed" onchange="renderCustomers()"> Hasn't booked in 6+ months</label>
+            <label class="cust-toggle"><input type="checkbox" id="cust-toggle-firsttime" onchange="renderCustomers()"> First-time customers only</label>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="cust-table">
+            <thead>
+              <tr>
+                <th class="cust-sort" data-sort="full_name">Name</th>
+                <th class="cust-sort" data-sort="email">Email</th>
+                <th class="cust-sort" data-sort="phone">Phone</th>
+                <th class="cust-sort" data-sort="location">City / State</th>
+                <th class="cust-sort" data-sort="bookings">Bookings</th>
+                <th class="cust-sort active desc" data-sort="lifetime">Lifetime</th>
+                <th class="cust-sort" data-sort="last">Last</th>
+                <th class="cust-sort" data-sort="first">First</th>
+                <th>Tags</th>
+              </tr>
+            </thead>
+            <tbody id="cust-tbody">
+              <tr><td colspan="9" class="loading">Loading customers…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
 
   </main>
 </div>
@@ -1146,6 +1369,7 @@
     event.target.classList.add('active');
     if (name === 'calendar') renderCalendar();
     if (name === 'analytics') renderAnalytics();
+    if (name === 'customers') loadCustomers();
   }
 
   /* ── Auth ── */
@@ -2239,6 +2463,354 @@
     else { showError('Failed to remove blackout date.'); }
   }
 
+  /* ── Customers ── */
+  const SOURCE_OPTIONS = ['phone','walkup','referral','repeat_direct','tripadvisor','viator','peek','fareharbor','instagram','facebook','website','other'];
+  const COMMON_TAGS = ['vip','frequent','lapsed','needs_followup'];
+
+  let allCustomers = [];
+  let custLoaded = false;
+  let custPeriod = 'year';
+  let custSort = { key: 'lifetime', dir: 'desc' };
+  let custSelectedSources = new Set();
+  let custSelectedTags = new Set();
+  let custExpandedId = null;
+
+  async function loadCustomers() {
+    if (custLoaded) { renderCustomers(); return; }
+    const tbody = document.getElementById('cust-tbody');
+    tbody.innerHTML = '<tr><td colspan="9" class="loading">Loading customers…</td></tr>';
+    const data = await api('/api/admin?action=customers');
+    if (!data || !data.customers) {
+      tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Failed to load customers.</td></tr>';
+      return;
+    }
+    allCustomers = data.customers;
+    custLoaded = true;
+    buildCustFilters();
+    renderCustomers();
+  }
+
+  function setCustPeriod(p, btn) {
+    custPeriod = p;
+    document.querySelectorAll('#tab-customers .period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCustomers();
+  }
+
+  function buildCustFilters() {
+    // Source chips
+    const srcEl = document.getElementById('cust-source-filter');
+    srcEl.innerHTML = SOURCE_OPTIONS.map(s =>
+      `<span class="cust-multi-chip" data-source="${esc(s)}">${esc(s)}</span>`
+    ).join('');
+    srcEl.querySelectorAll('.cust-multi-chip').forEach(el => {
+      el.addEventListener('click', () => {
+        const s = el.dataset.source;
+        if (custSelectedSources.has(s)) { custSelectedSources.delete(s); el.classList.remove('active'); }
+        else { custSelectedSources.add(s); el.classList.add('active'); }
+        renderCustomers();
+      });
+    });
+
+    // Discover tags from data + common defaults
+    const tagSet = new Set(COMMON_TAGS);
+    allCustomers.forEach(c => (c.tags || []).forEach(t => tagSet.add(t)));
+    const tagsEl = document.getElementById('cust-tags-filter');
+    tagsEl.innerHTML = [...tagSet].sort().map(t =>
+      `<span class="cust-multi-chip" data-tag="${esc(t)}">${esc(t)}</span>`
+    ).join('');
+    tagsEl.querySelectorAll('.cust-multi-chip').forEach(el => {
+      el.addEventListener('click', () => {
+        const t = el.dataset.tag;
+        if (custSelectedTags.has(t)) { custSelectedTags.delete(t); el.classList.remove('active'); }
+        else { custSelectedTags.add(t); el.classList.add('active'); }
+        renderCustomers();
+      });
+    });
+  }
+
+  function isWithinPeriod(dateStr, period) {
+    if (!dateStr) return false;
+    if (period === 'all') return true;
+    const d = new Date(dateStr);
+    if (isNaN(d)) return false;
+    const now = new Date();
+    if (period === 'week')  return (now - d) <= 7 * 24 * 60 * 60 * 1000;
+    if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (period === 'year')  return d.getFullYear() === now.getFullYear();
+    return true;
+  }
+
+  function periodLabel(p) {
+    return p === 'week' ? 'past 7 days' :
+           p === 'month' ? 'this month' :
+           p === 'year' ? 'this year' :
+           'all time';
+  }
+
+  function renderCustomers() {
+    const search = (document.getElementById('cust-search').value || '').trim().toLowerCase();
+    const lapsedOnly = document.getElementById('cust-toggle-lapsed').checked;
+    const firstTimeOnly = document.getElementById('cust-toggle-firsttime').checked;
+    const now = new Date();
+    const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+
+    // Stats
+    const totalCount = allCustomers.length;
+    const newCount = allCustomers.filter(c => isWithinPeriod(c.derived_first_date || c.first_booking_date, custPeriod)).length;
+    const returningCount = allCustomers.filter(c => (c.derived_total_bookings || c.total_bookings || 0) >= 2).length;
+    const vipCount = allCustomers.filter(c => {
+      const bookings = c.derived_total_bookings || c.total_bookings || 0;
+      const lifetime = c.derived_lifetime || c.lifetime_value || c.total_spent || 0;
+      return bookings >= 4 || parseFloat(lifetime) >= 5000;
+    }).length;
+    document.getElementById('cust-stat-total').textContent = totalCount;
+    document.getElementById('cust-stat-new').textContent = newCount;
+    document.getElementById('cust-stat-new-sub').textContent = periodLabel(custPeriod);
+    document.getElementById('cust-stat-returning').textContent = returningCount;
+    document.getElementById('cust-stat-vip').textContent = vipCount;
+
+    // Filter
+    let rows = allCustomers.filter(c => {
+      if (search) {
+        const blob = ((c.full_name || '') + ' ' + (c.email || '') + ' ' + (c.phone || '')).toLowerCase();
+        if (!blob.includes(search)) return false;
+      }
+      if (custSelectedSources.size > 0) {
+        if (!custSelectedSources.has(c.derived_source || 'website')) return false;
+      }
+      if (custSelectedTags.size > 0) {
+        const tags = c.tags || [];
+        if (![...custSelectedTags].every(t => tags.includes(t))) return false;
+      }
+      if (lapsedOnly) {
+        const last = c.derived_last_date || c.last_booking_date;
+        if (!last) return false;
+        const d = new Date(last);
+        if (isNaN(d) || d > sixMonthsAgo) return false;
+      }
+      if (firstTimeOnly) {
+        const total = c.derived_total_bookings || c.total_bookings || 0;
+        if (total !== 1) return false;
+      }
+      return true;
+    });
+
+    // Sort
+    const cmp = (a, b) => {
+      const dir = custSort.dir === 'asc' ? 1 : -1;
+      const av = custSortKey(a, custSort.key);
+      const bv = custSortKey(b, custSort.key);
+      if (av === bv) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return av < bv ? -dir : dir;
+    };
+    rows.sort(cmp);
+
+    const tbody = document.getElementById('cust-tbody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No customers match those filters.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(c => {
+      const tags = (c.tags || []).map(t => `<span class="cust-tag ${esc(t)}">${esc(t)}</span>`).join('');
+      const bookings = c.derived_total_bookings || c.total_bookings || 0;
+      const lifetime = parseFloat(c.derived_lifetime || c.lifetime_value || c.total_spent || 0);
+      const last = c.derived_last_date || c.last_booking_date;
+      const first = c.derived_first_date || c.first_booking_date;
+      const expanded = (String(custExpandedId) === String(c.id)) ? ' expanded' : '';
+      const detailHtml = (String(custExpandedId) === String(c.id)) ? renderCustDetail(c) : '';
+      return `
+        <tr class="cust-row${expanded}" data-id="${esc(c.id)}">
+          <td class="td-primary">${esc(c.full_name || '—')}</td>
+          <td>${esc(c.email || '—')}</td>
+          <td>${esc(c.phone || '—')}</td>
+          <td>${esc(((c.city && c.state) ? c.city+', '+c.state : (c.state || '—')))}</td>
+          <td>${bookings}</td>
+          <td style="font-weight:700;color:var(--navy)">${fmtMoney(lifetime)}</td>
+          <td>${last ? esc(fmtDate((last+'').slice(0,10))) : '—'}</td>
+          <td>${first ? esc(fmtDate((first+'').slice(0,10))) : '—'}</td>
+          <td>${tags || '<span style="color:var(--gray-400);font-size:11px">—</span>'}</td>
+        </tr>
+        ${detailHtml ? `<tr class="cust-detail-row"><td colspan="9">${detailHtml}</td></tr>` : ''}
+      `;
+    }).join('');
+
+    // Wire row clicks
+    tbody.querySelectorAll('tr.cust-row').forEach(tr => {
+      tr.addEventListener('click', e => {
+        if (e.target.closest('button') || e.target.closest('a') || e.target.closest('textarea') || e.target.closest('input')) return;
+        const id = tr.dataset.id;
+        custExpandedId = (String(custExpandedId) === String(id)) ? null : id;
+        renderCustomers();
+      });
+    });
+
+    // Header sort indicators
+    document.querySelectorAll('#cust-table th.cust-sort').forEach(th => {
+      th.classList.remove('active', 'asc', 'desc');
+      if (th.dataset.sort === custSort.key) {
+        th.classList.add('active', custSort.dir);
+      }
+    });
+  }
+
+  function custSortKey(c, key) {
+    switch (key) {
+      case 'full_name': return (c.full_name || '').toLowerCase();
+      case 'email':     return (c.email || '').toLowerCase();
+      case 'phone':     return (c.phone || '').replace(/\D/g, '');
+      case 'location':  return ((c.city || '') + (c.state || '')).toLowerCase();
+      case 'bookings':  return c.derived_total_bookings || c.total_bookings || 0;
+      case 'lifetime':  return parseFloat(c.derived_lifetime || c.lifetime_value || c.total_spent || 0) || 0;
+      case 'last':      return c.derived_last_date || c.last_booking_date || '';
+      case 'first':     return c.derived_first_date || c.first_booking_date || '';
+      default: return '';
+    }
+  }
+
+  function renderCustDetail(c) {
+    const bookings = (c.bookings || []).slice().sort((a, b) => (b.date || b.booked_at || '').localeCompare(a.date || a.booked_at || ''));
+    const bookingsHtml = bookings.length ? `
+      <table class="cust-bookings-mini">
+        <thead><tr><th>Date</th><th>Vessel</th><th>Experience</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>${bookings.map(b => {
+          const paidFull = b.paid_in_full || b.payment_type === 'full';
+          const status = paidFull ? '<span class="badge badge-green">Paid</span>'
+                                  : (parseFloat(b.remaining_balance) > 0 ? '<span class="badge badge-amber">Deposit</span>' : '<span class="badge badge-red">Unpaid</span>');
+          const total = b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
+          return `<tr>
+            <td>${esc(fmtDate(b.date))}</td>
+            <td>${esc(vesselLabel(b.vessel))}</td>
+            <td>${esc(b.experience || '—')}</td>
+            <td>${fmtMoney(total)}</td>
+            <td>${status}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    ` : '<div class="cust-detail-empty">No bookings on file.</div>';
+
+    const tagSet = new Set(c.tags || []);
+    const suggestions = COMMON_TAGS.filter(t => !tagSet.has(t));
+    const tagChips = (c.tags || []).map(t =>
+      `<span class="cust-tag ${esc(t)} removable">${esc(t)}<button class="cust-tag-x" data-rm-tag="${esc(t)}" data-cust="${esc(c.id)}">×</button></span>`
+    ).join('');
+
+    const mailto = c.email ? `mailto:${esc(c.email)}` : '#';
+    const sourceBadge = c.derived_source ? `<span class="badge badge-navy">${esc(c.derived_source)}</span>` : '';
+
+    return `
+      <div class="cust-detail" data-cust="${esc(c.id)}" onclick="event.stopPropagation()">
+        <div>
+          <div class="cust-actions">
+            <a class="btn-sm btn-navy" href="${mailto}" style="text-decoration:none;display:inline-block;">📧 Send Email</a>
+            <button class="btn-sm btn-red" onclick="custAddBookingFor('${esc(c.id)}')">+ Add Booking</button>
+            ${sourceBadge}
+          </div>
+          <h4>Booking History</h4>
+          ${bookingsHtml}
+        </div>
+        <div class="cust-side">
+          <div>
+            <h4>Tags</h4>
+            <div id="cust-tags-${esc(c.id)}">${tagChips || '<span style="color:var(--gray-400);font-size:12px">No tags.</span>'}</div>
+            <div class="cust-tag-input">
+              <input type="text" id="cust-new-tag-${esc(c.id)}" placeholder="Add tag (e.g. vip)" onkeydown="if(event.key==='Enter'){custAddTagFromInput('${esc(c.id)}');event.preventDefault();}">
+              <button class="btn-sm btn-navy" onclick="custAddTagFromInput('${esc(c.id)}')">+</button>
+            </div>
+            ${suggestions.length ? `<div class="cust-tag-suggestions">${suggestions.map(t => `<button class="cust-tag-suggest" onclick="custAddTag('${esc(c.id)}','${esc(t)}')">+ ${esc(t)}</button>`).join('')}</div>` : ''}
+          </div>
+          <div class="cust-notes-box">
+            <h4>Notes</h4>
+            <textarea id="cust-notes-${esc(c.id)}" placeholder="Internal notes about this customer…">${esc(c.notes || '')}</textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:6px;">
+              <button class="btn-sm btn-navy" onclick="custSaveNotes('${esc(c.id)}')">Save Notes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function custSaveNotes(id) {
+    const ta = document.getElementById('cust-notes-' + id);
+    if (!ta) return;
+    const notes = ta.value;
+    const result = await api('/api/admin?action=update-customer', {
+      method: 'POST',
+      body: JSON.stringify({ id, notes }),
+    });
+    if (result && result.ok) {
+      const c = allCustomers.find(x => String(x.id) === String(id));
+      if (c) c.notes = notes;
+      showError('✓ Notes saved');
+    } else {
+      showError(result?.error || 'Failed to save notes.');
+    }
+  }
+
+  async function custAddTag(id, tag) {
+    tag = (tag || '').trim().toLowerCase().replace(/\s+/g, '_');
+    if (!tag) return;
+    const c = allCustomers.find(x => String(x.id) === String(id));
+    if (!c) return;
+    const tags = Array.from(new Set([...(c.tags || []), tag]));
+    const result = await api('/api/admin?action=update-customer', {
+      method: 'POST',
+      body: JSON.stringify({ id, tags }),
+    });
+    if (result && result.ok) {
+      c.tags = tags;
+      buildCustFilters();
+      renderCustomers();
+    } else {
+      showError(result?.error || 'Failed to add tag.');
+    }
+  }
+
+  function custAddTagFromInput(id) {
+    const input = document.getElementById('cust-new-tag-' + id);
+    if (!input) return;
+    const v = input.value;
+    input.value = '';
+    custAddTag(id, v);
+  }
+
+  async function custRemoveTag(id, tag) {
+    const c = allCustomers.find(x => String(x.id) === String(id));
+    if (!c) return;
+    const tags = (c.tags || []).filter(t => t !== tag);
+    const result = await api('/api/admin?action=update-customer', {
+      method: 'POST',
+      body: JSON.stringify({ id, tags }),
+    });
+    if (result && result.ok) {
+      c.tags = tags;
+      renderCustomers();
+    } else {
+      showError(result?.error || 'Failed to remove tag.');
+    }
+  }
+
+  function custAddBookingFor(id) {
+    const c = allCustomers.find(x => String(x.id) === String(id));
+    if (!c) return;
+    openAddBookingForCustomer(c);
+  }
+
+  function openAddBookingForCustomer(c) {
+    openAddBooking();
+    document.getElementById('ab-existing-customer-id').value = c.id || '';
+    document.getElementById('ab-full-name').value = c.full_name || '';
+    document.getElementById('ab-email').value     = c.email || '';
+    document.getElementById('ab-phone').value     = c.phone || '';
+    document.getElementById('ab-city').value      = c.city || '';
+    document.getElementById('ab-state').value     = c.state || '';
+    if (c.derived_source) document.getElementById('ab-source').value = c.derived_source;
+  }
+
   /* ── Init ── */
   document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
@@ -2255,6 +2827,37 @@
     closeCalCtx();
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCalCtx(); });
+
+  // Customers tab: search + sort headers + tag remove delegation
+  const custSearchEl = document.getElementById('cust-search');
+  if (custSearchEl) {
+    let t = null;
+    custSearchEl.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => renderCustomers(), 120);
+    });
+  }
+  document.querySelectorAll('#cust-table th.cust-sort').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (custSort.key === key) {
+        custSort.dir = custSort.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        custSort.key = key;
+        custSort.dir = (key === 'full_name' || key === 'email' || key === 'phone' || key === 'location') ? 'asc' : 'desc';
+      }
+      renderCustomers();
+    });
+  });
+  // Tag remove via delegation
+  document.addEventListener('click', e => {
+    const x = e.target.closest('.cust-tag-x');
+    if (!x) return;
+    e.stopPropagation();
+    const id = x.dataset.cust;
+    const tag = x.dataset.rmTag;
+    custRemoveTag(id, tag);
+  });
 
   // Wire up Add Booking modal events
   ['ab-vessel','ab-duration','ab-date','ab-time-slot'].forEach(id => {
