@@ -358,13 +358,26 @@
 
     /* ── Table ── */
     .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1000px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 880px; }
     thead th { background: var(--gray-50); padding: 10px 14px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
     tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.1s; }
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background: var(--gray-50); }
     tbody td { padding: 11px 14px; vertical-align: top; color: var(--gray-700); }
     .td-primary { font-weight: 700; color: var(--navy); }
+
+    /* Pin the actions column to the right edge of the bookings table */
+    #bookings-wrap table th:last-child,
+    #bookings-wrap table td:last-child {
+      position: sticky;
+      right: 0;
+      background: var(--white);
+      border-left: 1px solid var(--gray-200);
+      box-shadow: -8px 0 12px -8px rgba(0,0,0,0.08);
+      z-index: 1;
+    }
+    #bookings-wrap table thead th:last-child { background: var(--gray-50); }
+    #bookings-wrap table tbody tr:hover td:last-child { background: var(--gray-50); }
 
     .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
     .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
@@ -1300,20 +1313,36 @@
         ? '<span class="badge badge-green">Paid in Full</span>'
         : '<span class="badge badge-amber">Deposit Only</span>';
       const returningBadge = isReturning ? ' <span class="badge badge-teal">Returning</span>' : '';
+
+      // Customer cell: name + charter name + city/state as subtitles
+      const charterLine = b.charter_name ? `<div style="font-size:11px;color:var(--gray-600)">${esc(b.charter_name)}</div>` : '';
+      const locationLine = (b.city && b.state) || b.state
+        ? `<div style="font-size:11px;color:var(--gray-400)">${esc(b.city && b.state ? b.city+', '+b.state : b.state)}</div>`
+        : '';
+
+      // Experience cell: experience + duration + time slot as subtitle
+      const expSubtitleParts = [];
+      if (b.duration) expSubtitleParts.push(b.duration + ' hrs');
+      if (b.time_slot) expSubtitleParts.push(b.time_slot);
+      const expSubtitle = expSubtitleParts.length
+        ? `<div style="font-size:11px;color:var(--gray-400)">${esc(expSubtitleParts.join(' · '))}</div>`
+        : '';
+
       return `
         <tr>
           <td class="td-primary" style="white-space:nowrap">${esc(fmtDate(b.date))}</td>
-          <td>${esc(b.charter_name||'—')}</td>
           <td>
             <div style="font-weight:600">${esc(b.full_name||'—')}${returningBadge}</div>
             <div style="font-size:11px;color:var(--gray-400)">${esc(b.customer_email||'')}</div>
+            ${charterLine}
+            ${locationLine}
           </td>
           <td style="white-space:nowrap">${esc(b.phone||'—')}</td>
-          <td>${esc(b.city && b.state ? b.city+', '+b.state : (b.state || '—'))}</td>
           <td style="white-space:nowrap"><span class="badge ${b.vessel==='yacht' ? 'badge-navy' : 'badge-red'}">${esc(vesselLabel(b.vessel))}</span></td>
-          <td>${esc(b.experience||'—')}</td>
-          <td style="white-space:nowrap">${esc(b.time_slot||'—')}</td>
-          <td>${esc(b.duration ? b.duration+' hrs' : '—')}</td>
+          <td>
+            <div>${esc(b.experience||'—')}</div>
+            ${expSubtitle}
+          </td>
           <td>${esc(b.party_size ? b.party_size+' guests' : '—')}</td>
           <td class="addon-list">${esc(addOnText(b.add_ons))}</td>
           <td style="white-space:nowrap;font-weight:700">${fmtMoney(b.grand_total || (b.amount_total ? b.amount_total/100 : 0))}</td>
@@ -1322,7 +1351,6 @@
           <td>
             <div class="action-btns">
               <button class="btn-sm btn-navy" onclick="openEditModal('${esc(b.session_id)}')">✏ Edit</button>
-              <button class="btn-sm" style="background:var(--teal);color:#fff;" onclick="openEditPayment('${esc(b.session_id)}')">💵 Edit Payment</button>
               ${!paidFull ? `
                 <button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}',this)">✓ Mark Paid</button>
                 ${b.payment_method_id ? `<button class="btn-sm btn-navy" onclick="chargeCard('${esc(b.session_id)}',this)">💳 Charge Card</button>` : ''}
@@ -1338,9 +1366,17 @@
       <table>
         <thead>
           <tr>
-            <th>Date</th><th>Charter</th><th>Customer</th><th>Phone</th><th>Location</th>
-            <th>Vessel</th><th>Experience</th><th>Time</th><th>Duration</th><th>Party</th>
-            <th>Add-Ons</th><th>Total</th><th>Remaining</th><th>Status</th><th>Action</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Vessel</th>
+            <th>Experience</th>
+            <th>Party</th>
+            <th>Add-Ons</th>
+            <th>Total</th>
+            <th>Remaining</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
