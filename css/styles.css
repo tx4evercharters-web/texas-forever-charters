@@ -386,7 +386,7 @@ nav.scrolled .nav-logo img {
     text-align: right;
   }
 
-  .nav-book {
+  .nav-links a.nav-book {
     width: fit-content;
     text-align: center;
     padding: 6px 14px;
