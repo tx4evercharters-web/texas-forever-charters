@@ -235,42 +235,135 @@
     .volume-value { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--navy); }
     .volume-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 
-    /* ── Calendar ── */
+    /* ── Calendar (Google-style) ── */
     .calendar-wrap { padding: 20px 24px; }
     .calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .calendar-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--navy); letter-spacing: 2px; }
+    .calendar-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--navy); letter-spacing: 3px; }
     .cal-nav-btn { background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 16px; color: var(--navy); transition: background 0.15s; }
     .cal-nav-btn:hover { background: var(--gray-200); }
+    .cal-today-btn { background: var(--white); border: 1px solid var(--gray-200); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--navy); transition: background 0.15s; }
+    .cal-today-btn:hover { background: var(--gray-100); }
+    .cal-nav-group { display: flex; align-items: center; gap: 8px; }
 
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-    .cal-day-header { text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); padding: 6px 0; }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--gray-200);
+      gap: 1px;
+    }
+    .cal-day-header { background: var(--gray-50); text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); padding: 8px 0; }
 
     .cal-day {
-      aspect-ratio: 1;
+      background: var(--white);
+      min-height: 118px;
+      padding: 6px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: default;
+      gap: 2px;
       position: relative;
+      cursor: pointer;
       transition: background 0.1s;
-      min-height: 52px;
-      padding: 4px;
+      overflow: hidden;
+    }
+    .cal-day:hover:not(.other-month) { background: var(--gray-50); }
+    .cal-day-num { font-size: 13px; font-weight: 700; color: var(--gray-700); align-self: flex-end; line-height: 1; padding: 2px 4px; border-radius: 100px; }
+
+    .cal-day.other-month { background: var(--gray-50); cursor: default; }
+    .cal-day.other-month .cal-day-num { color: var(--gray-200); }
+
+    .cal-day.today { background: var(--gray-50); box-shadow: inset 0 0 0 2px var(--navy); }
+    .cal-day.today .cal-day-num { background: var(--navy); color: var(--white); min-width: 22px; text-align: center; }
+
+    .cal-day.blackout { background: var(--red-bg); }
+    .cal-day.blackout::before {
+      content: 'BLACKOUT';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-12deg);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--red);
+      opacity: 0.55;
+      pointer-events: none;
+      white-space: nowrap;
     }
 
-    .cal-day.other-month { color: var(--gray-200); }
-    .cal-day.today { background: var(--gray-100); border: 2px solid var(--navy); color: var(--navy); }
-    .cal-day.has-booking { background: var(--navy); color: var(--white); cursor: pointer; }
-    .cal-day.has-booking:hover { background: var(--navy-mid); }
-    .cal-day.blackout { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
-    .cal-day.has-booking.blackout { background: var(--red); color: var(--white); }
+    /* Booking chips */
+    .cal-chips { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; }
+    .cal-chip {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 11px;
+      line-height: 1.25;
+      color: var(--white);
+      cursor: pointer;
+      transition: filter 0.15s;
+      overflow: hidden;
+    }
+    .cal-chip:hover { filter: brightness(1.1); }
+    .cal-chip.yacht { background: #1B2A6B; }
+    .cal-chip.pontoon { background: #C8102E; }
+    .cal-chip-row { display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; }
+    .cal-chip-time { font-weight: 700; font-size: 10px; letter-spacing: 0.3px; flex-shrink: 0; }
+    .cal-chip-party { font-size: 10px; opacity: 0.85; flex-shrink: 0; margin-left: auto; }
+    .cal-chip-name { font-weight: 600; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .cal-booking-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-top: 3px; }
-    .cal-day.has-booking .cal-booking-dot { background: rgba(255,255,255,0.7); }
-    .cal-booking-count { font-size: 10px; opacity: 0.8; }
+    .cal-more {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--gray-600);
+      padding: 2px 4px;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+    }
+    .cal-more:hover { color: var(--navy); }
+
+    /* Context menu */
+    .cal-ctx-menu {
+      position: fixed;
+      z-index: 300;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      padding: 6px;
+      display: none;
+      min-width: 180px;
+    }
+    .cal-ctx-menu.open { display: block; }
+    .cal-ctx-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      padding: 8px 12px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 13px;
+      color: var(--gray-700);
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .cal-ctx-item:hover { background: var(--gray-100); color: var(--navy); }
+    .cal-ctx-item.danger:hover { background: var(--red-bg); color: var(--red); }
+    .cal-ctx-date { padding: 6px 12px 8px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gray-400); border-bottom: 1px solid var(--gray-200); margin-bottom: 4px; }
+
+    @media (max-width: 700px) {
+      .cal-day { min-height: 80px; padding: 4px; }
+      .cal-chip { font-size: 10px; padding: 2px 4px; }
+      .cal-chip-name { font-size: 10px; }
+      .calendar-title { font-size: 24px; }
+    }
 
     /* ── Booking detail modal ── */
     .modal-overlay {
@@ -387,16 +480,6 @@
     .badge-teal   { background: var(--teal-bg); color: var(--teal); border: 1px solid #A5F3FC; }
     .badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid #DDD6FE; }
 
-    /* ── Blackouts ── */
-    .blackout-form { padding: 20px 24px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--gray-200); }
-    .blackout-form input[type="date"] { padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 13px; outline: none; font-family: 'Barlow', sans-serif; }
-    .blackout-form input[type="date"]:focus { border-color: var(--navy); }
-    .blackout-list { padding: 12px 24px; display: flex; flex-wrap: wrap; gap: 8px; }
-    .blackout-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--navy); color: var(--white); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; }
-    .blackout-remove { background: rgba(255,255,255,0.2); border: none; color: var(--white); border-radius: 3px; width: 18px; height: 18px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .blackout-remove:hover { background: rgba(255,255,255,0.35); }
-    .blackout-empty { padding: 20px 24px; color: var(--gray-400); font-size: 13px; }
-
     .overdue-banner { background: var(--red-bg); border-bottom: 1px solid var(--red-border); padding: 14px 24px; font-size: 13px; color: var(--red); font-weight: 600; }
     .addon-list { font-size: 11px; color: var(--gray-600); line-height: 1.7; }
     .loading { padding: 40px; text-align: center; color: var(--gray-400); }
@@ -441,7 +524,6 @@
     <button class="tab-btn active" onclick="switchTab('bookings')">📋 Bookings</button>
     <button class="tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
     <button class="tab-btn" onclick="switchTab('calendar')">📅 Calendar</button>
-    <button class="tab-btn" onclick="switchTab('blackouts')">🚫 Blackouts</button>
   </div>
 
   <main>
@@ -625,22 +707,20 @@
       <div class="section">
         <div class="section-header">
           <div class="section-title">Booking Calendar</div>
+          <div style="font-size:11px;color:var(--gray-400);">Click empty day to add · Right-click to block</div>
         </div>
         <div class="calendar-wrap">
           <div class="calendar-nav">
-            <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+            <div class="cal-nav-group">
+              <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+              <button class="cal-nav-btn" onclick="calNext()">›</button>
+              <button class="cal-today-btn" onclick="calToday()">Today</button>
+            </div>
             <div class="calendar-title" id="cal-title">—</div>
-            <button class="cal-nav-btn" onclick="calNext()">›</button>
-          </div>
-          <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-600);">
-              <div style="width:14px;height:14px;background:var(--navy);border-radius:3px;"></div> Booked
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-600);">
-              <div style="width:14px;height:14px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:3px;"></div> Blackout
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-600);">
-              <div style="width:14px;height:14px;background:var(--gray-100);border:2px solid var(--navy);border-radius:3px;"></div> Today
+            <div class="cal-nav-group" style="font-size:11px;color:var(--gray-600);flex-wrap:wrap;justify-content:flex-end;">
+              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#1B2A6B;border-radius:3px;"></div> Yacht</div>
+              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#C8102E;border-radius:3px;"></div> Pontoon</div>
+              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:3px;"></div> Blackout</div>
             </div>
           </div>
           <div class="calendar-grid" id="calendar-grid"></div>
@@ -648,19 +728,8 @@
       </div>
     </div>
 
-    <!-- ══ BLACKOUTS TAB ══ -->
-    <div class="tab-panel" id="tab-blackouts">
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Blackout Dates</div>
-        </div>
-        <div class="blackout-form">
-          <input type="date" id="blackout-input" min="">
-          <button class="btn-sm btn-navy" onclick="addBlackout()">+ Block Date</button>
-        </div>
-        <div id="blackout-list-wrap"></div>
-      </div>
-    </div>
+    <!-- Calendar context menu / popover -->
+    <div class="cal-ctx-menu" id="cal-ctx-menu"></div>
 
   </main>
 </div>
@@ -1120,7 +1189,6 @@
     calYear = now.getFullYear(); calMonth = now.getMonth();
     document.getElementById('header-date').textContent =
       now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    document.getElementById('blackout-input').min = now.toISOString().split('T')[0];
   }
 
   /* ── API wrapper ── */
@@ -1148,7 +1216,8 @@
     renderStats(allBookings);
     renderOverdue(allBookings);
     renderBookings(allBookings);
-    renderBlackouts(allBlackouts);
+    // Refresh calendar if it's already on screen so chips/blackouts stay current
+    if (document.getElementById('tab-calendar').classList.contains('active')) renderCalendar();
   }
 
   /* ── Stats ── */
@@ -1393,6 +1462,47 @@
   }
 
   /* ── Calendar ── */
+  const CAL_MAX_CHIPS = 3;
+
+  function timeSortKey(t) {
+    if (!t) return 9999;
+    const m = String(t).match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    if (!m) return 9999;
+    let h = parseInt(m[1], 10);
+    const min = parseInt(m[2] || '0', 10);
+    const ap = (m[3] || '').toUpperCase();
+    if (ap === 'PM' && h !== 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    return h * 60 + min;
+  }
+
+  function timeShort(t) {
+    if (!t) return '';
+    // "9:00 AM" -> "9 AM", "10:00 AM" -> "10 AM", "12:30 PM" -> "12:30P"
+    const m = String(t).match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    if (!m) return t;
+    const hh = m[1];
+    const mm = m[2];
+    const ap = (m[3] || '').toUpperCase();
+    const min = (mm && mm !== '00') ? ':' + mm : '';
+    return hh + min + (ap ? ' ' + ap : '');
+  }
+
+  function chipName(b) {
+    return b.charter_name || b.full_name || b.customer_email || 'Charter';
+  }
+
+  function renderChip(b) {
+    const cls = b.vessel === 'yacht' ? 'yacht' : 'pontoon';
+    const time = esc(timeShort(b.time_slot));
+    const party = b.party_size ? esc(b.party_size) + 'g' : '';
+    const name = esc(chipName(b));
+    return `<button class="cal-chip ${cls}" type="button" data-session-id="${esc(b.session_id)}" title="${time} · ${name}${party ? ' · ' + esc(b.party_size) + ' guests' : ''}">
+      <div class="cal-chip-row"><span class="cal-chip-time">${time}</span>${party ? `<span class="cal-chip-party">${party}</span>` : ''}</div>
+      <div class="cal-chip-name">${name}</div>
+    </button>`;
+  }
+
   function renderCalendar() {
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     document.getElementById('cal-title').textContent = months[calMonth] + ' ' + calYear;
@@ -1405,7 +1515,7 @@
     const last = new Date(calYear, calMonth + 1, 0);
     const today = new Date();
 
-    // Build booking map by date string
+    // Build booking map by date string, sorted by time
     const bookingMap = {};
     allBookings.forEach(b => {
       if (b.date) {
@@ -1413,11 +1523,13 @@
         bookingMap[b.date].push(b);
       }
     });
+    Object.values(bookingMap).forEach(arr => arr.sort((a, b) => timeSortKey(a.time_slot) - timeSortKey(b.time_slot)));
     const blackoutSet = new Set(allBlackouts);
 
-    // Pad start
-    for (let i = 0; i < first.getDay(); i++) {
-      html += `<div class="cal-day other-month"></div>`;
+    // Pad start with previous-month days
+    const prevLast = new Date(calYear, calMonth, 0).getDate();
+    for (let i = first.getDay() - 1; i >= 0; i--) {
+      html += `<div class="cal-day other-month"><div class="cal-day-num">${prevLast - i}</div></div>`;
     }
 
     for (let d = 1; d <= last.getDate(); d++) {
@@ -1425,29 +1537,95 @@
       const isToday = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
       const bookingsOnDay = bookingMap[dateStr] || [];
       const isBlackout = blackoutSet.has(dateStr);
-      const hasBooking = bookingsOnDay.length > 0;
 
       let cls = 'cal-day';
       if (isToday) cls += ' today';
-      if (hasBooking) cls += ' has-booking';
       if (isBlackout) cls += ' blackout';
 
-      const clickAttr = hasBooking ? `onclick="showDayModal('${dateStr}')"` : '';
-      const dot = hasBooking ? `<div class="cal-booking-dot"></div>` : '';
-      const count = hasBooking && bookingsOnDay.length > 1 ? `<div class="cal-booking-count">${bookingsOnDay.length}</div>` : '';
+      const visible = bookingsOnDay.slice(0, CAL_MAX_CHIPS);
+      const overflow = bookingsOnDay.length - visible.length;
+      const chipsHtml = visible.map(renderChip).join('');
+      const moreHtml = overflow > 0 ? `<div class="cal-more" data-show-more="${dateStr}">+${overflow} more</div>` : '';
 
-      html += `<div class="${cls}" ${clickAttr}><span>${d}</span>${dot}${count}</div>`;
+      html += `<div class="${cls}" data-date="${dateStr}" data-blackout="${isBlackout ? '1' : '0'}">
+        <div class="cal-day-num">${d}</div>
+        <div class="cal-chips">${chipsHtml}${moreHtml}</div>
+      </div>`;
     }
 
-    // Pad end
-    const remaining = 7 - ((first.getDay() + last.getDate()) % 7);
-    if (remaining < 7) for (let i = 0; i < remaining; i++) html += `<div class="cal-day other-month"></div>`;
+    // Pad end with next-month days
+    const totalCells = first.getDay() + last.getDate();
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let i = 1; i <= remaining; i++) {
+      html += `<div class="cal-day other-month"><div class="cal-day-num">${i}</div></div>`;
+    }
 
     grid.innerHTML = html;
   }
 
   function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
   function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
+  function calToday() { const n = new Date(); calYear = n.getFullYear(); calMonth = n.getMonth(); renderCalendar(); }
+
+  /* Calendar interactions: click chip → edit, click empty day → add, right-click → context menu, click blackout → popover */
+  function calOnClick(e) {
+    closeCalCtx();
+    const chip = e.target.closest('.cal-chip');
+    if (chip) {
+      e.stopPropagation();
+      openEditModal(chip.dataset.sessionId);
+      return;
+    }
+    const more = e.target.closest('.cal-more');
+    if (more) {
+      e.stopPropagation();
+      showDayModal(more.dataset.showMore);
+      return;
+    }
+    const day = e.target.closest('.cal-day');
+    if (!day || day.classList.contains('other-month')) return;
+    const dateStr = day.dataset.date;
+    if (day.dataset.blackout === '1') {
+      showCalCtx(e, dateStr, true);
+      return;
+    }
+    // Empty day → open Add Booking with date pre-filled
+    openAddBooking(dateStr);
+  }
+
+  function calOnContextMenu(e) {
+    const day = e.target.closest('.cal-day');
+    if (!day || day.classList.contains('other-month')) return;
+    e.preventDefault();
+    showCalCtx(e, day.dataset.date, day.dataset.blackout === '1');
+  }
+
+  function showCalCtx(e, dateStr, isBlackout) {
+    const menu = document.getElementById('cal-ctx-menu');
+    const items = isBlackout
+      ? `<button class="cal-ctx-item danger" onclick="ctxRemoveBlackout('${esc(dateStr)}')">Remove blackout</button>
+         <button class="cal-ctx-item" onclick="ctxAddBooking('${esc(dateStr)}')">+ Add Booking anyway</button>`
+      : `<button class="cal-ctx-item" onclick="ctxAddBooking('${esc(dateStr)}')">+ Add Booking</button>
+         <button class="cal-ctx-item danger" onclick="ctxBlockDate('${esc(dateStr)}')">🚫 Block this date</button>`;
+    menu.innerHTML = `<div class="cal-ctx-date">${esc(fmtDate(dateStr))}</div>${items}`;
+    menu.classList.add('open');
+    // Position
+    const x = (e.clientX || 0);
+    const y = (e.clientY || 0);
+    const rect = menu.getBoundingClientRect();
+    const maxX = window.innerWidth - rect.width - 8;
+    const maxY = window.innerHeight - rect.height - 8;
+    menu.style.left = Math.min(x, maxX) + 'px';
+    menu.style.top  = Math.min(y, maxY) + 'px';
+  }
+
+  function closeCalCtx() {
+    document.getElementById('cal-ctx-menu').classList.remove('open');
+  }
+
+  function ctxAddBooking(dateStr) { closeCalCtx(); openAddBooking(dateStr); }
+  function ctxBlockDate(dateStr)  { closeCalCtx(); addBlackout(dateStr); }
+  function ctxRemoveBlackout(d)   { closeCalCtx(); removeBlackout(d); }
 
   /* ── Day modal ── */
   function showDayModal(dateStr) {
@@ -1493,7 +1671,7 @@
   let abCustomerSearchTimer = null;
   let abAdminOverrideTotal = false;
 
-  function openAddBooking() {
+  function openAddBooking(prefillDate) {
     // Reset edit-mode state and modal chrome
     abEditingSessionId = null;
     document.getElementById('ab-modal-title').textContent = '+ Add Booking';
@@ -1510,7 +1688,7 @@
     document.getElementById('ab-source-notes').value = '';
     document.getElementById('ab-vessel').value = 'yacht';
     document.getElementById('ab-experience').value = 'Private Party';
-    document.getElementById('ab-date').value = '';
+    document.getElementById('ab-date').value = prefillDate || '';
     document.getElementById('ab-time-slot').value = '11:00 AM';
     document.getElementById('ab-duration').value = '4';
     document.getElementById('ab-party-size').value = '6';
@@ -2047,37 +2225,36 @@
     btn.disabled = false; btn.textContent = '📧 Send Link';
   }
 
-  /* ── Blackouts ── */
-  async function addBlackout() {
-    const input = document.getElementById('blackout-input');
-    const date = input.value;
+  /* ── Blackouts (managed from calendar) ── */
+  async function addBlackout(date) {
     if (!date) { showError('Select a date to block.'); return; }
     const result = await api('/api/admin?action=add-blackout', { method: 'POST', body: JSON.stringify({ date }) });
-    if (Array.isArray(result)) { input.value = ''; allBlackouts = result; renderBlackouts(result); } else { showError('Failed to add blackout date.'); }
+    if (Array.isArray(result)) { allBlackouts = result; renderCalendar(); }
+    else { showError('Failed to add blackout date.'); }
   }
 
   async function removeBlackout(date) {
     const result = await api('/api/admin?action=remove-blackout&date=' + encodeURIComponent(date), { method: 'DELETE' });
-    if (Array.isArray(result)) { allBlackouts = result; renderBlackouts(result); } else { showError('Failed to remove blackout date.'); }
-  }
-
-  function renderBlackouts(blackouts) {
-    const wrap = document.getElementById('blackout-list-wrap');
-    if (!blackouts || !blackouts.length) {
-      wrap.innerHTML = '<div class="blackout-empty">No blackout dates set.</div>';
-      return;
-    }
-    wrap.innerHTML = '<div class="blackout-list">' +
-      blackouts.map(d => `
-        <div class="blackout-chip">
-          <span>${esc(fmtDate(d))}</span>
-          <button class="blackout-remove" onclick="removeBlackout('${esc(d)}')">&times;</button>
-        </div>
-      `).join('') + '</div>';
+    if (Array.isArray(result)) { allBlackouts = result; renderCalendar(); }
+    else { showError('Failed to remove blackout date.'); }
   }
 
   /* ── Init ── */
   document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  // Calendar grid event delegation (attached once)
+  const calGrid = document.getElementById('calendar-grid');
+  if (calGrid) {
+    calGrid.addEventListener('click', calOnClick);
+    calGrid.addEventListener('contextmenu', calOnContextMenu);
+  }
+  // Close context menu on outside click / Escape (calOnClick manages clicks on the grid itself)
+  document.addEventListener('click', e => {
+    if (e.target.closest('#cal-ctx-menu')) return;
+    if (e.target.closest('#calendar-grid')) return;
+    closeCalCtx();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCalCtx(); });
 
   // Wire up Add Booking modal events
   ['ab-vessel','ab-duration','ab-date','ab-time-slot'].forEach(id => {
