@@ -58,6 +58,10 @@ module.exports = async function handler(req, res) {
         },
       ],
       customer_email: booking.email || undefined,
+      customer_creation: 'always',
+      payment_intent_data: {
+        setup_future_usage: 'off_session',
+      },
       success_url: `${baseUrl}/booking-confirmation.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/booking.html`,
       metadata: {
