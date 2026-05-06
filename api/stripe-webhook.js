@@ -51,6 +51,20 @@ module.exports = async function handler(req, res) {
   }
 
   const meta = session.metadata || {};
+  const stripeCustomerId = session.customer || null;
+  const paymentIntentId = session.payment_intent || null;
+
+  // Retrieve payment method from payment intent
+  let paymentMethodId = null;
+  if (paymentIntentId) {
+    try {
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      paymentMethodId = paymentIntent.payment_method || null;
+    } catch (err) {
+      console.error('Failed to retrieve payment intent:', err.message);
+    }
+  }
+
   const billingAddress = session.customer_details?.address || {};
   const city = billingAddress.city || null;
   const state = billingAddress.state || null;
@@ -85,6 +99,8 @@ module.exports = async function handler(req, res) {
       newsletter:       meta.newsletter,
       city:  city,
       state: state,
+      stripe_customer_id: stripeCustomerId,
+      payment_method_id:  paymentMethodId,
       paid_in_full:     meta.payment_type !== 'deposit',
       remaining_balance: remaining,
       booked_at:        new Date().toISOString(),
