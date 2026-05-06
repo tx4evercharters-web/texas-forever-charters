@@ -1749,7 +1749,7 @@
         </div>
 
         <!-- Promo Code -->
-        <div>
+        <div id="promo-section">
           <div id="nl-unlock-banner" style="display:none;background:linear-gradient(135deg,rgba(200,16,46,0.15),rgba(27,42,107,0.4));border:1px solid rgba(200,16,46,0.3);border-radius:12px;padding:18px 20px;margin-bottom:16px;">
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px;">🎉 Unlock 10% Off</div>
             <div style="font-family:'Barlow',sans-serif;font-size:14px;color:rgba(255,255,255,0.8);margin-bottom:12px;">Enter your email to get your promo code instantly.</div>
@@ -2294,17 +2294,14 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       document.getElementById('depositAmountBtn').textContent = '$' + calDepositAmount.toFixed(2);
       document.getElementById('fullAmountBtn').textContent = '$' + calGrandTotal.toFixed(2);
 
-      // Auto-apply promo code in UI if subscribed
+      // Silently auto-apply promo for newsletter subscribers
       if (localStorage.getItem('nl_subscribed') && !booking.promoApplied) {
         booking.promoApplied = true;
       }
-      if (booking.promoApplied) {
-        document.getElementById('promoInput').value = 'LAKELIFE10';
-        document.getElementById('promoInput').classList.add('applied');
-        const msg = document.getElementById('promoMsg');
-        msg.className = 'promo-msg success';
-        msg.textContent = '10% newsletter discount applied!';
-      }
+
+      // Hide the entire promo section once a discount is applied (any path)
+      const promoSection = document.getElementById('promo-section');
+      if (promoSection) promoSection.style.display = booking.promoApplied ? 'none' : '';
 
       checkShowUnlockBanner();
     }
