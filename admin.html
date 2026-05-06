@@ -525,7 +525,10 @@
       <div class="section">
         <div class="section-header">
           <div class="section-title">Upcoming Bookings</div>
-          <button class="btn-sm btn-gray" onclick="loadData()">↻ Refresh</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-sm btn-red" onclick="openAddBooking()">+ Add Booking</button>
+            <button class="btn-sm btn-gray" onclick="loadData()">↻ Refresh</button>
+          </div>
         </div>
         <div class="table-wrap" id="bookings-wrap">
           <div class="loading">Loading...</div>
@@ -657,6 +660,196 @@
       <button class="modal-close" onclick="closeModalBtn()">✕</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Add booking modal -->
+<div class="modal-overlay" id="add-booking-overlay" onclick="closeAddBooking(event)">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-header">
+      <div class="modal-title">+ Add Booking</div>
+      <button class="modal-close" onclick="closeAddBookingBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- 1. Source -->
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:14px;">1. Source</div>
+        <div class="edit-form-grid">
+          <div class="edit-form-group">
+            <label class="edit-label">Source</label>
+            <select class="edit-input" id="ab-source">
+              <option value="phone">Phone</option>
+              <option value="walkup">Walk-up</option>
+              <option value="referral">Referral</option>
+              <option value="repeat_direct">Repeat Direct</option>
+              <option value="tripadvisor">TripAdvisor</option>
+              <option value="viator">Viator</option>
+              <option value="peek">Peek</option>
+              <option value="fareharbor">FareHarbor</option>
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+              <option value="website">Website</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">Source Notes</label>
+            <input class="edit-input" id="ab-source-notes" type="text" placeholder="Who referred / which platform / context">
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Vessel & Experience -->
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:14px;">2. Charter</div>
+        <div class="edit-form-grid">
+          <div class="edit-form-group">
+            <label class="edit-label">Vessel</label>
+            <select class="edit-input" id="ab-vessel">
+              <option value="yacht">40ft Carver Aft Cabin (Yacht)</option>
+              <option value="pontoon">24ft Bentley Navigator 243 (Pontoon)</option>
+            </select>
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">Experience</label>
+            <select class="edit-input" id="ab-experience">
+              <option>Private Party</option>
+              <option>Bachelor Party</option>
+              <option>Bachelorette Party</option>
+              <option>Birthday Party</option>
+              <option>Sunset Cruise</option>
+              <option>Boat Tour</option>
+              <option>Lake Day</option>
+              <option>Proposal</option>
+              <option>Graduation Party</option>
+              <option>Corporate Outing</option>
+            </select>
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">Date</label>
+            <input class="edit-input" id="ab-date" type="date">
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">Time Slot</label>
+            <select class="edit-input" id="ab-time-slot">
+              <option value="9:00 AM">9:00 AM</option>
+              <option value="10:00 AM">10:00 AM</option>
+              <option value="11:00 AM">11:00 AM</option>
+              <option value="12:00 PM">12:00 PM</option>
+              <option value="1:00 PM">1:00 PM</option>
+              <option value="2:30 PM">2:30 PM</option>
+              <option value="3:00 PM">3:00 PM</option>
+              <option value="4:00 PM">4:00 PM</option>
+              <option value="5:00 PM">5:00 PM</option>
+            </select>
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">Duration (hrs)</label>
+            <select class="edit-input" id="ab-duration">
+              <option value="2">2</option><option value="3">3</option>
+              <option value="4">4</option><option value="5">5</option>
+              <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+            </select>
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">Party Size</label>
+            <input class="edit-input" id="ab-party-size" type="number" min="1" max="20" value="6">
+          </div>
+        </div>
+        <div id="ab-conflict-warning" style="display:none;margin-top:10px;padding:10px 14px;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:6px;color:var(--amber);font-size:13px;font-weight:600;"></div>
+      </div>
+
+      <!-- 3. Customer -->
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:14px;">3. Customer</div>
+        <input type="hidden" id="ab-existing-customer-id" value="">
+        <div class="edit-form-grid">
+          <div class="edit-form-group">
+            <label class="edit-label">Charter / Trip Name</label>
+            <input class="edit-input" id="ab-charter-name" type="text" placeholder="e.g. Sarah's Birthday">
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">Full Name</label>
+            <input class="edit-input" id="ab-full-name" type="text">
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">Email *</label>
+            <input class="edit-input" id="ab-email" type="email" placeholder="customer@example.com">
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">Phone</label>
+            <input class="edit-input" id="ab-phone" type="tel" placeholder="(737) 555-1234">
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">City</label>
+            <input class="edit-input" id="ab-city" type="text">
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label">State</label>
+            <input class="edit-input" id="ab-state" type="text" maxlength="2" placeholder="TX">
+          </div>
+        </div>
+        <div id="ab-customer-suggestions" style="margin-top:8px;display:none;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;max-height:200px;overflow-y:auto;"></div>
+        <div id="ab-customer-match" style="margin-top:10px;display:none;padding:12px 14px;background:var(--teal-bg);border:1px solid #A5F3FC;border-radius:6px;font-size:13px;"></div>
+      </div>
+
+      <!-- 4. Pricing -->
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:14px;">4. Pricing</div>
+        <div class="edit-addon-grid" style="margin-bottom:12px;">
+          <div class="edit-addon-item"><input type="checkbox" id="ab-addon-drone"><label for="ab-addon-drone">🎥 Drone Footage ($200)</label></div>
+          <div class="edit-addon-item"><input type="checkbox" id="ab-addon-water"><label for="ab-addon-water">💧 Water Bottles ($25)</label></div>
+          <div class="edit-addon-item"><input type="checkbox" id="ab-addon-ice"><label for="ab-addon-ice">🧊 Ice ($50)</label></div>
+          <div class="edit-addon-item"><input type="checkbox" id="ab-addon-beerpong"><label for="ab-addon-beerpong">🏓 Beer Pong ($50)</label></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <div class="edit-addon-item" style="flex:0 0 auto;"><input type="checkbox" id="ab-addon-towels"><label for="ab-addon-towels">🏖 Towels ($8 each)</label></div>
+          <input type="number" class="edit-input" id="ab-towel-qty" min="0" max="20" value="0" placeholder="Qty" style="width:80px;">
+        </div>
+        <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:14px;">
+          <div id="ab-price-rows" style="font-size:13px;color:var(--gray-700);"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);">
+            <label class="edit-label" for="ab-grand-total">Grand Total (override)</label>
+            <input class="edit-input" id="ab-grand-total" type="number" step="0.01" min="0" style="width:140px;text-align:right;font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--navy);">
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Payment -->
+      <div style="margin-bottom:24px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:14px;">5. Payment</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;"><input type="radio" name="ab-payment" value="external" checked onchange="abUpdatePaymentUI()"> Paid externally</label>
+          <div id="ab-external-sub" style="margin-left:24px;display:flex;align-items:center;gap:10px;">
+            <select class="edit-input" id="ab-external-method" style="max-width:200px;">
+              <option value="cash">Cash</option>
+              <option value="venmo">Venmo</option>
+              <option value="zelle">Zelle</option>
+              <option value="check">Check</option>
+              <option value="external_platform">External Platform</option>
+            </select>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;"><input type="radio" name="ab-payment" value="stripe-link" onchange="abUpdatePaymentUI()"> Send Stripe payment link via email</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;"><input type="radio" name="ab-payment" value="deposit" onchange="abUpdatePaymentUI()"> Deposit only — collect rest later</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;"><input type="radio" name="ab-payment" value="invoice" onchange="abUpdatePaymentUI()"> Invoice / pay later</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--gray-400);cursor:not-allowed;" title="Coming soon — use Send Payment Link"><input type="radio" name="ab-payment" disabled> Charge card now via Stripe (coming soon)</label>
+        </div>
+      </div>
+
+      <!-- 6. Internal Notes -->
+      <div style="margin-bottom:18px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:14px;">6. Internal Notes</div>
+        <textarea class="edit-input" id="ab-internal-notes" rows="2" style="resize:vertical;width:100%;" placeholder="Admin-only notes — never shown to customer"></textarea>
+      </div>
+
+      <div class="edit-modal-footer">
+        <button class="btn-sm btn-gray" onclick="closeAddBookingBtn()">Cancel</button>
+        <button class="btn-sm btn-navy" id="ab-save-btn" onclick="abSave(false)">Save Booking</button>
+        <button class="btn-sm btn-green" id="ab-save-send-btn" onclick="abSave(true)">Save &amp; Send Confirmation</button>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -1256,6 +1449,267 @@
   function closeModal(e) { if (e.target === document.getElementById('modal-overlay')) closeModalBtn(); }
   function closeModalBtn() { document.getElementById('modal-overlay').classList.remove('open'); }
 
+  /* ── Add Booking modal ── */
+  const AB_ADDON_PRICES = { drone: 200, towels: 8, water: 25, ice: 50, beerpong: 50 };
+  let abCustomerSearchTimer = null;
+  let abAdminOverrideTotal = false;
+
+  function openAddBooking() {
+    // Reset form
+    document.getElementById('ab-source').value = 'phone';
+    document.getElementById('ab-source-notes').value = '';
+    document.getElementById('ab-vessel').value = 'yacht';
+    document.getElementById('ab-experience').value = 'Private Party';
+    document.getElementById('ab-date').value = '';
+    document.getElementById('ab-time-slot').value = '11:00 AM';
+    document.getElementById('ab-duration').value = '4';
+    document.getElementById('ab-party-size').value = '6';
+    document.getElementById('ab-charter-name').value = '';
+    document.getElementById('ab-full-name').value = '';
+    document.getElementById('ab-email').value = '';
+    document.getElementById('ab-phone').value = '';
+    document.getElementById('ab-city').value = '';
+    document.getElementById('ab-state').value = '';
+    document.getElementById('ab-existing-customer-id').value = '';
+    ['drone','water','ice','beerpong','towels'].forEach(k => {
+      document.getElementById('ab-addon-' + k).checked = false;
+    });
+    document.getElementById('ab-towel-qty').value = '0';
+    document.getElementById('ab-internal-notes').value = '';
+    document.querySelector('input[name="ab-payment"][value="external"]').checked = true;
+    document.getElementById('ab-external-method').value = 'cash';
+    document.getElementById('ab-conflict-warning').style.display = 'none';
+    document.getElementById('ab-customer-suggestions').style.display = 'none';
+    document.getElementById('ab-customer-match').style.display = 'none';
+    abAdminOverrideTotal = false;
+    abRecalcPrice();
+    abUpdatePaymentUI();
+    document.getElementById('add-booking-overlay').classList.add('open');
+  }
+
+  function closeAddBooking(e) {
+    if (e && e.target !== document.getElementById('add-booking-overlay')) return;
+    closeAddBookingBtn();
+  }
+  function closeAddBookingBtn() {
+    document.getElementById('add-booking-overlay').classList.remove('open');
+  }
+
+  function abUpdatePaymentUI() {
+    const val = document.querySelector('input[name="ab-payment"]:checked')?.value;
+    document.getElementById('ab-external-sub').style.display = val === 'external' ? 'flex' : 'none';
+    abRecalcPrice();
+  }
+
+  /* ── Pricing calc (mirrors booking.html) ── */
+  function abComputePricing() {
+    const vessel = document.getElementById('ab-vessel').value;
+    const dateStr = document.getElementById('ab-date').value;
+    const duration = parseInt(document.getElementById('ab-duration').value) || 4;
+    const date = dateStr ? new Date(dateStr + 'T12:00:00') : null;
+    const day = date ? date.getDay() : 1;
+    let rate;
+    if (vessel === 'yacht') rate = day === 6 ? 350 : (day === 0 || day === 5) ? 300 : 250;
+    else                    rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
+    const charterBase = rate * duration;
+
+    let addOnsTotal = 0;
+    const ao = abReadAddOns();
+    if (ao.drone_footage)     addOnsTotal += AB_ADDON_PRICES.drone;
+    if (ao.towels > 0)        addOnsTotal += AB_ADDON_PRICES.towels * ao.towels;
+    if (ao.water_bottles)     addOnsTotal += AB_ADDON_PRICES.water;
+    if (ao.ice)               addOnsTotal += AB_ADDON_PRICES.ice;
+    if (ao.beer_pong)         addOnsTotal += AB_ADDON_PRICES.beerpong;
+
+    const subtotal = charterBase + addOnsTotal;
+    const adminFee = Math.round(subtotal * 0.10 * 100) / 100;
+    const afterAdmin = subtotal + adminFee;
+    const tax = Math.round(afterAdmin * 0.085 * 100) / 100;
+    const afterTax = afterAdmin + tax;
+
+    // Processing fee only when paying via Stripe link or charge card
+    const payment = document.querySelector('input[name="ab-payment"]:checked')?.value;
+    const usesStripe = payment === 'stripe-link';
+    const processingFee = usesStripe ? Math.round(afterTax * 0.029 * 100) / 100 : 0;
+    const total = Math.round((afterTax + processingFee) * 100) / 100;
+
+    return { rate, charterBase, addOnsTotal, subtotal, adminFee, tax, processingFee, total, day, duration };
+  }
+
+  function abReadAddOns() {
+    return {
+      drone_footage: document.getElementById('ab-addon-drone').checked,
+      water_bottles: document.getElementById('ab-addon-water').checked,
+      ice:           document.getElementById('ab-addon-ice').checked,
+      beer_pong:     document.getElementById('ab-addon-beerpong').checked,
+      towels:        document.getElementById('ab-addon-towels').checked
+                       ? (parseInt(document.getElementById('ab-towel-qty').value) || 1)
+                       : 0,
+    };
+  }
+
+  function abRecalcPrice() {
+    const p = abComputePricing();
+    const dayLabel = p.day === 6 ? 'Sat rate' : (p.day === 0 || p.day === 5) ? 'Fri/Sun rate' : 'Mon–Thu rate';
+    const rows = [];
+    rows.push(['Charter (' + p.duration + ' hrs × $' + p.rate + '/hr · ' + dayLabel + ')', '$' + p.charterBase.toFixed(2)]);
+    if (p.addOnsTotal) rows.push(['Add-Ons', '$' + p.addOnsTotal.toFixed(2)]);
+    rows.push(['Admin Fee (10%)', '+$' + p.adminFee.toFixed(2)]);
+    rows.push(['Sales Tax (8.5%)', '+$' + p.tax.toFixed(2)]);
+    if (p.processingFee) rows.push(['Credit Card Processing (2.9%)', '+$' + p.processingFee.toFixed(2)]);
+    document.getElementById('ab-price-rows').innerHTML = rows.map(([l, v]) =>
+      '<div style="display:flex;justify-content:space-between;padding:3px 0;">' +
+      '<span style="color:var(--gray-600)">' + esc(l) + '</span>' +
+      '<span style="color:var(--gray-700);font-weight:600">' + v + '</span></div>'
+    ).join('');
+    if (!abAdminOverrideTotal) document.getElementById('ab-grand-total').value = p.total.toFixed(2);
+  }
+
+  /* ── Conflict detection (same date+vessel+time_slot) ── */
+  function abCheckConflict() {
+    const date = document.getElementById('ab-date').value;
+    const vessel = document.getElementById('ab-vessel').value;
+    const time = document.getElementById('ab-time-slot').value;
+    const banner = document.getElementById('ab-conflict-warning');
+    if (!date || !vessel || !time) { banner.style.display = 'none'; return; }
+    const conflicts = (allBookings || []).filter(b =>
+      b.date === date && b.vessel === vessel && b.time_slot === time
+    );
+    if (conflicts.length === 0) { banner.style.display = 'none'; return; }
+    banner.innerHTML = '⚠ Conflict: ' + conflicts.length + ' existing booking' +
+      (conflicts.length > 1 ? 's' : '') + ' on this date/time/vessel — ' +
+      conflicts.map(b => esc(b.full_name || b.charter_name || 'unnamed')).join(', ');
+    banner.style.display = 'block';
+  }
+
+  /* ── Customer auto-suggest ── */
+  async function abSearchCustomers(query) {
+    if (!query || query.length < 2) {
+      document.getElementById('ab-customer-suggestions').style.display = 'none';
+      return;
+    }
+    const result = await api('/api/admin?action=customer-search&q=' + encodeURIComponent(query));
+    const list = (result && result.customers) || [];
+    const wrap = document.getElementById('ab-customer-suggestions');
+    if (!list.length) { wrap.style.display = 'none'; return; }
+    wrap.innerHTML = list.map(c => `
+      <div onclick='abPickCustomer(${JSON.stringify(c).replace(/'/g, "&#39;")})' style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--gray-200);">
+        <div style="font-weight:600;color:var(--navy)">${esc(c.full_name || '(no name)')}</div>
+        <div style="font-size:12px;color:var(--gray-600)">${esc(c.email)} · ${esc(c.phone || 'no phone')} · ${c.total_bookings || 0} bookings</div>
+      </div>
+    `).join('');
+    wrap.style.display = 'block';
+  }
+
+  function abPickCustomer(c) {
+    document.getElementById('ab-existing-customer-id').value = c.id;
+    document.getElementById('ab-full-name').value = c.full_name || '';
+    document.getElementById('ab-email').value = c.email || '';
+    document.getElementById('ab-phone').value = c.phone || '';
+    document.getElementById('ab-customer-suggestions').style.display = 'none';
+    const match = document.getElementById('ab-customer-match');
+    match.innerHTML = `✓ Linked to existing customer: <strong>${esc(c.full_name || c.email)}</strong> (${c.total_bookings || 0} prior booking${c.total_bookings === 1 ? '' : 's'}, $${parseFloat(c.total_spent || 0).toFixed(2)} lifetime)`;
+    match.style.display = 'block';
+  }
+
+  function abOnEmailPhoneInput() {
+    clearTimeout(abCustomerSearchTimer);
+    const email = document.getElementById('ab-email').value.trim();
+    const phone = document.getElementById('ab-phone').value.trim();
+    const q = email.length >= 2 ? email : phone;
+    abCustomerSearchTimer = setTimeout(() => abSearchCustomers(q), 300);
+  }
+
+  /* ── Save ── */
+  async function abSave(sendConfirmation) {
+    const email = document.getElementById('ab-email').value.trim();
+    if (!email) { showError('Email is required.'); return; }
+    if (!document.getElementById('ab-date').value) { showError('Date is required.'); return; }
+    if (!document.getElementById('ab-full-name').value.trim()) { showError('Full name is required.'); return; }
+
+    const btnSave = document.getElementById('ab-save-btn');
+    const btnSend = document.getElementById('ab-save-send-btn');
+    btnSave.disabled = btnSend.disabled = true;
+    btnSave.textContent = sendConfirmation ? 'Saving...' : 'Saving...';
+    btnSend.textContent = sendConfirmation ? 'Saving & sending...' : 'Save & Send Confirmation';
+
+    const p = abComputePricing();
+    const grandTotal = parseFloat(document.getElementById('ab-grand-total').value) || p.total;
+    const payment = document.querySelector('input[name="ab-payment"]:checked')?.value;
+    const externalMethod = document.getElementById('ab-external-method').value;
+
+    const paymentType = payment === 'deposit' ? 'deposit' : 'full';
+    const paidInFull = payment === 'external' || payment === 'stripe-link';
+    const paymentMethodExternal = payment === 'external' ? externalMethod : (payment === 'invoice' ? 'invoice_pending' : null);
+    const depositAmount = payment === 'deposit' ? Math.round(grandTotal * 0.10 * 100) / 100 : 0;
+    const remaining = payment === 'deposit' ? grandTotal - depositAmount : 0;
+    const amountPaidCents = payment === 'external' ? Math.round(grandTotal * 100) : (payment === 'deposit' ? Math.round(depositAmount * 100) : 0);
+
+    const booking = {
+      source:                  document.getElementById('ab-source').value,
+      source_notes:            document.getElementById('ab-source-notes').value || null,
+      payment_method_external: paymentMethodExternal,
+      internal_notes:          document.getElementById('ab-internal-notes').value || null,
+
+      charter_name:    document.getElementById('ab-charter-name').value || document.getElementById('ab-full-name').value,
+      vessel:          document.getElementById('ab-vessel').value,
+      experience:      document.getElementById('ab-experience').value,
+      date:            document.getElementById('ab-date').value,
+      time_slot:       document.getElementById('ab-time-slot').value,
+      duration:        parseInt(document.getElementById('ab-duration').value),
+      full_name:       document.getElementById('ab-full-name').value,
+      customer_email:  email,
+      phone:           document.getElementById('ab-phone').value || null,
+      city:            document.getElementById('ab-city').value || null,
+      state:           document.getElementById('ab-state').value || null,
+      party_size:      parseInt(document.getElementById('ab-party-size').value),
+      add_ons:         abReadAddOns(),
+      special_requests: null,
+
+      payment_type:    paymentType,
+      grand_total:     String(grandTotal),
+      deposit_amount:  String(depositAmount),
+      amount_total:    amountPaidCents,
+      paid_in_full:    paidInFull,
+      remaining_balance: remaining,
+
+      charter_subtotal: parseFloat((p.charterBase + p.addOnsTotal).toFixed(2)),
+      admin_fee:        p.adminFee,
+      tax_amount:       p.tax,
+      processing_fee:   p.processingFee,
+      promo_discount:   0,
+      promo_applied:    'false',
+    };
+
+    try {
+      const result = await api('/api/admin?action=add-booking', {
+        method: 'POST',
+        body: JSON.stringify({ booking, send_confirmation: sendConfirmation }),
+      });
+      if (result && result.ok) {
+        // If Stripe link selected, fire it after the booking is saved
+        if (payment === 'stripe-link') {
+          await api('/api/admin?action=send-payment-link', {
+            method: 'POST',
+            body: JSON.stringify({ session_id: result.session_id }),
+          });
+        }
+        const warn = result.email_warning ? ' (email failed: ' + result.email_warning + ')' : '';
+        showError('✅ Booking saved for ' + booking.full_name + ' on ' + booking.date + ' — $' + grandTotal.toFixed(2) + warn);
+        closeAddBookingBtn();
+        loadData();
+      } else {
+        showError(result?.error || 'Failed to save booking.');
+      }
+    } catch (e) {
+      showError(e.message || 'Save failed.');
+    } finally {
+      btnSave.disabled = btnSend.disabled = false;
+      btnSave.textContent = 'Save Booking';
+      btnSend.textContent = 'Save & Send Confirmation';
+    }
+  }
+
   /* ── Edit booking ── */
   function openEditModal(session_id) {
     const booking = allBookings.find(b => b.session_id === session_id);
@@ -1378,6 +1832,24 @@
 
   /* ── Init ── */
   document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  // Wire up Add Booking modal events
+  ['ab-vessel','ab-duration','ab-date','ab-time-slot'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', () => { abRecalcPrice(); abCheckConflict(); });
+  });
+  ['ab-addon-drone','ab-addon-water','ab-addon-ice','ab-addon-beerpong','ab-addon-towels','ab-towel-qty'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', abRecalcPrice);
+  });
+  const grandTotalInput = document.getElementById('ab-grand-total');
+  if (grandTotalInput) {
+    grandTotalInput.addEventListener('input', () => { abAdminOverrideTotal = true; });
+  }
+  ['ab-email','ab-phone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', abOnEmailPhoneInput);
+  });
 
   if (getToken()) { showApp(); loadData(); } else { showLogin(); }
 </script>

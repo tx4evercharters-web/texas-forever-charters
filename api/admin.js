@@ -9,8 +9,10 @@ const {
   getBlackouts,
   addBlackout,
   removeBlackout,
+  searchCustomers,
+  addManualBooking,
 } = require('../lib/storage');
-const { postToResend } = require('../lib/send-emails');
+const { postToResend, sendConfirmationEmails } = require('../lib/send-emails');
 
 /* ── Direct Supabase PATCH for booking edits ── */
 function supabasePatch(session_id, updates) {
@@ -236,20 +238,89 @@ async function handleSendPaymentLink(req, res) {
   }
 }
 
+async function handleCustomerSearch(req, res) {
+  if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).end();
+  const q = req.query.q || (req.body && req.body.q) || '';
+  try {
+    const customers = await searchCustomers(q);
+    return res.status(200).json({ customers });
+  } catch (err) {
+    console.error('Customer search error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleAddBooking(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { booking, send_confirmation } = req.body || {};
+  if (!booking) return res.status(400).json({ error: 'Missing booking' });
+  if (!booking.customer_email) return res.status(400).json({ error: 'customer_email is required' });
+
+  try {
+    const result = await addManualBooking(booking);
+
+    if (send_confirmation) {
+      try {
+        await sendConfirmationEmails({
+          customer_email:   booking.customer_email,
+          amount_total:     Math.round(parseFloat(booking.grand_total || 0) * 100),
+          session_id:       result.session_id,
+          charter_name:     booking.charter_name,
+          vessel:           booking.vessel,
+          experience:       booking.experience,
+          date:             booking.date,
+          time_slot:        booking.time_slot,
+          duration:         booking.duration,
+          full_name:        booking.full_name,
+          party_size:       booking.party_size,
+          phone:            booking.phone,
+          payment_type:     booking.payment_type,
+          grand_total:      booking.grand_total,
+          deposit_amount:   booking.deposit_amount,
+          add_ons:          booking.add_ons,
+          special_requests: booking.special_requests,
+          promo_applied:    booking.promo_applied,
+          newsletter:       false,
+        });
+      } catch (emailErr) {
+        console.error('[add-booking] confirmation email failed:', emailErr.message);
+        // Don't fail the request — booking is saved
+        return res.status(200).json({
+          ok: true,
+          session_id:  result.session_id,
+          customer_id: result.customer_id,
+          email_warning: emailErr.message,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      ok: true,
+      session_id:  result.session_id,
+      customer_id: result.customer_id,
+    });
+  } catch (err) {
+    console.error('Add booking error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 /* ── Router ── */
 
 const PUBLIC_ACTIONS = new Set(['login']);
 
 const ROUTES = {
-  'login':            handleLogin,
-  'bookings':         handleBookings,
-  'blackouts':        handleListBlackouts,
-  'add-blackout':     handleAddBlackout,
-  'remove-blackout':  handleRemoveBlackout,
-  'mark-paid':        handleMarkPaid,
-  'update-booking':   handleUpdateBooking,
-  'charge-remaining': handleChargeRemaining,
+  'login':             handleLogin,
+  'bookings':          handleBookings,
+  'blackouts':         handleListBlackouts,
+  'add-blackout':      handleAddBlackout,
+  'remove-blackout':   handleRemoveBlackout,
+  'mark-paid':         handleMarkPaid,
+  'update-booking':    handleUpdateBooking,
+  'charge-remaining':  handleChargeRemaining,
   'send-payment-link': handleSendPaymentLink,
+  'customer-search':   handleCustomerSearch,
+  'add-booking':       handleAddBooking,
 };
 
 module.exports = async function handler(req, res) {
