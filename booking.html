@@ -2266,6 +2266,11 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       const processingFee = Math.round(afterTax * 0.029 * 100) / 100;
       const beforeDiscount = afterTax + processingFee;
       const discount = booking.promoApplied ? Math.round(beforeDiscount * 0.10 * 100) / 100 : 0;
+      booking.adminFee = adminFee;
+      booking.taxAmount = tax;
+      booking.processingFee = processingFee;
+      booking.charterSubtotal = charterBase + addOnsTotal;
+      booking.promoDiscount = discount;
       calGrandTotal = Math.round((beforeDiscount - discount) * 100) / 100;
       calDepositAmount = Math.round(calGrandTotal * 0.10 * 100) / 100;
 
@@ -2426,6 +2431,11 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
               addOns:          booking.addOns,
               promoApplied:    booking.promoApplied,
               newsletter:      booking.newsletter,
+              adminFee:        booking.adminFee || 0,
+              taxAmount:       booking.taxAmount || 0,
+              processingFee:   booking.processingFee || 0,
+              charterSubtotal: booking.charterSubtotal || 0,
+              promoDiscount:   booking.promoDiscount || 0,
             },
           }),
         });

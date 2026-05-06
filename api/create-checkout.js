@@ -81,6 +81,11 @@ module.exports = async function handler(req, res) {
         special_requests: truncate(booking.specialRequests, 490),
         newsletter:      String(!!booking.newsletter),
         promo_applied:   String(!!booking.promoApplied),
+        admin_fee:        String(booking.adminFee || ''),
+        tax_amount:       String(booking.taxAmount || ''),
+        processing_fee:   String(booking.processingFee || ''),
+        charter_subtotal: String(booking.charterSubtotal || ''),
+        promo_discount:   String(booking.promoDiscount || ''),
       },
     });
 

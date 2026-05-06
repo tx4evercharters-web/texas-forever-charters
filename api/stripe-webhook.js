@@ -76,6 +76,13 @@ module.exports = async function handler(req, res) {
     ? Math.max(0, grandTotal - amountPaidDollars)
     : 0;
 
+  // Fee breakdown from metadata
+  const adminFee = parseFloat(meta.admin_fee || 0);
+  const taxAmount = parseFloat(meta.tax_amount || 0);
+  const processingFee = parseFloat(meta.processing_fee || 0);
+  const charterSubtotal = parseFloat(meta.charter_subtotal || 0);
+  const promoDiscount = parseFloat(meta.promo_discount || 0);
+
   try {
     await saveBooking({
       session_id:       session.id,
@@ -103,6 +110,11 @@ module.exports = async function handler(req, res) {
       payment_method_id:  paymentMethodId,
       paid_in_full:     meta.payment_type !== 'deposit',
       remaining_balance: remaining,
+      admin_fee:         adminFee,
+      tax_amount:        taxAmount,
+      processing_fee:    processingFee,
+      charter_subtotal:  charterSubtotal,
+      promo_discount:    promoDiscount,
       booked_at:        new Date().toISOString(),
     });
     console.log('Booking saved to storage for session:', session.id);
