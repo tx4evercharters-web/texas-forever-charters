@@ -1936,6 +1936,62 @@ section {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Click-to-open zoom overlay on fleet card photo */
+.fleet-img::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10,16,48,0) 55%, rgba(10,16,48,0.45) 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.fleet-img:hover::before {
+  opacity: 1;
+}
+
+.fleet-zoom {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--navy);
+  border: 2px solid var(--red);
+  color: var(--white);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.85);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+
+.fleet-img:hover .fleet-zoom {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+@media (max-width: 768px) {
+  .fleet-zoom {
+    width: 48px;
+    height: 48px;
+    font-size: 30px;
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  .fleet-img::before {
+    opacity: 0.35;
+  }
+}
+
 .gallery-modal {
   display: none;
   position: fixed;
