@@ -880,7 +880,7 @@
     const errEl = document.getElementById('login-error');
     errEl.style.display = 'none';
     try {
-      const res = await fetch('/api/admin-login', {
+      const res = await fetch('/api/admin?action=login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: pwd }),
@@ -931,8 +931,8 @@
   async function loadData() {
     document.getElementById('bookings-wrap').innerHTML = '<div class="loading">Loading bookings...</div>';
     const [bookingData, blackouts] = await Promise.all([
-      api('/api/admin-bookings'),
-      api('/api/admin-blackouts'),
+      api('/api/admin?action=bookings'),
+      api('/api/admin?action=blackouts'),
     ]);
     if (!bookingData) return;
     allBookings = bookingData.upcoming || [];
@@ -1156,7 +1156,7 @@
   async function markPaid(session_id, btn) {
     if (!confirm('Mark this booking as paid in full?')) return;
     btn.disabled = true; btn.textContent = 'Saving...';
-    const result = await api('/api/admin-mark-paid', { method: 'POST', body: JSON.stringify({ session_id }) });
+    const result = await api('/api/admin?action=mark-paid', { method: 'POST', body: JSON.stringify({ session_id }) });
     if (result && result.ok) { loadData(); } else { showError('Failed to mark as paid.'); btn.disabled = false; btn.textContent = 'Mark Paid'; }
   }
 
@@ -1306,7 +1306,7 @@
       },
     };
 
-    const result = await api('/api/admin-update-booking', {
+    const result = await api('/api/admin?action=update-booking', {
       method: 'POST',
       body: JSON.stringify({ session_id, updates }),
     });
@@ -1325,7 +1325,7 @@
   async function chargeCard(session_id, btn) {
     if (!confirm('Charge the saved card for the remaining balance?')) return;
     btn.disabled = true; btn.textContent = 'Charging...';
-    const result = await api('/api/charge-remaining', { method: 'POST', body: JSON.stringify({ session_id }) });
+    const result = await api('/api/admin?action=charge-remaining', { method: 'POST', body: JSON.stringify({ session_id }) });
     if (result && result.ok) {
       showError('✅ Payment successful!');
       loadData();
@@ -1338,7 +1338,7 @@
   async function sendPaymentLink(session_id, btn) {
     if (!confirm('Send a payment link to the customer via email?')) return;
     btn.disabled = true; btn.textContent = 'Sending...';
-    const result = await api('/api/send-payment-link', { method: 'POST', body: JSON.stringify({ session_id }) });
+    const result = await api('/api/admin?action=send-payment-link', { method: 'POST', body: JSON.stringify({ session_id }) });
     if (result && result.ok) {
       showError('✅ Payment link sent!');
     } else {
@@ -1352,12 +1352,12 @@
     const input = document.getElementById('blackout-input');
     const date = input.value;
     if (!date) { showError('Select a date to block.'); return; }
-    const result = await api('/api/admin-blackouts', { method: 'POST', body: JSON.stringify({ date }) });
+    const result = await api('/api/admin?action=add-blackout', { method: 'POST', body: JSON.stringify({ date }) });
     if (Array.isArray(result)) { input.value = ''; allBlackouts = result; renderBlackouts(result); } else { showError('Failed to add blackout date.'); }
   }
 
   async function removeBlackout(date) {
-    const result = await api('/api/admin-blackouts?date=' + encodeURIComponent(date), { method: 'DELETE' });
+    const result = await api('/api/admin?action=remove-blackout&date=' + encodeURIComponent(date), { method: 'DELETE' });
     if (Array.isArray(result)) { allBlackouts = result; renderBlackouts(result); } else { showError('Failed to remove blackout date.'); }
   }
 
