@@ -119,13 +119,30 @@ async function handleUpdateBooking(req, res) {
   const { session_id, updates } = req.body || {};
   if (!session_id || !updates) return res.status(400).json({ error: 'Missing session_id or updates' });
 
-  const allowedFields = ['date', 'time_slot', 'duration', 'party_size', 'vessel', 'experience', 'special_requests', 'add_ons'];
+  const allowedFields = [
+    // Charter details
+    'date', 'time_slot', 'duration', 'party_size', 'vessel', 'experience',
+    'charter_name', 'special_requests', 'add_ons',
+    // Source / admin metadata
+    'source', 'source_notes', 'internal_notes',
+    // Customer fields
+    'full_name', 'customer_email', 'phone', 'city', 'state',
+    // Pricing
+    'grand_total', 'charter_subtotal', 'admin_fee', 'tax_amount',
+    'processing_fee', 'promo_discount', 'add_on_total', 'deposit_amount',
+    // Payment
+    'amount_total', 'paid_in_full', 'remaining_balance',
+    'payment_type', 'payment_method_external',
+  ];
   const sanitized = {};
   for (const key of allowedFields) {
     if (updates[key] !== undefined) sanitized[key] = updates[key];
   }
-  if (sanitized.duration) sanitized.duration = parseInt(sanitized.duration);
-  if (sanitized.party_size) sanitized.party_size = parseInt(sanitized.party_size);
+  if (sanitized.duration   !== undefined) sanitized.duration   = parseInt(sanitized.duration);
+  if (sanitized.party_size !== undefined) sanitized.party_size = parseInt(sanitized.party_size);
+  if (sanitized.add_ons && typeof sanitized.add_ons === 'object') {
+    sanitized.add_ons = JSON.stringify(sanitized.add_ons);
+  }
 
   try {
     await supabasePatch(session_id, sanitized);

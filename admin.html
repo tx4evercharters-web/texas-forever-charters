@@ -663,11 +663,11 @@
   </div>
 </div>
 
-<!-- Add booking modal -->
+<!-- Add / Edit booking modal -->
 <div class="modal-overlay" id="add-booking-overlay" onclick="closeAddBooking(event)">
   <div class="modal" style="max-width:760px;">
     <div class="modal-header">
-      <div class="modal-title">+ Add Booking</div>
+      <div class="modal-title" id="ab-modal-title">+ Add Booking</div>
       <button class="modal-close" onclick="closeAddBookingBtn()">✕</button>
     </div>
     <div class="modal-body">
@@ -792,6 +792,10 @@
         </div>
         <div id="ab-customer-suggestions" style="margin-top:8px;display:none;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;max-height:200px;overflow-y:auto;"></div>
         <div id="ab-customer-match" style="margin-top:10px;display:none;padding:12px 14px;background:var(--teal-bg);border:1px solid #A5F3FC;border-radius:6px;font-size:13px;"></div>
+        <div class="edit-form-group full" style="margin-top:12px;">
+          <label class="edit-label">Special Requests</label>
+          <textarea class="edit-input" id="ab-special-requests" rows="2" style="resize:vertical;width:100%;"></textarea>
+        </div>
       </div>
 
       <!-- 4. Pricing -->
@@ -809,6 +813,30 @@
         </div>
         <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:14px;">
           <div id="ab-price-rows" style="font-size:13px;color:var(--gray-700);"></div>
+          <div id="ab-fee-overrides" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);">
+            <div class="edit-form-grid">
+              <div class="edit-form-group">
+                <label class="edit-label">Charter Subtotal</label>
+                <input class="edit-input" id="ab-charter-subtotal" type="number" step="0.01" min="0">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Admin Fee</label>
+                <input class="edit-input" id="ab-admin-fee" type="number" step="0.01" min="0">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Sales Tax</label>
+                <input class="edit-input" id="ab-tax-amount" type="number" step="0.01" min="0">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Processing Fee</label>
+                <input class="edit-input" id="ab-processing-fee" type="number" step="0.01" min="0">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Promo Discount</label>
+                <input class="edit-input" id="ab-promo-discount" type="number" step="0.01" min="0">
+              </div>
+            </div>
+          </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);">
             <label class="edit-label" for="ab-grand-total">Grand Total (override)</label>
             <input class="edit-input" id="ab-grand-total" type="number" step="0.01" min="0" style="width:140px;text-align:right;font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--navy);">
@@ -819,7 +847,39 @@
       <!-- 5. Payment -->
       <div style="margin-bottom:24px;">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:14px;">5. Payment</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
+
+        <!-- Edit mode payment fields -->
+        <div id="ab-payment-edit" style="display:none;">
+          <div class="edit-form-grid">
+            <div class="edit-form-group">
+              <label class="edit-label">Amount Paid</label>
+              <input class="edit-input" id="ab-edit-amount-paid" type="number" step="0.01" min="0" oninput="abEditPaymentRecalc()">
+            </div>
+            <div class="edit-form-group">
+              <label class="edit-label">Payment Method</label>
+              <select class="edit-input" id="ab-edit-method">
+                <option value="cash">Cash</option>
+                <option value="venmo">Venmo</option>
+                <option value="zelle">Zelle</option>
+                <option value="check">Check</option>
+                <option value="stripe">Stripe (online)</option>
+                <option value="external_platform">Other (external platform)</option>
+              </select>
+            </div>
+            <div class="edit-form-group">
+              <label class="edit-label">Remaining Balance</label>
+              <input class="edit-input" id="ab-edit-remaining" type="number" step="0.01" min="0">
+            </div>
+            <div class="edit-form-group" style="justify-content:flex-end;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;margin-top:24px;">
+                <input type="checkbox" id="ab-edit-paid-full" onchange="abEditPaymentToggleFull()"> Paid in full
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add mode payment radios -->
+        <div id="ab-payment-add" style="display:flex;flex-direction:column;gap:8px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;"><input type="radio" name="ab-payment" value="external" checked onchange="abUpdatePaymentUI()"> Paid externally</label>
           <div id="ab-external-sub" style="margin-left:24px;display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -897,113 +957,6 @@
       <div class="edit-modal-footer">
         <button class="btn-sm btn-gray" onclick="closeEditPaymentBtn()">Cancel</button>
         <button class="btn-sm btn-navy" id="ep-save-btn" onclick="epSave()">Save Payment</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Edit booking modal -->
-<div class="modal-overlay" id="edit-modal-overlay" onclick="closeEditModal(event)">
-  <div class="modal" style="max-width:640px;">
-    <div class="modal-header">
-      <div class="modal-title">Edit Booking</div>
-      <button class="modal-close" onclick="closeEditModalBtn()">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="edit-session-id">
-      <div class="edit-form-grid">
-        <div class="edit-form-group">
-          <label class="edit-label">Charter Date</label>
-          <input type="date" class="edit-input" id="edit-date">
-        </div>
-        <div class="edit-form-group">
-          <label class="edit-label">Time Slot</label>
-          <select class="edit-input" id="edit-time-slot">
-            <option value="9:00 AM">9:00 AM</option>
-            <option value="10:00 AM">10:00 AM</option>
-            <option value="11:00 AM">11:00 AM</option>
-            <option value="12:00 PM">12:00 PM</option>
-            <option value="1:00 PM">1:00 PM</option>
-            <option value="2:30 PM">2:30 PM</option>
-            <option value="3:00 PM">3:00 PM</option>
-            <option value="4:00 PM">4:00 PM</option>
-            <option value="5:00 PM">5:00 PM</option>
-          </select>
-        </div>
-        <div class="edit-form-group">
-          <label class="edit-label">Duration (hours)</label>
-          <select class="edit-input" id="edit-duration">
-            <option value="2">2 hrs</option>
-            <option value="3">3 hrs</option>
-            <option value="4">4 hrs</option>
-            <option value="5">5 hrs</option>
-            <option value="6">6 hrs</option>
-            <option value="7">7 hrs</option>
-            <option value="8">8 hrs</option>
-          </select>
-        </div>
-        <div class="edit-form-group">
-          <label class="edit-label">Party Size</label>
-          <input type="number" class="edit-input" id="edit-party-size" min="1" max="20">
-        </div>
-        <div class="edit-form-group">
-          <label class="edit-label">Vessel</label>
-          <select class="edit-input" id="edit-vessel">
-            <option value="yacht">40ft Carver Aft Cabin (Yacht)</option>
-            <option value="pontoon">24ft Bentley Navigator 243 (Pontoon)</option>
-          </select>
-        </div>
-        <div class="edit-form-group">
-          <label class="edit-label">Experience</label>
-          <select class="edit-input" id="edit-experience">
-            <option>Private Party</option>
-            <option>Bachelor Party</option>
-            <option>Bachelorette Party</option>
-            <option>Birthday Party</option>
-            <option>Sunset Cruise</option>
-            <option>Boat Tour</option>
-            <option>Lake Day</option>
-            <option>Proposal</option>
-            <option>Graduation Party</option>
-            <option>Corporate Outing</option>
-          </select>
-        </div>
-        <div class="edit-form-group full">
-          <label class="edit-label">Add-Ons</label>
-          <div class="edit-addon-grid">
-            <div class="edit-addon-item">
-              <input type="checkbox" id="edit-addon-drone">
-              <label for="edit-addon-drone">🎥 Drone Footage ($200)</label>
-            </div>
-            <div class="edit-addon-item">
-              <input type="checkbox" id="edit-addon-water">
-              <label for="edit-addon-water">💧 Water Bottles ($25)</label>
-            </div>
-            <div class="edit-addon-item">
-              <input type="checkbox" id="edit-addon-ice">
-              <label for="edit-addon-ice">🧊 Ice ($50)</label>
-            </div>
-            <div class="edit-addon-item">
-              <input type="checkbox" id="edit-addon-beerpong">
-              <label for="edit-addon-beerpong">🏓 Beer Pong ($50)</label>
-            </div>
-          </div>
-          <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
-            <div class="edit-addon-item" style="flex:0 0 auto;">
-              <input type="checkbox" id="edit-addon-towels">
-              <label for="edit-addon-towels">🏖 Towels ($8 each)</label>
-            </div>
-            <input type="number" class="edit-input" id="edit-towel-qty" min="0" max="20" value="0" placeholder="Qty" style="width:80px;">
-          </div>
-        </div>
-        <div class="edit-form-group full">
-          <label class="edit-label">Special Requests</label>
-          <textarea class="edit-input" id="edit-special-requests" rows="3" style="resize:vertical;"></textarea>
-        </div>
-      </div>
-      <div class="edit-modal-footer">
-        <button class="btn-sm btn-gray" onclick="closeEditModalBtn()">Cancel</button>
-        <button class="btn-sm btn-navy" id="edit-save-btn" onclick="saveBookingEdit()">Save Changes</button>
       </div>
     </div>
   </div>
@@ -1505,6 +1458,17 @@
   let abAdminOverrideTotal = false;
 
   function openAddBooking() {
+    // Reset edit-mode state and modal chrome
+    abEditingSessionId = null;
+    document.getElementById('ab-modal-title').textContent = '+ Add Booking';
+    document.getElementById('ab-save-btn').textContent = 'Save Booking';
+    document.getElementById('ab-save-send-btn').style.display = '';
+    document.getElementById('ab-payment-add').style.display = 'flex';
+    document.getElementById('ab-payment-edit').style.display = 'none';
+    document.getElementById('ab-fee-overrides').style.display = 'none';
+    document.getElementById('ab-price-rows').style.display = '';
+    document.getElementById('ab-special-requests').value = '';
+
     // Reset form
     document.getElementById('ab-source').value = 'phone';
     document.getElementById('ab-source-notes').value = '';
@@ -1543,6 +1507,7 @@
   }
   function closeAddBookingBtn() {
     document.getElementById('add-booking-overlay').classList.remove('open');
+    abEditingSessionId = null;
   }
 
   function abUpdatePaymentUI() {
@@ -1705,8 +1670,64 @@
     const btnSave = document.getElementById('ab-save-btn');
     const btnSend = document.getElementById('ab-save-send-btn');
     btnSave.disabled = btnSend.disabled = true;
-    btnSave.textContent = sendConfirmation ? 'Saving...' : 'Saving...';
+    const isEditMode = !!abEditingSessionId;
+    btnSave.textContent = 'Saving...';
     btnSend.textContent = sendConfirmation ? 'Saving & sending...' : 'Save & Send Confirmation';
+
+    if (isEditMode) {
+      const updates = {
+        source:           document.getElementById('ab-source').value,
+        source_notes:     document.getElementById('ab-source-notes').value || null,
+        internal_notes:   document.getElementById('ab-internal-notes').value || null,
+        charter_name:     document.getElementById('ab-charter-name').value || null,
+        vessel:           document.getElementById('ab-vessel').value,
+        experience:       document.getElementById('ab-experience').value,
+        date:             document.getElementById('ab-date').value,
+        time_slot:        document.getElementById('ab-time-slot').value,
+        duration:         parseInt(document.getElementById('ab-duration').value),
+        full_name:        document.getElementById('ab-full-name').value,
+        customer_email:   email,
+        phone:            document.getElementById('ab-phone').value || null,
+        city:             document.getElementById('ab-city').value || null,
+        state:            document.getElementById('ab-state').value || null,
+        party_size:       parseInt(document.getElementById('ab-party-size').value),
+        special_requests: document.getElementById('ab-special-requests').value || null,
+        add_ons:          abReadAddOns(),
+        grand_total:      String(parseFloat(document.getElementById('ab-grand-total').value) || 0),
+        charter_subtotal: parseFloat(document.getElementById('ab-charter-subtotal').value) || 0,
+        admin_fee:        parseFloat(document.getElementById('ab-admin-fee').value) || 0,
+        tax_amount:       parseFloat(document.getElementById('ab-tax-amount').value) || 0,
+        processing_fee:   parseFloat(document.getElementById('ab-processing-fee').value) || 0,
+        promo_discount:   parseFloat(document.getElementById('ab-promo-discount').value) || 0,
+        amount_total:     Math.round((parseFloat(document.getElementById('ab-edit-amount-paid').value) || 0) * 100),
+        remaining_balance: parseFloat(document.getElementById('ab-edit-remaining').value) || 0,
+        paid_in_full:     document.getElementById('ab-edit-paid-full').checked,
+      };
+      const editMethod = document.getElementById('ab-edit-method').value;
+      updates.payment_method_external = editMethod === 'stripe' ? null : editMethod;
+      updates.payment_type = updates.paid_in_full ? 'full' : 'deposit';
+
+      try {
+        const result = await api('/api/admin?action=update-booking', {
+          method: 'POST',
+          body: JSON.stringify({ session_id: abEditingSessionId, updates }),
+        });
+        if (result && result.ok) {
+          showError('✅ Booking updated.');
+          closeAddBookingBtn();
+          loadData();
+        } else {
+          showError(result?.error || 'Failed to save changes.');
+        }
+      } catch (e) {
+        showError(e.message || 'Update failed.');
+      } finally {
+        btnSave.disabled = btnSend.disabled = false;
+        btnSave.textContent = 'Save Changes';
+      }
+      return;
+    }
+
 
     const p = abComputePricing();
     const grandTotal = parseFloat(document.getElementById('ab-grand-total').value) || p.total;
@@ -1881,68 +1902,86 @@
     }
   }
 
-  /* ── Edit booking ── */
+  /* ── Open Add Booking modal in EDIT mode ── */
+  let abEditingSessionId = null;
+
   function openEditModal(session_id) {
-    const booking = allBookings.find(b => b.session_id === session_id);
-    if (!booking) return;
-    const ao = parseAddOns(booking.add_ons);
-    document.getElementById('edit-session-id').value = session_id;
-    document.getElementById('edit-date').value = booking.date || '';
-    document.getElementById('edit-time-slot').value = booking.time_slot || '9:00 AM';
-    document.getElementById('edit-duration').value = booking.duration || '3';
-    document.getElementById('edit-party-size').value = booking.party_size || '';
-    document.getElementById('edit-vessel').value = booking.vessel || 'yacht';
-    document.getElementById('edit-experience').value = booking.experience || 'Private Party';
-    document.getElementById('edit-special-requests').value = booking.special_requests || '';
-    document.getElementById('edit-addon-drone').checked = !!(ao.drone_footage || ao.drone);
-    document.getElementById('edit-addon-water').checked = !!(ao.water_bottles || ao.water);
-    document.getElementById('edit-addon-ice').checked = !!ao.ice;
-    document.getElementById('edit-addon-beerpong').checked = !!(ao.beer_pong || ao.beerpong);
-    document.getElementById('edit-addon-towels').checked = !!(ao.towels > 0);
-    document.getElementById('edit-towel-qty').value = ao.towels || 0;
-    document.getElementById('edit-modal-overlay').classList.add('open');
+    const b = allBookings.find(x => x.session_id === session_id);
+    if (!b) return;
+    abEditingSessionId = session_id;
+
+    // Switch modal chrome into edit mode
+    document.getElementById('ab-modal-title').textContent = 'Edit Booking';
+    document.getElementById('ab-save-btn').textContent = 'Save Changes';
+    document.getElementById('ab-save-send-btn').style.display = 'none';
+    document.getElementById('ab-customer-suggestions').style.display = 'none';
+    document.getElementById('ab-customer-match').style.display = 'none';
+    document.getElementById('ab-payment-add').style.display = 'none';
+    document.getElementById('ab-payment-edit').style.display = 'block';
+    document.getElementById('ab-fee-overrides').style.display = 'block';
+    document.getElementById('ab-price-rows').style.display = 'none';
+
+    // Charter fields
+    document.getElementById('ab-source').value         = b.source || 'website';
+    document.getElementById('ab-source-notes').value   = b.source_notes || '';
+    document.getElementById('ab-vessel').value         = b.vessel || 'yacht';
+    document.getElementById('ab-experience').value     = b.experience || 'Private Party';
+    document.getElementById('ab-date').value           = b.date || '';
+    document.getElementById('ab-time-slot').value      = b.time_slot || '11:00 AM';
+    document.getElementById('ab-duration').value       = String(b.duration || '4');
+    document.getElementById('ab-party-size').value     = String(b.party_size || '6');
+    document.getElementById('ab-charter-name').value   = b.charter_name || '';
+    document.getElementById('ab-full-name').value      = b.full_name || '';
+    document.getElementById('ab-email').value          = b.customer_email || '';
+    document.getElementById('ab-phone').value          = b.phone || '';
+    document.getElementById('ab-city').value           = b.city || '';
+    document.getElementById('ab-state').value          = b.state || '';
+    document.getElementById('ab-special-requests').value = b.special_requests || '';
+    document.getElementById('ab-internal-notes').value = b.internal_notes || '';
+
+    // Add-ons
+    const ao = parseAddOns(b.add_ons);
+    document.getElementById('ab-addon-drone').checked    = !!(ao.drone_footage || ao.drone);
+    document.getElementById('ab-addon-water').checked    = !!(ao.water_bottles || ao.water);
+    document.getElementById('ab-addon-ice').checked      = !!ao.ice;
+    document.getElementById('ab-addon-beerpong').checked = !!(ao.beer_pong || ao.beerpong);
+    document.getElementById('ab-addon-towels').checked   = !!(ao.towels > 0);
+    document.getElementById('ab-towel-qty').value        = ao.towels || 0;
+
+    // Pricing — overrides preserve stored values exactly
+    abAdminOverrideTotal = true;
+    document.getElementById('ab-grand-total').value      = parseFloat(b.grand_total || 0).toFixed(2);
+    document.getElementById('ab-charter-subtotal').value = parseFloat(b.charter_subtotal || 0).toFixed(2);
+    document.getElementById('ab-admin-fee').value        = parseFloat(b.admin_fee       || 0).toFixed(2);
+    document.getElementById('ab-tax-amount').value       = parseFloat(b.tax_amount      || 0).toFixed(2);
+    document.getElementById('ab-processing-fee').value   = parseFloat(b.processing_fee  || 0).toFixed(2);
+    document.getElementById('ab-promo-discount').value   = parseFloat(b.promo_discount  || 0).toFixed(2);
+    abRecalcPrice();
+
+    // Payment edit panel
+    const total   = parseFloat(b.grand_total || 0) || ((b.amount_total || 0) / 100);
+    const paidNow = (b.amount_total || 0) / 100;
+    const remaining = parseFloat(b.remaining_balance || 0);
+    document.getElementById('ab-edit-amount-paid').value = paidNow.toFixed(2);
+    document.getElementById('ab-edit-remaining').value   = remaining.toFixed(2);
+    document.getElementById('ab-edit-paid-full').checked = !!b.paid_in_full;
+    const m = b.payment_method_external;
+    document.getElementById('ab-edit-method').value =
+      (m && ['cash','venmo','zelle','check','external_platform'].includes(m)) ? m : 'stripe';
+
+    document.getElementById('add-booking-overlay').classList.add('open');
   }
 
-  function closeEditModal(e) { if (e.target === document.getElementById('edit-modal-overlay')) closeEditModalBtn(); }
-  function closeEditModalBtn() { document.getElementById('edit-modal-overlay').classList.remove('open'); }
+  function abEditPaymentRecalc() {
+    const total = parseFloat(document.getElementById('ab-grand-total').value) || 0;
+    const paid  = parseFloat(document.getElementById('ab-edit-amount-paid').value) || 0;
+    document.getElementById('ab-edit-remaining').value   = Math.max(0, total - paid).toFixed(2);
+    document.getElementById('ab-edit-paid-full').checked = paid >= total;
+  }
 
-  async function saveBookingEdit() {
-    const session_id = document.getElementById('edit-session-id').value;
-    const btn = document.getElementById('edit-save-btn');
-    btn.disabled = true; btn.textContent = 'Saving...';
-
-    const towelChecked = document.getElementById('edit-addon-towels').checked;
-    const towelQty = parseInt(document.getElementById('edit-towel-qty').value) || 0;
-
-    const updates = {
-      date:             document.getElementById('edit-date').value,
-      time_slot:        document.getElementById('edit-time-slot').value,
-      duration:         document.getElementById('edit-duration').value,
-      party_size:       document.getElementById('edit-party-size').value,
-      vessel:           document.getElementById('edit-vessel').value,
-      experience:       document.getElementById('edit-experience').value,
-      special_requests: document.getElementById('edit-special-requests').value,
-      add_ons: {
-        drone_footage: document.getElementById('edit-addon-drone').checked,
-        water_bottles: document.getElementById('edit-addon-water').checked,
-        ice:           document.getElementById('edit-addon-ice').checked,
-        beer_pong:     document.getElementById('edit-addon-beerpong').checked,
-        towels:        towelChecked ? towelQty : 0,
-      },
-    };
-
-    const result = await api('/api/admin?action=update-booking', {
-      method: 'POST',
-      body: JSON.stringify({ session_id, updates }),
-    });
-
-    btn.disabled = false; btn.textContent = 'Save Changes';
-
-    if (result && result.ok) {
-      closeEditModalBtn();
-      loadData();
-    } else {
-      showError(result?.error || 'Failed to save changes.');
+  function abEditPaymentToggleFull() {
+    if (document.getElementById('ab-edit-paid-full').checked) {
+      document.getElementById('ab-edit-remaining').value = '0.00';
     }
   }
 
@@ -2015,7 +2054,10 @@
   });
   const grandTotalInput = document.getElementById('ab-grand-total');
   if (grandTotalInput) {
-    grandTotalInput.addEventListener('input', () => { abAdminOverrideTotal = true; });
+    grandTotalInput.addEventListener('input', () => {
+      abAdminOverrideTotal = true;
+      if (abEditingSessionId) abEditPaymentRecalc();
+    });
   }
   ['ab-email','ab-phone'].forEach(id => {
     const el = document.getElementById(id);
