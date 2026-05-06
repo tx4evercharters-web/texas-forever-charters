@@ -14,6 +14,7 @@ const {
   updateBookingPayment,
   listCustomers,
   updateCustomer,
+  importHistoricalBookings,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails } = require('../lib/send-emails');
 
@@ -384,6 +385,22 @@ async function handleUpdateCustomer(req, res) {
   }
 }
 
+async function handleImportBookings(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { rows } = req.body || {};
+  if (!Array.isArray(rows)) return res.status(400).json({ error: 'rows array required' });
+  if (rows.length === 0)    return res.status(400).json({ error: 'rows is empty' });
+  if (rows.length > 1000)   return res.status(400).json({ error: 'Max 1000 rows per import' });
+
+  try {
+    const result = await importHistoricalBookings(rows);
+    return res.status(200).json({ ok: true, ...result });
+  } catch (err) {
+    console.error('Import bookings error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 async function handleUpdatePayment(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const { session_id, ...fields } = req.body || {};
@@ -418,6 +435,7 @@ const ROUTES = {
   'update-payment':    handleUpdatePayment,
   'customers':         handleListCustomers,
   'update-customer':   handleUpdateCustomer,
+  'import-bookings':   handleImportBookings,
 };
 
 module.exports = async function handler(req, res) {

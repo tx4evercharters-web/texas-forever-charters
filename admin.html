@@ -624,6 +624,24 @@
       .cust-detail { grid-template-columns: 1fr; }
     }
 
+    /* ── Import modal ── */
+    #import-preview-table th {
+      position: sticky; top: 0; z-index: 1;
+      background: var(--gray-50);
+    }
+    .import-warning {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .import-warning.amber { background: var(--amber-bg); border: 1px solid var(--amber-border); color: var(--amber); }
+    .import-warning.red   { background: var(--red-bg);   border: 1px solid var(--red-border);   color: var(--red); }
+    .import-warning.green { background: var(--green-bg); border: 1px solid var(--green-border); color: var(--green); }
+    .import-row-bad td { background: var(--red-bg) !important; }
+    code { font-family: ui-monospace, Menlo, Consolas, monospace; background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px; font-size: 11px; }
+
     .overdue-banner { background: var(--red-bg); border-bottom: 1px solid var(--red-border); padding: 14px 24px; font-size: 13px; color: var(--red); font-weight: 600; }
     .addon-list { font-size: 11px; color: var(--gray-600); line-height: 1.7; }
     .loading { padding: 40px; text-align: center; color: var(--gray-400); }
@@ -906,11 +924,14 @@
       <div class="section">
         <div class="section-header">
           <div class="section-title">Customers</div>
-          <div class="period-filter">
-            <button class="period-btn" onclick="setCustPeriod('week',this)">Week</button>
-            <button class="period-btn" onclick="setCustPeriod('month',this)">Month</button>
-            <button class="period-btn active" onclick="setCustPeriod('year',this)">Year</button>
-            <button class="period-btn" onclick="setCustPeriod('all',this)">All Time</button>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <button class="btn-sm btn-gray" onclick="openImport()">📥 Import Historical Bookings</button>
+            <div class="period-filter">
+              <button class="period-btn" onclick="setCustPeriod('week',this)">Week</button>
+              <button class="period-btn" onclick="setCustPeriod('month',this)">Month</button>
+              <button class="period-btn active" onclick="setCustPeriod('year',this)">Year</button>
+              <button class="period-btn" onclick="setCustPeriod('all',this)">All Time</button>
+            </div>
           </div>
         </div>
 
@@ -1263,6 +1284,69 @@
         <button class="btn-sm btn-gray" onclick="closeEditPaymentBtn()">Cancel</button>
         <button class="btn-sm btn-navy" id="ep-save-btn" onclick="epSave()">Save Payment</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import historical bookings modal -->
+<div class="modal-overlay" id="import-overlay" onclick="closeImport(event)">
+  <div class="modal" style="max-width:920px;">
+    <div class="modal-header">
+      <div class="modal-title">📥 Import Historical Bookings</div>
+      <button class="modal-close" onclick="closeImportBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step 1: Upload -->
+      <div id="import-step-upload">
+        <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">
+          Upload a CSV with historical bookings. The first row should contain column headers. After upload, you'll map each CSV column to a booking field.
+        </p>
+        <input type="file" id="import-file" accept=".csv,text/csv" style="margin-bottom:8px;">
+        <div id="import-file-info" style="font-size:12px;color:var(--gray-400);"></div>
+        <div style="margin-top:18px;padding:12px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;font-size:12px;color:var(--gray-600);line-height:1.6;">
+          <strong>Required fields:</strong> booking date, customer name, customer email, vessel, total amount.<br>
+          <strong>Optional:</strong> phone, source. Imported rows are marked <code>source = historical_import</code>, paid in full, external platform — no confirmation emails are sent.
+        </div>
+      </div>
+
+      <!-- Step 2: Mapping -->
+      <div id="import-step-map" style="display:none;">
+        <h4 style="font-family:'Bebas Neue',sans-serif;color:var(--navy);letter-spacing:2px;font-size:18px;margin-bottom:12px;">Map CSV Columns</h4>
+        <div id="import-map-grid" class="edit-form-grid"></div>
+        <div class="edit-modal-footer" style="margin-top:18px;">
+          <button class="btn-sm btn-gray" onclick="importBack('upload')">← Back</button>
+          <button class="btn-sm btn-navy" onclick="importBuildPreview()">Preview →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Preview -->
+      <div id="import-step-preview" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
+          <h4 style="font-family:'Bebas Neue',sans-serif;color:var(--navy);letter-spacing:2px;font-size:18px;">Preview &amp; Validate</h4>
+          <div id="import-preview-summary" style="font-size:12px;color:var(--gray-600);"></div>
+        </div>
+        <div id="import-warnings" style="margin-bottom:12px;"></div>
+        <div class="table-wrap" style="max-height:340px;overflow:auto;">
+          <table id="import-preview-table" style="font-size:12px;min-width:0;">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="edit-modal-footer" style="margin-top:18px;">
+          <button class="btn-sm btn-gray" onclick="importBack('map')">← Back to Mapping</button>
+          <button class="btn-sm btn-navy" id="import-confirm-btn" onclick="importConfirm()">Import Bookings</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Result -->
+      <div id="import-step-result" style="display:none;">
+        <div id="import-result-content" style="padding:20px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;color:var(--gray-700);"></div>
+        <div class="edit-modal-footer" style="margin-top:18px;">
+          <button class="btn-sm btn-navy" onclick="closeImportBtn()">Done</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -2811,6 +2895,305 @@
     if (c.derived_source) document.getElementById('ab-source').value = c.derived_source;
   }
 
+  /* ── Bulk CSV import ── */
+  const IMPORT_FIELDS = [
+    { key: 'date',           label: 'Booking Date',   required: true,  hint: 'YYYY-MM-DD or MM/DD/YYYY' },
+    { key: 'full_name',      label: 'Customer Name',  required: true },
+    { key: 'customer_email', label: 'Customer Email', required: true },
+    { key: 'phone',          label: 'Customer Phone', required: false },
+    { key: 'vessel',         label: 'Vessel',         required: true,  hint: 'Yacht / Pontoon (or 40ft / 24ft)' },
+    { key: 'grand_total',    label: 'Total Amount',   required: true,  hint: '$1,200 or 1200.00' },
+    { key: 'source',         label: 'Source',         required: false, hint: 'Optional — overridden to historical_import on save' },
+    { key: 'experience',     label: 'Experience',     required: false },
+    { key: 'time_slot',      label: 'Time Slot',      required: false },
+    { key: 'duration',       label: 'Duration (hrs)', required: false },
+    { key: 'party_size',     label: 'Party Size',     required: false },
+    { key: 'charter_name',   label: 'Charter Name',   required: false },
+    { key: 'city',           label: 'City',           required: false },
+    { key: 'state',          label: 'State',          required: false },
+  ];
+
+  let importHeaders = [];
+  let importRows = [];   // raw rows (array of arrays)
+  let importMap = {};    // { fieldKey: csvColumnIndex }
+  let importMapped = []; // mapped row objects
+  let importValid = [];  // boolean per row
+
+  function openImport() {
+    importReset();
+    document.getElementById('import-overlay').classList.add('open');
+  }
+  function closeImport(e) { if (e && e.target !== document.getElementById('import-overlay')) return; closeImportBtn(); }
+  function closeImportBtn() { document.getElementById('import-overlay').classList.remove('open'); }
+
+  function importReset() {
+    importHeaders = []; importRows = []; importMap = {}; importMapped = []; importValid = [];
+    document.getElementById('import-step-upload').style.display = '';
+    document.getElementById('import-step-map').style.display = 'none';
+    document.getElementById('import-step-preview').style.display = 'none';
+    document.getElementById('import-step-result').style.display = 'none';
+    document.getElementById('import-file').value = '';
+    document.getElementById('import-file-info').textContent = '';
+    document.getElementById('import-warnings').innerHTML = '';
+    const tbl = document.getElementById('import-preview-table');
+    tbl.querySelector('thead').innerHTML = '';
+    tbl.querySelector('tbody').innerHTML = '';
+    document.getElementById('import-confirm-btn').disabled = false;
+    document.getElementById('import-confirm-btn').textContent = 'Import Bookings';
+  }
+
+  function importBack(step) {
+    document.getElementById('import-step-upload').style.display  = step === 'upload' ? '' : 'none';
+    document.getElementById('import-step-map').style.display     = step === 'map' ? '' : 'none';
+    document.getElementById('import-step-preview').style.display = step === 'preview' ? '' : 'none';
+    document.getElementById('import-step-result').style.display  = 'none';
+  }
+
+  /* RFC 4180-ish CSV parser (handles quoted fields with commas, escaped quotes, CRLF) */
+  function parseCSV(text) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let i = 0;
+    let inQuotes = false;
+    while (i < text.length) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        field += c; i++; continue;
+      }
+      if (c === '"') { inQuotes = true; i++; continue; }
+      if (c === ',') { row.push(field); field = ''; i++; continue; }
+      if (c === '\r') { i++; continue; }
+      if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+      field += c; i++;
+    }
+    // Flush the trailing field/row (no trailing newline)
+    if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+    // Drop fully-empty trailing rows
+    while (rows.length && rows[rows.length - 1].every(v => (v || '').trim() === '')) rows.pop();
+    return rows;
+  }
+
+  function importGuessMapping() {
+    const lc = importHeaders.map(h => (h || '').toLowerCase().trim());
+    const guess = {};
+    const matchers = {
+      date:           ['date','booking date','booking_date','start date','event date'],
+      full_name:      ['name','full name','customer name','customer','client'],
+      customer_email: ['email','customer email','e-mail','mail'],
+      phone:          ['phone','mobile','cell','phone number'],
+      vessel:         ['vessel','boat','yacht/pontoon','vessel type'],
+      grand_total:    ['total','amount','total amount','grand total','price','revenue'],
+      source:         ['source','origin','channel','platform'],
+      experience:     ['experience','event','event type','tour','package'],
+      time_slot:      ['time','time slot','start time'],
+      duration:       ['duration','hours','hrs'],
+      party_size:     ['party size','guests','people','party'],
+      charter_name:   ['charter name','trip name','occasion','charter'],
+      city:           ['city'],
+      state:          ['state','st'],
+    };
+    for (const [key, candidates] of Object.entries(matchers)) {
+      const idx = lc.findIndex(h => candidates.includes(h));
+      if (idx >= 0) guess[key] = idx;
+    }
+    return guess;
+  }
+
+  function importBuildMapUI() {
+    const grid = document.getElementById('import-map-grid');
+    grid.innerHTML = IMPORT_FIELDS.map(f => {
+      const opts = ['<option value="">— skip —</option>']
+        .concat(importHeaders.map((h, i) =>
+          `<option value="${i}" ${importMap[f.key] === i ? 'selected' : ''}>${esc(h)} (col ${i + 1})</option>`
+        )).join('');
+      return `
+        <div class="edit-form-group">
+          <label class="edit-label">${esc(f.label)}${f.required ? ' *' : ''}</label>
+          <select class="edit-input" data-field="${esc(f.key)}">${opts}</select>
+          ${f.hint ? `<span style="font-size:10px;color:var(--gray-400);">${esc(f.hint)}</span>` : ''}
+        </div>
+      `;
+    }).join('');
+    grid.querySelectorAll('select[data-field]').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const field = sel.dataset.field;
+        const v = sel.value;
+        if (v === '') delete importMap[field];
+        else importMap[field] = parseInt(v);
+      });
+    });
+  }
+
+  function parseDateLoose(s) {
+    if (!s) return null;
+    const t = String(s).trim();
+    // YYYY-MM-DD
+    let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+    // MM/DD/YYYY or M/D/YY
+    m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (m) {
+      let yr = parseInt(m[3]); if (yr < 100) yr += 2000;
+      return `${yr}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+    }
+    // Fallback to native parser
+    const d = new Date(t);
+    if (!isNaN(d)) return d.toISOString().slice(0, 10);
+    return null;
+  }
+
+  function normalizeVessel(s) {
+    if (!s) return null;
+    const t = String(s).toLowerCase();
+    if (t.includes('yacht') || t.includes('carver') || t.includes('40')) return 'yacht';
+    if (t.includes('pontoon') || t.includes('bentley') || t.includes('24')) return 'pontoon';
+    return null;
+  }
+
+  function parseMoney(s) {
+    if (s == null || s === '') return null;
+    const cleaned = String(s).replace(/[$,\s]/g, '');
+    const v = parseFloat(cleaned);
+    return isFinite(v) ? v : null;
+  }
+
+  function importBuildPreview() {
+    // Validate required mappings
+    const missing = IMPORT_FIELDS.filter(f => f.required && importMap[f.key] === undefined).map(f => f.label);
+    if (missing.length) {
+      showError('Map all required fields: ' + missing.join(', '));
+      return;
+    }
+
+    importMapped = importRows.map(r => {
+      const obj = {};
+      for (const [field, colIdx] of Object.entries(importMap)) {
+        obj[field] = r[colIdx] != null ? String(r[colIdx]).trim() : '';
+      }
+      // Normalize
+      if (obj.date)         obj._dateNorm   = parseDateLoose(obj.date);
+      if (obj.vessel)       obj._vesselNorm = normalizeVessel(obj.vessel);
+      if (obj.grand_total)  obj._totalNorm  = parseMoney(obj.grand_total);
+      if (obj.customer_email) obj.customer_email = obj.customer_email.toLowerCase();
+      return obj;
+    });
+
+    // Validate each row
+    const errs = { missing_email: 0, missing_name: 0, bad_date: 0, bad_vessel: 0, bad_total: 0 };
+    importValid = importMapped.map(r => {
+      let ok = true;
+      if (!r.customer_email || !r.customer_email.includes('@')) { errs.missing_email++; ok = false; }
+      if (!r.full_name)   { errs.missing_name++;  ok = false; }
+      if (!r._dateNorm)   { errs.bad_date++;      ok = false; }
+      if (!r._vesselNorm) { errs.bad_vessel++;    ok = false; }
+      if (r._totalNorm == null || r._totalNorm < 0) { errs.bad_total++; ok = false; }
+      return ok;
+    });
+
+    // Render warnings
+    const validCount = importValid.filter(Boolean).length;
+    const totalCount = importMapped.length;
+    const warnEl = document.getElementById('import-warnings');
+    const messages = [];
+    if (errs.missing_email) messages.push(`<div class="import-warning red">${errs.missing_email} row(s) have a missing or invalid email.</div>`);
+    if (errs.missing_name)  messages.push(`<div class="import-warning red">${errs.missing_name} row(s) are missing a customer name.</div>`);
+    if (errs.bad_date)      messages.push(`<div class="import-warning red">${errs.bad_date} row(s) have a date that couldn't be parsed.</div>`);
+    if (errs.bad_vessel)    messages.push(`<div class="import-warning amber">${errs.bad_vessel} row(s) have a vessel value that wasn't recognized as Yacht or Pontoon.</div>`);
+    if (errs.bad_total)     messages.push(`<div class="import-warning amber">${errs.bad_total} row(s) have a total amount that couldn't be parsed.</div>`);
+    if (validCount === totalCount) messages.push(`<div class="import-warning green">All ${totalCount} rows look valid.</div>`);
+    else if (validCount > 0)       messages.push(`<div class="import-warning amber">${validCount} of ${totalCount} rows will be imported. Invalid rows will be skipped.</div>`);
+    else                            messages.push(`<div class="import-warning red">No valid rows found. Fix the mapping or the source CSV.</div>`);
+    warnEl.innerHTML = messages.join('');
+
+    document.getElementById('import-preview-summary').textContent = `Showing first ${Math.min(10, totalCount)} of ${totalCount} rows`;
+
+    // Render preview table
+    const cols = IMPORT_FIELDS.filter(f => importMap[f.key] !== undefined);
+    const tbl = document.getElementById('import-preview-table');
+    tbl.querySelector('thead').innerHTML = '<tr>' +
+      '<th>#</th><th>OK</th>' +
+      cols.map(c => `<th>${esc(c.label)}</th>`).join('') +
+      '</tr>';
+    tbl.querySelector('tbody').innerHTML = importMapped.slice(0, 10).map((r, idx) => {
+      const ok = importValid[idx];
+      return `<tr class="${ok ? '' : 'import-row-bad'}">
+        <td>${idx + 1}</td>
+        <td>${ok ? '✓' : '✗'}</td>
+        ${cols.map(c => {
+          if (c.key === 'date')        return `<td>${esc(r._dateNorm || r.date || '')}</td>`;
+          if (c.key === 'vessel')      return `<td>${esc(r._vesselNorm || r.vessel || '')}</td>`;
+          if (c.key === 'grand_total') return `<td>${r._totalNorm != null ? fmtMoney(r._totalNorm) : esc(r.grand_total || '')}</td>`;
+          return `<td>${esc(r[c.key] || '')}</td>`;
+        }).join('')}
+      </tr>`;
+    }).join('');
+
+    document.getElementById('import-confirm-btn').disabled = (validCount === 0);
+    importBack('preview');
+  }
+
+  async function importConfirm() {
+    const validRows = importMapped.filter((_, i) => importValid[i]).map(r => ({
+      date:           r._dateNorm,
+      vessel:         r._vesselNorm,
+      grand_total:    r._totalNorm,
+      full_name:      r.full_name || null,
+      customer_email: r.customer_email || null,
+      phone:          r.phone || null,
+      experience:     r.experience || null,
+      time_slot:      r.time_slot || null,
+      duration:       r.duration || null,
+      party_size:     r.party_size || null,
+      charter_name:   r.charter_name || null,
+      city:           r.city || null,
+      state:          r.state || null,
+      source_notes:   r.source || null,
+    }));
+    if (!validRows.length) { showError('No valid rows to import.'); return; }
+
+    const btn = document.getElementById('import-confirm-btn');
+    btn.disabled = true; btn.textContent = `Importing ${validRows.length}…`;
+
+    const result = await api('/api/admin?action=import-bookings', {
+      method: 'POST',
+      body: JSON.stringify({ rows: validRows }),
+    });
+
+    if (!result || !result.ok) {
+      showError(result?.error || 'Import failed.');
+      btn.disabled = false; btn.textContent = 'Import Bookings';
+      return;
+    }
+
+    document.getElementById('import-step-preview').style.display = 'none';
+    const errLine = result.errors && result.errors.length
+      ? `<div style="margin-top:10px;font-size:12px;color:var(--gray-600);">${result.errors.length} row(s) failed during insert. First error: ${esc(result.errors[0].error || '')}</div>`
+      : '';
+    document.getElementById('import-result-content').innerHTML = `
+      <div style="font-size:18px;font-weight:700;color:var(--green);margin-bottom:6px;">✓ Import complete</div>
+      <div style="font-size:14px;line-height:1.7;">
+        Imported <strong>${result.imported}</strong> booking${result.imported === 1 ? '' : 's'},
+        created <strong>${result.customers_created}</strong> new customer${result.customers_created === 1 ? '' : 's'},
+        matched <strong>${result.customers_matched}</strong> existing customer${result.customers_matched === 1 ? '' : 's'}.
+      </div>
+      ${errLine}
+    `;
+    document.getElementById('import-step-result').style.display = '';
+
+    // Refresh customers list so the new ones appear
+    custLoaded = false;
+    if (document.getElementById('tab-customers').classList.contains('active')) {
+      loadCustomers();
+    }
+    // Also refresh top-level bookings cache so the new bookings appear elsewhere
+    loadData();
+  }
+
   /* ── Init ── */
   document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
@@ -2858,6 +3241,34 @@
     const tag = x.dataset.rmTag;
     custRemoveTag(id, tag);
   });
+
+  // Import: handle file upload
+  const importFileEl = document.getElementById('import-file');
+  if (importFileEl) {
+    importFileEl.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const info = document.getElementById('import-file-info');
+      if (file.size > 5 * 1024 * 1024) { info.textContent = 'File too large (>5MB).'; info.style.color = 'var(--red)'; return; }
+      info.textContent = `Reading ${file.name} (${(file.size/1024).toFixed(1)} KB)…`;
+      info.style.color = 'var(--gray-400)';
+      try {
+        const text = await file.text();
+        const all = parseCSV(text);
+        if (all.length < 2) { info.textContent = 'CSV must have a header row plus at least one data row.'; info.style.color = 'var(--red)'; return; }
+        importHeaders = all[0];
+        importRows    = all.slice(1);
+        importMap     = importGuessMapping();
+        importBuildMapUI();
+        info.textContent = `Loaded ${importRows.length} rows. Auto-detected ${Object.keys(importMap).length} column matches — adjust below.`;
+        info.style.color = 'var(--gray-600)';
+        importBack('map');
+      } catch (err) {
+        info.textContent = 'Failed to read file: ' + err.message;
+        info.style.color = 'var(--red)';
+      }
+    });
+  }
 
   // Wire up Add Booking modal events
   ['ab-vessel','ab-duration','ab-date','ab-time-slot'].forEach(id => {
