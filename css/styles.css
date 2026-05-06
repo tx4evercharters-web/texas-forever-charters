@@ -895,7 +895,7 @@ section {
 
 /* ── 11. Crew ── */
 .crew-section {
-  background: var(--navy-deeper);
+  background: var(--navy-dark);
 }
 
 .crew-header {
@@ -981,7 +981,7 @@ section {
 
 /* ── 12. Reviews ── */
 .reviews-section {
-  background: var(--navy-dark);
+  background: var(--navy-deeper);
 }
 
 .reviews-header {
@@ -1077,7 +1077,7 @@ section {
 
 /* ── 13. FAQ ── */
 .faq-section {
-  background: var(--navy-deeper);
+  background: var(--navy-dark);
 }
 
 .faq-inner {
