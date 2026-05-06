@@ -2,3 +2,4 @@ images/*.mp4
 images/*.mov
 images/*.webm
 images/*.avi
+!images/hero-video.mp4
