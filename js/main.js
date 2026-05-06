@@ -194,7 +194,6 @@ async function handlePopupSubscribe() {
     localStorage.setItem('nl_subscribed', '1');
     document.getElementById('nlPopupForm').style.display = 'none';
     document.getElementById('nlPopupSuccess').style.display = 'block';
-    setTimeout(closeNewsletterPopup, 2800);
   } else {
     btn.textContent = 'Claim My Discount';
     btn.disabled = false;

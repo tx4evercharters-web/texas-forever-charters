@@ -2282,6 +2282,19 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
 
       document.getElementById('depositAmountBtn').textContent = '$' + calDepositAmount.toFixed(2);
       document.getElementById('fullAmountBtn').textContent = '$' + calGrandTotal.toFixed(2);
+
+      // Auto-apply promo code in UI if subscribed
+      if (localStorage.getItem('nl_subscribed') && !booking.promoApplied) {
+        booking.promoApplied = true;
+      }
+      if (booking.promoApplied) {
+        document.getElementById('promoInput').value = 'LAKELIFE10';
+        document.getElementById('promoInput').classList.add('applied');
+        const msg = document.getElementById('promoMsg');
+        msg.className = 'promo-msg success';
+        msg.textContent = '10% newsletter discount applied!';
+      }
+
       checkShowUnlockBanner();
     }
 
@@ -2427,6 +2440,11 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     /* ── Init ── */
     renderCalendar();
     updateProgress();
+
+    // Auto-apply promo if already subscribed via newsletter
+    if (localStorage.getItem('nl_subscribed')) {
+      booking.promoApplied = true;
+    }
 
     // Deep link: ?vessel=yacht or ?vessel=pontoon skips step 1
     const urlParams = new URLSearchParams(window.location.search);
