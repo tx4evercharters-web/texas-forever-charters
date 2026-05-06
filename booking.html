@@ -2209,9 +2209,15 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       const base = getCharterBaseTotal();
       const addons = getAddOnsTotal();
       const sub = base + addons;
-      const discount = booking.promoApplied ? Math.round(sub * 0.1) : 0;
-      const taxable = sub - discount;
-      document.getElementById('runningTotal').textContent = '$' + sub.toLocaleString();
+      const adminFee = Math.round(sub * 0.10 * 100) / 100;
+      const afterAdmin = sub + adminFee;
+      const tax = Math.round(afterAdmin * 0.085 * 100) / 100;
+      const afterTax = afterAdmin + tax;
+      const processingFee = Math.round(afterTax * 0.029 * 100) / 100;
+      const beforeDiscount = afterTax + processingFee;
+      const discount = booking.promoApplied ? Math.round(beforeDiscount * 0.10 * 100) / 100 : 0;
+      const total = beforeDiscount - discount;
+      document.getElementById('runningTotal').textContent = '$' + total.toFixed(2);
     }
 
     /* ── Step 8: Summary ── */
@@ -2251,14 +2257,17 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       const holidaySurcharge = date && isHoliday(date) ? 100 : 0;
       const effectiveRate = rate + holidaySurcharge;
       const charterBase = effectiveRate * duration;
-
       const addOnsTotal = getAddOnsTotal();
-      let subtotal = charterBase + addOnsTotal;
-      const discount = booking.promoApplied ? Math.round(subtotal * 0.1) : 0;
-      const discounted = subtotal - discount;
-      const tax = Math.round(discounted * 0.085 * 100) / 100;
-      calGrandTotal = Math.round((discounted + tax) * 100) / 100;
-      calDepositAmount = Math.round(calGrandTotal * 0.1 * 100) / 100;
+      const subtotal = charterBase + addOnsTotal;
+      const adminFee = Math.round(subtotal * 0.10 * 100) / 100;
+      const afterAdmin = subtotal + adminFee;
+      const tax = Math.round(afterAdmin * 0.085 * 100) / 100;
+      const afterTax = afterAdmin + tax;
+      const processingFee = Math.round(afterTax * 0.029 * 100) / 100;
+      const beforeDiscount = afterTax + processingFee;
+      const discount = booking.promoApplied ? Math.round(beforeDiscount * 0.10 * 100) / 100 : 0;
+      calGrandTotal = Math.round((beforeDiscount - discount) * 100) / 100;
+      calDepositAmount = Math.round(calGrandTotal * 0.10 * 100) / 100;
 
       const dayLabel = day === 6 ? 'Saturday rate' : (day === 0 || day === 5) ? 'Fri/Sun rate' : 'Mon–Thu rate';
       const rows = document.getElementById('priceRows');
@@ -2275,8 +2284,10 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       if (booking.addOns.water) add('Water Bottles', '$25');
       if (booking.addOns.ice) add('Ice', '$50');
       if (booking.addOns.beerpong) add('Beer Pong Setup', '$50');
-      if (discount > 0) add('Promo Discount (10%)', '−$' + discount, 'discount');
+      add('Admin Fee (10%)', '+$' + adminFee.toFixed(2));
       add('Sales Tax (8.5%)', '+$' + tax.toFixed(2), 'tax-row');
+      add('Credit Card Processing (2.9%)', '+$' + processingFee.toFixed(2), 'tax-row');
+      if (discount > 0) add('Promo Discount (10%)', '−$' + discount.toFixed(2), 'discount');
       add('Total', '$' + calGrandTotal.toFixed(2), 'total');
       add('Deposit (10%)', '$' + calDepositAmount.toFixed(2), 'deposit');
 
