@@ -301,6 +301,24 @@
     .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--white); letter-spacing: 2px; }
     .modal-close { background: rgba(255,255,255,0.15); border: none; color: var(--white); width: 30px; height: 30px; border-radius: 6px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .modal-close:hover { background: rgba(255,255,255,0.25); }
+
+    /* ── Edit modal ── */
+    .edit-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .edit-form-group { display: flex; flex-direction: column; gap: 6px; }
+    .edit-form-group.full { grid-column: 1 / -1; }
+    .edit-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-600); }
+    .edit-input { padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 14px; font-family: 'Barlow', sans-serif; outline: none; transition: border-color 0.15s; }
+    .edit-input:focus { border-color: var(--navy); }
+    .edit-addon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+    .edit-addon-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--gray-200); border-radius: 6px; cursor: pointer; transition: border-color 0.15s; }
+    .edit-addon-item:hover { border-color: var(--navy); }
+    .edit-addon-item input[type="checkbox"] { accent-color: var(--navy); width: 16px; height: 16px; }
+    .edit-addon-item label { font-size: 13px; cursor: pointer; }
+    .edit-modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--gray-200); margin-top: 8px; }
+
+    /* ── Payment buttons ── */
+    .action-btns { display: flex; flex-direction: column; gap: 4px; }
+
     .modal-body { padding: 24px; }
 
     .modal-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
@@ -639,6 +657,113 @@
       <button class="modal-close" onclick="closeModalBtn()">✕</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Edit booking modal -->
+<div class="modal-overlay" id="edit-modal-overlay" onclick="closeEditModal(event)">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <div class="modal-title">Edit Booking</div>
+      <button class="modal-close" onclick="closeEditModalBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-session-id">
+      <div class="edit-form-grid">
+        <div class="edit-form-group">
+          <label class="edit-label">Charter Date</label>
+          <input type="date" class="edit-input" id="edit-date">
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">Time Slot</label>
+          <select class="edit-input" id="edit-time-slot">
+            <option value="9:00 AM">9:00 AM</option>
+            <option value="10:00 AM">10:00 AM</option>
+            <option value="11:00 AM">11:00 AM</option>
+            <option value="12:00 PM">12:00 PM</option>
+            <option value="1:00 PM">1:00 PM</option>
+            <option value="2:30 PM">2:30 PM</option>
+            <option value="3:00 PM">3:00 PM</option>
+            <option value="4:00 PM">4:00 PM</option>
+            <option value="5:00 PM">5:00 PM</option>
+          </select>
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">Duration (hours)</label>
+          <select class="edit-input" id="edit-duration">
+            <option value="2">2 hrs</option>
+            <option value="3">3 hrs</option>
+            <option value="4">4 hrs</option>
+            <option value="5">5 hrs</option>
+            <option value="6">6 hrs</option>
+            <option value="7">7 hrs</option>
+            <option value="8">8 hrs</option>
+          </select>
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">Party Size</label>
+          <input type="number" class="edit-input" id="edit-party-size" min="1" max="20">
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">Vessel</label>
+          <select class="edit-input" id="edit-vessel">
+            <option value="yacht">40ft Carver Aft Cabin (Yacht)</option>
+            <option value="pontoon">24ft Bentley Navigator 243 (Pontoon)</option>
+          </select>
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">Experience</label>
+          <select class="edit-input" id="edit-experience">
+            <option>Private Party</option>
+            <option>Bachelor Party</option>
+            <option>Bachelorette Party</option>
+            <option>Birthday Party</option>
+            <option>Sunset Cruise</option>
+            <option>Boat Tour</option>
+            <option>Lake Day</option>
+            <option>Proposal</option>
+            <option>Graduation Party</option>
+            <option>Corporate Outing</option>
+          </select>
+        </div>
+        <div class="edit-form-group full">
+          <label class="edit-label">Add-Ons</label>
+          <div class="edit-addon-grid">
+            <div class="edit-addon-item">
+              <input type="checkbox" id="edit-addon-drone">
+              <label for="edit-addon-drone">🎥 Drone Footage ($200)</label>
+            </div>
+            <div class="edit-addon-item">
+              <input type="checkbox" id="edit-addon-water">
+              <label for="edit-addon-water">💧 Water Bottles ($25)</label>
+            </div>
+            <div class="edit-addon-item">
+              <input type="checkbox" id="edit-addon-ice">
+              <label for="edit-addon-ice">🧊 Ice ($50)</label>
+            </div>
+            <div class="edit-addon-item">
+              <input type="checkbox" id="edit-addon-beerpong">
+              <label for="edit-addon-beerpong">🏓 Beer Pong ($50)</label>
+            </div>
+          </div>
+          <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
+            <div class="edit-addon-item" style="flex:0 0 auto;">
+              <input type="checkbox" id="edit-addon-towels">
+              <label for="edit-addon-towels">🏖 Towels ($8 each)</label>
+            </div>
+            <input type="number" class="edit-input" id="edit-towel-qty" min="0" max="20" value="0" placeholder="Qty" style="width:80px;">
+          </div>
+        </div>
+        <div class="edit-form-group full">
+          <label class="edit-label">Special Requests</label>
+          <textarea class="edit-input" id="edit-special-requests" rows="3" style="resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div class="edit-modal-footer">
+        <button class="btn-sm btn-gray" onclick="closeEditModalBtn()">Cancel</button>
+        <button class="btn-sm btn-navy" id="edit-save-btn" onclick="saveBookingEdit()">Save Changes</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1000,9 +1125,14 @@
           <td style="white-space:nowrap;color:${parseFloat(b.remaining_balance)>0?'var(--amber)':'var(--green)'}">${fmtMoney(b.remaining_balance)}</td>
           <td>${badge}</td>
           <td>
-            ${paidFull
-              ? '<span style="font-size:12px;color:var(--gray-400)">—</span>'
-              : `<button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}',this)">Mark Paid</button>`}
+            <div class="action-btns">
+              <button class="btn-sm btn-navy" onclick="openEditModal('${esc(b.session_id)}')">✏ Edit</button>
+              ${!paidFull ? `
+                <button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}',this)">✓ Mark Paid</button>
+                ${b.payment_method_id ? `<button class="btn-sm btn-navy" onclick="chargeCard('${esc(b.session_id)}',this)">💳 Charge Card</button>` : ''}
+                <button class="btn-sm" style="background:var(--amber);color:#fff;" onclick="sendPaymentLink('${esc(b.session_id)}',this)">📧 Send Link</button>
+              ` : ''}
+            </div>
           </td>
         </tr>
       `;
@@ -1125,6 +1255,97 @@
 
   function closeModal(e) { if (e.target === document.getElementById('modal-overlay')) closeModalBtn(); }
   function closeModalBtn() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+  /* ── Edit booking ── */
+  function openEditModal(session_id) {
+    const booking = allBookings.find(b => b.session_id === session_id);
+    if (!booking) return;
+    const ao = parseAddOns(booking.add_ons);
+    document.getElementById('edit-session-id').value = session_id;
+    document.getElementById('edit-date').value = booking.date || '';
+    document.getElementById('edit-time-slot').value = booking.time_slot || '9:00 AM';
+    document.getElementById('edit-duration').value = booking.duration || '3';
+    document.getElementById('edit-party-size').value = booking.party_size || '';
+    document.getElementById('edit-vessel').value = booking.vessel || 'yacht';
+    document.getElementById('edit-experience').value = booking.experience || 'Private Party';
+    document.getElementById('edit-special-requests').value = booking.special_requests || '';
+    document.getElementById('edit-addon-drone').checked = !!(ao.drone_footage || ao.drone);
+    document.getElementById('edit-addon-water').checked = !!(ao.water_bottles || ao.water);
+    document.getElementById('edit-addon-ice').checked = !!ao.ice;
+    document.getElementById('edit-addon-beerpong').checked = !!(ao.beer_pong || ao.beerpong);
+    document.getElementById('edit-addon-towels').checked = !!(ao.towels > 0);
+    document.getElementById('edit-towel-qty').value = ao.towels || 0;
+    document.getElementById('edit-modal-overlay').classList.add('open');
+  }
+
+  function closeEditModal(e) { if (e.target === document.getElementById('edit-modal-overlay')) closeEditModalBtn(); }
+  function closeEditModalBtn() { document.getElementById('edit-modal-overlay').classList.remove('open'); }
+
+  async function saveBookingEdit() {
+    const session_id = document.getElementById('edit-session-id').value;
+    const btn = document.getElementById('edit-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    const towelChecked = document.getElementById('edit-addon-towels').checked;
+    const towelQty = parseInt(document.getElementById('edit-towel-qty').value) || 0;
+
+    const updates = {
+      date:             document.getElementById('edit-date').value,
+      time_slot:        document.getElementById('edit-time-slot').value,
+      duration:         document.getElementById('edit-duration').value,
+      party_size:       document.getElementById('edit-party-size').value,
+      vessel:           document.getElementById('edit-vessel').value,
+      experience:       document.getElementById('edit-experience').value,
+      special_requests: document.getElementById('edit-special-requests').value,
+      add_ons: {
+        drone_footage: document.getElementById('edit-addon-drone').checked,
+        water_bottles: document.getElementById('edit-addon-water').checked,
+        ice:           document.getElementById('edit-addon-ice').checked,
+        beer_pong:     document.getElementById('edit-addon-beerpong').checked,
+        towels:        towelChecked ? towelQty : 0,
+      },
+    };
+
+    const result = await api('/api/admin-update-booking', {
+      method: 'POST',
+      body: JSON.stringify({ session_id, updates }),
+    });
+
+    btn.disabled = false; btn.textContent = 'Save Changes';
+
+    if (result && result.ok) {
+      closeEditModalBtn();
+      loadData();
+    } else {
+      showError(result?.error || 'Failed to save changes.');
+    }
+  }
+
+  /* ── Charge card / send payment link ── */
+  async function chargeCard(session_id, btn) {
+    if (!confirm('Charge the saved card for the remaining balance?')) return;
+    btn.disabled = true; btn.textContent = 'Charging...';
+    const result = await api('/api/charge-remaining', { method: 'POST', body: JSON.stringify({ session_id }) });
+    if (result && result.ok) {
+      showError('✅ Payment successful!');
+      loadData();
+    } else {
+      showError(result?.error || 'Charge failed.');
+      btn.disabled = false; btn.textContent = '💳 Charge Card';
+    }
+  }
+
+  async function sendPaymentLink(session_id, btn) {
+    if (!confirm('Send a payment link to the customer via email?')) return;
+    btn.disabled = true; btn.textContent = 'Sending...';
+    const result = await api('/api/send-payment-link', { method: 'POST', body: JSON.stringify({ session_id }) });
+    if (result && result.ok) {
+      showError('✅ Payment link sent!');
+    } else {
+      showError(result?.error || 'Failed to send link.');
+    }
+    btn.disabled = false; btn.textContent = '📧 Send Link';
+  }
 
   /* ── Blackouts ── */
   async function addBlackout() {
