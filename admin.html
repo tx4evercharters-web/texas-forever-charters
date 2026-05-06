@@ -4,32 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Texas Forever Charters</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --navy:   #1B2A6B;
-      --navy-dark: #0F1A45;
-      --red:    #C8102E;
-      --white:  #FFFFFF;
-      --gray-50: #F8F9FC;
-      --gray-100: #F0F2F8;
-      --gray-200: #E5E7EB;
-      --gray-400: #9CA3AF;
-      --gray-600: #4B5563;
-      --gray-700: #374151;
-      --green:  #16A34A;
-      --green-bg: #F0FDF4;
-      --green-border: #BBF7D0;
-      --amber:  #D97706;
-      --amber-bg: #FFFBEB;
-      --amber-border: #FDE68A;
-      --red-bg: #FEF2F2;
-      --red-border: #FECACA;
+      --navy:        #1B2A6B;
+      --navy-dark:   #0F1A45;
+      --navy-mid:    #243580;
+      --red:         #C8102E;
+      --white:       #FFFFFF;
+      --gray-50:     #F8F9FC;
+      --gray-100:    #F0F2F8;
+      --gray-200:    #E5E7EB;
+      --gray-400:    #9CA3AF;
+      --gray-600:    #4B5563;
+      --gray-700:    #374151;
+      --green:       #16A34A;
+      --green-bg:    #F0FDF4;
+      --green-border:#BBF7D0;
+      --amber:       #D97706;
+      --amber-bg:    #FFFBEB;
+      --amber-border:#FDE68A;
+      --red-bg:      #FEF2F2;
+      --red-border:  #FECACA;
+      --teal:        #0891B2;
+      --teal-bg:     #ECFEFF;
+      --purple:      #7C3AED;
+      --purple-bg:   #F5F3FF;
     }
 
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: 'Barlow', Arial, sans-serif;
       background: var(--gray-100);
       color: var(--gray-700);
       min-height: 100vh;
@@ -53,88 +59,20 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
     }
 
-    .login-logo {
-      text-align: center;
-      margin-bottom: 32px;
-    }
+    .login-logo { text-align: center; margin-bottom: 32px; }
+    .login-logo .brand { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--navy); letter-spacing: 3px; }
+    .login-logo .sub { font-size: 11px; color: var(--gray-400); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+    .login-logo .bar { width: 40px; height: 3px; background: var(--red); margin: 12px auto 0; border-radius: 2px; }
 
-    .login-logo .brand {
-      font-size: 18px;
-      font-weight: 900;
-      color: var(--navy);
-      letter-spacing: 3px;
-      text-transform: uppercase;
-    }
+    .login-card label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-600); margin-bottom: 6px; }
+    .login-card input[type="password"] { width: 100%; padding: 12px 14px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 15px; outline: none; transition: border-color 0.15s; font-family: 'Barlow', sans-serif; }
+    .login-card input[type="password"]:focus { border-color: var(--navy); }
 
-    .login-logo .sub {
-      font-size: 11px;
-      color: var(--gray-400);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
-
-    .login-logo .bar {
-      width: 40px;
-      height: 3px;
-      background: var(--red);
-      margin: 12px auto 0;
-      border-radius: 2px;
-    }
-
-    .login-card label {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--gray-600);
-      margin-bottom: 6px;
-    }
-
-    .login-card input[type="password"] {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid var(--gray-200);
-      border-radius: 6px;
-      font-size: 15px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .login-card input[type="password"]:focus {
-      border-color: var(--navy);
-    }
-
-    .btn-login {
-      width: 100%;
-      margin-top: 18px;
-      padding: 13px;
-      background: var(--navy);
-      color: var(--white);
-      border: none;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
+    .btn-login { width: 100%; margin-top: 18px; padding: 13px; background: var(--navy); color: var(--white); border: none; border-radius: 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: background 0.15s; }
     .btn-login:hover { background: var(--navy-dark); }
     .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    .login-error {
-      margin-top: 14px;
-      padding: 10px 14px;
-      background: var(--red-bg);
-      border: 1px solid var(--red-border);
-      border-radius: 6px;
-      font-size: 13px;
-      color: var(--red);
-      display: none;
-    }
+    .login-error { margin-top: 14px; padding: 10px 14px; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 6px; font-size: 13px; color: var(--red); display: none; }
 
     /* ── App shell ── */
     #app { display: none; }
@@ -152,306 +90,292 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.3);
     }
 
-    .header-brand {
-      font-size: 14px;
-      font-weight: 900;
-      color: var(--white);
-      letter-spacing: 3px;
-      text-transform: uppercase;
-    }
+    .header-brand { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--white); letter-spacing: 3px; }
+    .header-brand span { color: var(--red); }
+    .header-right { display: flex; align-items: center; gap: 14px; }
+    .header-right .date-label { font-size: 12px; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
 
-    .header-brand span {
-      color: var(--red);
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .header-right .date-label {
-      font-size: 12px;
-      color: rgba(255,255,255,0.5);
-      letter-spacing: 1px;
-    }
-
-    .btn-logout {
-      background: rgba(255,255,255,0.1);
-      color: var(--white);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 5px;
-      padding: 6px 16px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
+    .btn-logout { background: rgba(255,255,255,0.1); color: var(--white); border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; padding: 6px 16px; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: background 0.15s; }
     .btn-logout:hover { background: rgba(255,255,255,0.18); }
 
-    main {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 28px 24px 60px;
+    /* ── Tabs ── */
+    .tab-bar {
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 28px;
+      display: flex;
+      gap: 0;
+      position: sticky;
+      top: 58px;
+      z-index: 99;
     }
 
-    /* ── Stats ── */
+    .tab-btn {
+      padding: 14px 20px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover { color: var(--navy); }
+    .tab-btn.active { color: var(--navy); border-bottom-color: var(--red); }
+
+    main { max-width: 1400px; margin: 0 auto; padding: 28px 24px 60px; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Stats grid ── */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
-      margin-bottom: 28px;
-    }
-
-    @media (max-width: 700px) {
-      .stats-grid { grid-template-columns: 1fr; }
+      margin-bottom: 24px;
     }
 
     .stat-card {
       background: var(--white);
       border-radius: 10px;
-      padding: 22px 24px;
+      padding: 20px 22px;
       border: 1px solid var(--gray-200);
-      display: flex;
-      align-items: center;
-      gap: 16px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, transform 0.15s;
+      position: relative;
     }
 
-    .stat-icon {
-      width: 48px;
-      height: 48px;
+    .stat-card:hover { box-shadow: 0 4px 20px rgba(27,42,107,0.12); transform: translateY(-1px); }
+    .stat-card.clickable::after { content: '▾'; position: absolute; top: 18px; right: 18px; font-size: 14px; color: var(--gray-400); }
+    .stat-card.expanded::after { content: '▴'; }
+
+    .stat-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 6px; }
+    .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--navy); letter-spacing: 1px; }
+    .stat-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+    /* ── Revenue breakdown panel ── */
+    .breakdown-panel {
+      background: var(--navy-dark);
       border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
+      padding: 20px 24px;
+      margin-top: -8px;
+      margin-bottom: 16px;
+      display: none;
+      animation: slideDown 0.2s ease;
     }
 
-    .stat-icon.navy { background: var(--navy); }
-    .stat-icon.red  { background: var(--red);  }
-    .stat-icon.green { background: var(--green); }
+    .breakdown-panel.open { display: block; }
 
-    .stat-info { flex: 1; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 
-    .stat-label {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--gray-400);
-      margin-bottom: 4px;
+    .breakdown-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+
+    .breakdown-item { }
+    .breakdown-item-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+    .breakdown-item-value { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--white); }
+
+    .breakdown-divider { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 16px 0; }
+
+    .addon-breakdown { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 4px; }
+    .addon-item { background: rgba(255,255,255,0.06); border-radius: 6px; padding: 10px 14px; }
+    .addon-item-label { font-size: 10px; color: rgba(255,255,255,0.5); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 3px; }
+    .addon-item-value { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--white); }
+    .addon-item-count { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+
+    /* ── Vessel split ── */
+    .vessel-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
     }
 
-    .stat-value {
-      font-size: 28px;
-      font-weight: 900;
-      color: var(--navy);
-    }
-
-    /* ── Sections ── */
-    .section {
+    .vessel-card {
       background: var(--white);
       border-radius: 10px;
       border: 1px solid var(--gray-200);
-      margin-bottom: 24px;
       overflow: hidden;
     }
 
-    .section-header {
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--gray-200);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .section-title {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--navy);
-    }
-
-    .section-title.red { color: var(--red); }
-
-    .btn-sm {
-      padding: 6px 14px;
-      border-radius: 5px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      cursor: pointer;
-      border: none;
-      transition: opacity 0.15s;
-    }
-
-    .btn-sm:hover { opacity: 0.85; }
-    .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .btn-navy { background: var(--navy); color: var(--white); }
-    .btn-red  { background: var(--red);  color: var(--white); }
-    .btn-green { background: var(--green); color: var(--white); }
-    .btn-gray { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-200); }
-
-    /* ── Table ── */
-    .table-wrap {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      min-width: 1100px;
-    }
-
-    thead th {
-      background: var(--gray-50);
-      padding: 10px 14px;
-      text-align: left;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--gray-600);
-      border-bottom: 1px solid var(--gray-200);
-      white-space: nowrap;
-    }
-
-    tbody tr {
-      border-bottom: 1px solid var(--gray-100);
-      transition: background 0.1s;
-    }
-
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--gray-50); }
-
-    tbody td {
-      padding: 11px 14px;
-      vertical-align: top;
-      color: var(--gray-700);
-    }
-
-    .td-primary {
-      font-weight: 700;
-      color: var(--navy);
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 100px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
-    .badge-amber  { background: var(--amber-bg);  color: var(--amber);  border: 1px solid var(--amber-border); }
-    .badge-red    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border); }
-
-    .empty-state {
-      padding: 40px;
-      text-align: center;
-      color: var(--gray-400);
-      font-size: 14px;
-    }
-
-    /* ── Overdue alert ── */
-    .overdue-banner {
-      background: var(--red-bg);
-      border-bottom: 1px solid var(--red-border);
-      padding: 14px 24px;
-      font-size: 13px;
-      color: var(--red);
-      font-weight: 600;
-    }
-
-    /* ── Blackouts ── */
-    .blackout-form {
-      padding: 20px 24px;
+    .vessel-card-header {
+      padding: 14px 20px;
       display: flex;
       align-items: center;
       gap: 10px;
       border-bottom: 1px solid var(--gray-200);
     }
 
-    .blackout-form input[type="date"] {
-      padding: 8px 12px;
-      border: 1px solid var(--gray-200);
-      border-radius: 6px;
-      font-size: 13px;
-      outline: none;
+    .vessel-card-header.yacht { background: var(--navy); color: var(--white); }
+    .vessel-card-header.pontoon { background: var(--red); color: var(--white); }
+
+    .vessel-card-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; }
+    .vessel-card-sub { font-size: 11px; opacity: 0.7; margin-top: 1px; }
+
+    .vessel-stats { display: grid; grid-template-columns: repeat(3, 1fr); padding: 16px; gap: 12px; }
+    .vessel-stat-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 4px; }
+    .vessel-stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--navy); }
+
+    /* ── Charter volume ── */
+    .volume-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      padding: 20px;
     }
 
-    .blackout-form input[type="date"]:focus {
-      border-color: var(--navy);
-    }
+    .volume-item { text-align: center; padding: 16px; background: var(--gray-50); border-radius: 8px; border: 1px solid var(--gray-200); }
+    .volume-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 6px; }
+    .volume-value { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--navy); }
+    .volume-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 
-    .blackout-list {
-      padding: 12px 24px;
+    /* ── Calendar ── */
+    .calendar-wrap { padding: 20px 24px; }
+    .calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .calendar-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--navy); letter-spacing: 2px; }
+    .cal-nav-btn { background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 16px; color: var(--navy); transition: background 0.15s; }
+    .cal-nav-btn:hover { background: var(--gray-200); }
+
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-day-header { text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); padding: 6px 0; }
+
+    .cal-day {
+      aspect-ratio: 1;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .blackout-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--navy);
-      color: var(--white);
-      border-radius: 6px;
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .blackout-remove {
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: var(--white);
-      border-radius: 3px;
-      width: 18px;
-      height: 18px;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      line-height: 1;
-      padding: 0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: default;
+      position: relative;
+      transition: background 0.1s;
+      min-height: 52px;
+      padding: 4px;
     }
 
+    .cal-day.other-month { color: var(--gray-200); }
+    .cal-day.today { background: var(--gray-100); border: 2px solid var(--navy); color: var(--navy); }
+    .cal-day.has-booking { background: var(--navy); color: var(--white); cursor: pointer; }
+    .cal-day.has-booking:hover { background: var(--navy-mid); }
+    .cal-day.blackout { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+    .cal-day.has-booking.blackout { background: var(--red); color: var(--white); }
+
+    .cal-booking-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-top: 3px; }
+    .cal-day.has-booking .cal-booking-dot { background: rgba(255,255,255,0.7); }
+    .cal-booking-count { font-size: 10px; opacity: 0.8; }
+
+    /* ── Booking detail modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--white);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      animation: modalIn 0.2s ease;
+    }
+
+    @keyframes modalIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; background: var(--navy); border-radius: 12px 12px 0 0; }
+    .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--white); letter-spacing: 2px; }
+    .modal-close { background: rgba(255,255,255,0.15); border: none; color: var(--white); width: 30px; height: 30px; border-radius: 6px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .modal-close:hover { background: rgba(255,255,255,0.25); }
+    .modal-body { padding: 24px; }
+
+    .modal-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+    .modal-row:last-child { border-bottom: none; }
+    .modal-row-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); flex-shrink: 0; margin-right: 16px; }
+    .modal-row-value { font-size: 14px; font-weight: 600; color: var(--gray-700); text-align: right; }
+
+    /* ── Origins ── */
+    .origins-list { padding: 20px 24px; }
+    .origin-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+    .origin-row:last-child { border-bottom: none; }
+    .origin-location { font-weight: 600; color: var(--navy); min-width: 160px; font-size: 14px; }
+    .origin-bar-wrap { flex: 1; background: var(--gray-100); border-radius: 4px; height: 8px; overflow: hidden; }
+    .origin-bar { height: 100%; background: var(--navy); border-radius: 4px; transition: width 0.5s ease; }
+    .origin-count { font-size: 13px; font-weight: 700; color: var(--gray-600); min-width: 30px; text-align: right; }
+
+    /* ── Section ── */
+    .section { background: var(--white); border-radius: 10px; border: 1px solid var(--gray-200); margin-bottom: 24px; overflow: hidden; }
+    .section-header { padding: 16px 24px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; }
+    .section-title { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--navy); }
+    .section-title.red { color: var(--red); }
+
+    /* ── Period filter ── */
+    .period-filter { display: flex; gap: 6px; }
+    .period-btn { padding: 5px 12px; border-radius: 5px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; border: 1px solid var(--gray-200); background: var(--gray-50); color: var(--gray-600); transition: all 0.15s; }
+    .period-btn:hover { border-color: var(--navy); color: var(--navy); }
+    .period-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+
+    /* ── Buttons ── */
+    .btn-sm { padding: 6px 14px; border-radius: 5px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; border: none; transition: opacity 0.15s; }
+    .btn-sm:hover { opacity: 0.85; }
+    .btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-navy { background: var(--navy); color: var(--white); }
+    .btn-red  { background: var(--red);  color: var(--white); }
+    .btn-green { background: var(--green); color: var(--white); }
+    .btn-gray { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-200) !important; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1000px; }
+    thead th { background: var(--gray-50); padding: 10px 14px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--gray-50); }
+    tbody td { padding: 11px 14px; vertical-align: top; color: var(--gray-700); }
+    .td-primary { font-weight: 700; color: var(--navy); }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 100px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+    .badge-green  { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
+    .badge-amber  { background: var(--amber-bg);  color: var(--amber);  border: 1px solid var(--amber-border); }
+    .badge-red    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border); }
+    .badge-navy   { background: var(--navy); color: var(--white); }
+    .badge-teal   { background: var(--teal-bg); color: var(--teal); border: 1px solid #A5F3FC; }
+    .badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid #DDD6FE; }
+
+    /* ── Blackouts ── */
+    .blackout-form { padding: 20px 24px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--gray-200); }
+    .blackout-form input[type="date"] { padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 13px; outline: none; font-family: 'Barlow', sans-serif; }
+    .blackout-form input[type="date"]:focus { border-color: var(--navy); }
+    .blackout-list { padding: 12px 24px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .blackout-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--navy); color: var(--white); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; }
+    .blackout-remove { background: rgba(255,255,255,0.2); border: none; color: var(--white); border-radius: 3px; width: 18px; height: 18px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .blackout-remove:hover { background: rgba(255,255,255,0.35); }
+    .blackout-empty { padding: 20px 24px; color: var(--gray-400); font-size: 13px; }
 
-    .blackout-empty {
-      padding: 20px 24px;
-      color: var(--gray-400);
-      font-size: 13px;
-    }
-
-    /* ── Misc ── */
+    .overdue-banner { background: var(--red-bg); border-bottom: 1px solid var(--red-border); padding: 14px 24px; font-size: 13px; color: var(--red); font-weight: 600; }
     .addon-list { font-size: 11px; color: var(--gray-600); line-height: 1.7; }
     .loading { padding: 40px; text-align: center; color: var(--gray-400); }
-    .error-bar {
-      background: var(--red-bg);
-      border: 1px solid var(--red-border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 18px;
-      font-size: 13px;
-      color: var(--red);
-      display: none;
+    .empty-state { padding: 40px; text-align: center; color: var(--gray-400); font-size: 14px; }
+    .error-bar { background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: var(--red); display: none; }
+
+    @media (max-width: 700px) {
+      .vessel-split { grid-template-columns: 1fr; }
+      .vessel-stats { grid-template-columns: repeat(2, 1fr); }
+      .tab-btn { padding: 12px 12px; font-size: 11px; letter-spacing: 1px; }
     }
   </style>
 </head>
@@ -482,85 +406,248 @@
     </div>
   </header>
 
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('bookings')">📋 Bookings</button>
+    <button class="tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
+    <button class="tab-btn" onclick="switchTab('calendar')">📅 Calendar</button>
+    <button class="tab-btn" onclick="switchTab('blackouts')">🚫 Blackouts</button>
+  </div>
+
   <main>
     <div class="error-bar" id="error-bar"></div>
 
-    <!-- Stats -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon navy">&#128197;</div>
-        <div class="stat-info">
-          <div class="stat-label">Upcoming Bookings</div>
+    <!-- ══ BOOKINGS TAB ══ -->
+    <div class="tab-panel active" id="tab-bookings">
+
+      <!-- Stats row -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Upcoming Charters</div>
           <div class="stat-value" id="stat-count">—</div>
+          <div class="stat-sub">next 90 days</div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon green">&#36;</div>
-        <div class="stat-info">
+        <div class="stat-card clickable" id="revenue-card" onclick="toggleRevenue()">
           <div class="stat-label">Revenue Collected</div>
           <div class="stat-value" id="stat-revenue">—</div>
+          <div class="stat-sub">tap to expand</div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon red">&#9888;</div>
-        <div class="stat-info">
+        <div class="stat-card">
           <div class="stat-label">Outstanding Balances</div>
           <div class="stat-value" id="stat-outstanding">—</div>
+          <div class="stat-sub">deposits not yet paid</div>
+        </div>
+      </div>
+
+      <!-- Revenue breakdown -->
+      <div class="breakdown-panel" id="revenue-breakdown">
+        <div class="breakdown-grid">
+          <div class="breakdown-item">
+            <div class="breakdown-item-label">Charter Revenue</div>
+            <div class="breakdown-item-value" id="bd-charter">—</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-item-label">Add-On Revenue</div>
+            <div class="breakdown-item-value" id="bd-addons">—</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-item-label">Sales Tax Collected</div>
+            <div class="breakdown-item-value" id="bd-tax">—</div>
+          </div>
+        </div>
+        <hr class="breakdown-divider">
+        <div class="breakdown-item-label" style="color:rgba(255,255,255,0.5);margin-bottom:10px;">Add-On Breakdown</div>
+        <div class="addon-breakdown">
+          <div class="addon-item">
+            <div class="addon-item-label">Drone Footage</div>
+            <div class="addon-item-value" id="bd-drone">$0</div>
+            <div class="addon-item-count" id="bd-drone-ct">0 bookings</div>
+          </div>
+          <div class="addon-item">
+            <div class="addon-item-label">Towels</div>
+            <div class="addon-item-value" id="bd-towels">$0</div>
+            <div class="addon-item-count" id="bd-towels-ct">0 bookings</div>
+          </div>
+          <div class="addon-item">
+            <div class="addon-item-label">Water Bottles</div>
+            <div class="addon-item-value" id="bd-water">$0</div>
+            <div class="addon-item-count" id="bd-water-ct">0 bookings</div>
+          </div>
+          <div class="addon-item">
+            <div class="addon-item-label">Ice</div>
+            <div class="addon-item-value" id="bd-ice">$0</div>
+            <div class="addon-item-count" id="bd-ice-ct">0 bookings</div>
+          </div>
+          <div class="addon-item">
+            <div class="addon-item-label">Beer Pong</div>
+            <div class="addon-item-value" id="bd-beerpong">$0</div>
+            <div class="addon-item-count" id="bd-beerpong-ct">0 bookings</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overdue section -->
+      <div class="section" id="overdue-section" style="display:none">
+        <div class="section-header">
+          <div class="section-title red">⚠ Overdue Payments — Charter Within 7 Days</div>
+        </div>
+        <div class="overdue-banner" id="overdue-banner"></div>
+        <div class="table-wrap">
+          <table id="overdue-table">
+            <thead>
+              <tr>
+                <th>Date</th><th>Charter</th><th>Customer</th><th>Phone</th><th>Paid</th><th>Remaining</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="overdue-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Upcoming bookings -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Upcoming Bookings</div>
+          <button class="btn-sm btn-gray" onclick="loadData()">↻ Refresh</button>
+        </div>
+        <div class="table-wrap" id="bookings-wrap">
+          <div class="loading">Loading...</div>
         </div>
       </div>
     </div>
 
-    <!-- Overdue section -->
-    <div class="section" id="overdue-section" style="display:none">
-      <div class="section-header">
-        <div class="section-title red">&#9888; Overdue Payments — Charter Within 7 Days</div>
+    <!-- ══ ANALYTICS TAB ══ -->
+    <div class="tab-panel" id="tab-analytics">
+
+      <!-- Period filter -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--navy);letter-spacing:2px;">Analytics</div>
+        <div class="period-filter">
+          <button class="period-btn active" onclick="setPeriod('week',this)">Week</button>
+          <button class="period-btn" onclick="setPeriod('month',this)">Month</button>
+          <button class="period-btn" onclick="setPeriod('year',this)">Year</button>
+          <button class="period-btn" onclick="setPeriod('all',this)">All Time</button>
+        </div>
       </div>
-      <div class="overdue-banner" id="overdue-banner"></div>
-      <div class="table-wrap">
-        <table id="overdue-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Charter</th>
-              <th>Customer</th>
-              <th>Phone</th>
-              <th>Paid</th>
-              <th>Remaining</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="overdue-tbody"></tbody>
-        </table>
+
+      <!-- Charter volume -->
+      <div class="section" style="margin-bottom:20px;">
+        <div class="section-header">
+          <div class="section-title">Charter Volume</div>
+        </div>
+        <div class="volume-grid" id="volume-grid">
+          <div class="volume-item"><div class="volume-label">Total Charters</div><div class="volume-value" id="vol-total">—</div></div>
+          <div class="volume-item"><div class="volume-label">Yacht Charters</div><div class="volume-value" id="vol-yacht">—</div></div>
+          <div class="volume-item"><div class="volume-label">Pontoon Charters</div><div class="volume-value" id="vol-pontoon">—</div></div>
+          <div class="volume-item"><div class="volume-label">Avg Party Size</div><div class="volume-value" id="vol-party">—</div></div>
+          <div class="volume-item"><div class="volume-label">Avg Duration</div><div class="volume-value" id="vol-duration">—</div><div class="volume-sub">hours</div></div>
+          <div class="volume-item"><div class="volume-label">Returning Customers</div><div class="volume-value" id="vol-returning">—</div></div>
+        </div>
+      </div>
+
+      <!-- Vessel split -->
+      <div class="vessel-split">
+        <div class="vessel-card">
+          <div class="vessel-card-header yacht">
+            <div>
+              <div class="vessel-card-title">⚓ Yacht</div>
+              <div class="vessel-card-sub">40ft Carver Aft Cabin</div>
+            </div>
+          </div>
+          <div class="vessel-stats">
+            <div><div class="vessel-stat-label">Revenue</div><div class="vessel-stat-value" id="yacht-rev">—</div></div>
+            <div><div class="vessel-stat-label">Add-Ons</div><div class="vessel-stat-value" id="yacht-addons">—</div></div>
+            <div><div class="vessel-stat-label">Charters</div><div class="vessel-stat-value" id="yacht-count">—</div></div>
+          </div>
+        </div>
+        <div class="vessel-card">
+          <div class="vessel-card-header pontoon">
+            <div>
+              <div class="vessel-card-title">🚤 Pontoon</div>
+              <div class="vessel-card-sub">24ft Bentley Navigator 243</div>
+            </div>
+          </div>
+          <div class="vessel-stats">
+            <div><div class="vessel-stat-label">Revenue</div><div class="vessel-stat-value" id="pontoon-rev">—</div></div>
+            <div><div class="vessel-stat-label">Add-Ons</div><div class="vessel-stat-value" id="pontoon-addons">—</div></div>
+            <div><div class="vessel-stat-label">Charters</div><div class="vessel-stat-value" id="pontoon-count">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer origins -->
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Customer Origins</div>
+        </div>
+        <div class="origins-list" id="origins-list">
+          <div class="empty-state">No origin data yet — collected from Stripe billing address on new bookings.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ CALENDAR TAB ══ -->
+    <div class="tab-panel" id="tab-calendar">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Booking Calendar</div>
+        </div>
+        <div class="calendar-wrap">
+          <div class="calendar-nav">
+            <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+            <div class="calendar-title" id="cal-title">—</div>
+            <button class="cal-nav-btn" onclick="calNext()">›</button>
+          </div>
+          <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-600);">
+              <div style="width:14px;height:14px;background:var(--navy);border-radius:3px;"></div> Booked
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-600);">
+              <div style="width:14px;height:14px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:3px;"></div> Blackout
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-600);">
+              <div style="width:14px;height:14px;background:var(--gray-100);border:2px solid var(--navy);border-radius:3px;"></div> Today
+            </div>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
       </div>
     </div>
 
-    <!-- Upcoming bookings -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">Upcoming Bookings</div>
-        <button class="btn-sm btn-gray" onclick="loadData()">&#8635; Refresh</button>
-      </div>
-      <div class="table-wrap" id="bookings-wrap">
-        <div class="loading">Loading...</div>
+    <!-- ══ BLACKOUTS TAB ══ -->
+    <div class="tab-panel" id="tab-blackouts">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Blackout Dates</div>
+        </div>
+        <div class="blackout-form">
+          <input type="date" id="blackout-input" min="">
+          <button class="btn-sm btn-navy" onclick="addBlackout()">+ Block Date</button>
+        </div>
+        <div id="blackout-list-wrap"></div>
       </div>
     </div>
 
-    <!-- Blackout dates -->
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">Blackout Dates</div>
-      </div>
-      <div class="blackout-form">
-        <input type="date" id="blackout-input" min="">
-        <button class="btn-sm btn-navy" onclick="addBlackout()">+ Block Date</button>
-      </div>
-      <div id="blackout-list-wrap"></div>
-    </div>
   </main>
+</div>
+
+<!-- Booking detail modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Booking Details</div>
+      <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
 </div>
 
 <script>
   const TOKEN_KEY = 'tfc_admin_token';
+  let allBookings = [];
+  let allBlackouts = [];
+  let calYear, calMonth;
+  let currentPeriod = 'week';
 
   /* ── Helpers ── */
   function getToken() { return localStorage.getItem(TOKEN_KEY); }
@@ -575,31 +662,32 @@
     return days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
   }
 
-  function fmtMoney(cents) {
-    return '$' + (cents / 100).toFixed(2);
+  function fmtMoney(v) {
+    return '$' + parseFloat(v || 0).toFixed(2);
   }
 
-  function fmtDollars(n) {
-    const v = parseFloat(n || 0);
-    return '$' + v.toFixed(2);
+  function fmtCents(cents) {
+    return '$' + (cents / 100).toFixed(2);
   }
 
   function vesselLabel(v) {
     return v === 'yacht' ? '40ft Carver' : '24ft Bentley';
   }
 
-  function parseAddOns(json) {
-    try { return JSON.parse(json || '{}'); } catch { return {}; }
+  function parseAddOns(raw) {
+    if (!raw) return {};
+    if (typeof raw === 'object') return raw;
+    try { return JSON.parse(raw); } catch { return {}; }
   }
 
-  function addOnText(json) {
-    const a = parseAddOns(json);
+  function addOnText(raw) {
+    const a = parseAddOns(raw);
     const lines = [];
-    if (a.drone)      lines.push('Drone Footage');
-    if (a.towels > 0) lines.push('Towels x' + a.towels);
-    if (a.water)      lines.push('Water Bottles');
-    if (a.ice)        lines.push('Ice');
-    if (a.beerpong)   lines.push('Beer Pong');
+    if (a.drone_footage || a.drone)      lines.push('🎥 Drone');
+    if (a.towels > 0)                    lines.push('🏖 Towels x' + a.towels);
+    if (a.water_bottles || a.water)      lines.push('💧 Water Bottles');
+    if (a.ice)                           lines.push('🧊 Ice');
+    if (a.beer_pong || a.beerpong)       lines.push('🏓 Beer Pong');
     return lines.length ? lines.join(', ') : '—';
   }
 
@@ -614,16 +702,58 @@
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  /* ── Returning customer detection ── */
+  function getReturningEmails(bookings) {
+    const counts = {};
+    bookings.forEach(b => {
+      const e = (b.customer_email || '').toLowerCase();
+      if (e) counts[e] = (counts[e] || 0) + 1;
+    });
+    return new Set(Object.keys(counts).filter(e => counts[e] > 1));
+  }
+
+  /* ── Period filter ── */
+  function setPeriod(period, btn) {
+    currentPeriod = period;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAnalytics();
+  }
+
+  function filterByPeriod(bookings, period) {
+    const now = new Date();
+    return bookings.filter(b => {
+      const d = new Date((b.booked_at || b.date || '') );
+      if (period === 'week') {
+        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        return d >= weekAgo;
+      } else if (period === 'month') {
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      } else if (period === 'year') {
+        return d.getFullYear() === now.getFullYear();
+      }
+      return true;
+    });
+  }
+
+  /* ── Tabs ── */
+  function switchTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+    if (name === 'calendar') renderCalendar();
+    if (name === 'analytics') renderAnalytics();
+  }
+
   /* ── Auth ── */
   async function doLogin() {
     const pwd = document.getElementById('pwd-input').value.trim();
     if (!pwd) return;
     const btn = document.getElementById('login-btn');
-    btn.disabled = true;
-    btn.textContent = 'Signing in...';
+    btn.disabled = true; btn.textContent = 'Signing in...';
     const errEl = document.getElementById('login-error');
     errEl.style.display = 'none';
-
     try {
       const res = await fetch('/api/admin-login', {
         method: 'POST',
@@ -639,17 +769,12 @@
       errEl.textContent = err.message;
       errEl.style.display = 'block';
     } finally {
-      btn.disabled = false;
-      btn.textContent = 'Sign In';
+      btn.disabled = false; btn.textContent = 'Sign In';
     }
   }
 
-  function logout() {
-    clearToken();
-    showLogin();
-  }
+  function logout() { clearToken(); showLogin(); }
 
-  /* ── Screen switching ── */
   function showLogin() {
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
@@ -659,6 +784,7 @@
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     const now = new Date();
+    calYear = now.getFullYear(); calMonth = now.getMonth();
     document.getElementById('header-date').textContent =
       now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     document.getElementById('blackout-input').min = now.toISOString().split('T')[0];
@@ -669,11 +795,7 @@
     const token = getToken();
     const res = await fetch(path, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token,
-        ...(options.headers || {}),
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(options.headers || {}) },
     });
     if (res.status === 401) { logout(); return null; }
     const text = await res.text();
@@ -688,104 +810,199 @@
       api('/api/admin-blackouts'),
     ]);
     if (!bookingData) return;
-    renderStats(bookingData.upcoming || []);
-    renderOverdue(bookingData.upcoming || []);
-    renderBookings(bookingData.upcoming || []);
-    renderBlackouts(blackouts || []);
+    allBookings = bookingData.upcoming || [];
+    allBlackouts = blackouts || [];
+    renderStats(allBookings);
+    renderOverdue(allBookings);
+    renderBookings(allBookings);
+    renderBlackouts(allBlackouts);
   }
 
   /* ── Stats ── */
-  function renderStats(upcoming) {
+  function renderStats(bookings) {
     let revenue = 0, outstanding = 0;
-    upcoming.forEach(b => {
-      revenue += (b.amount_total || 0) / 100;
+    let charterSubtotal = 0, addonTotal = 0, taxAmount = 0;
+    const addonCounts = { drone: 0, towels: 0, water: 0, ice: 0, beerpong: 0 };
+    const addonRevenue = { drone: 0, towels: 0, water: 0, ice: 0, beerpong: 0 };
+
+    bookings.forEach(b => {
+      // Use cents from amount_total if available, else grand_total in dollars
+      const paid = b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
+      revenue += paid;
       outstanding += parseFloat(b.remaining_balance || 0);
+
+      charterSubtotal += parseFloat(b.charter_subtotal || 0);
+      addonTotal += parseFloat(b.add_on_total || 0);
+      taxAmount += parseFloat(b.tax_amount || 0);
+
+      const ao = parseAddOns(b.add_ons);
+      if (ao.drone_footage || ao.drone) { addonCounts.drone++; addonRevenue.drone += 200; }
+      if (ao.towels > 0) { addonCounts.towels++; addonRevenue.towels += 8 * (ao.towels || 1); }
+      if (ao.water_bottles || ao.water) { addonCounts.water++; addonRevenue.water += 25; }
+      if (ao.ice) { addonCounts.ice++; addonRevenue.ice += 50; }
+      if (ao.beer_pong || ao.beerpong) { addonCounts.beerpong++; addonRevenue.beerpong += 50; }
     });
-    document.getElementById('stat-count').textContent = upcoming.length;
-    document.getElementById('stat-revenue').textContent = '$' + revenue.toFixed(2);
-    document.getElementById('stat-outstanding').textContent = '$' + outstanding.toFixed(2);
+
+    document.getElementById('stat-count').textContent = bookings.length;
+    document.getElementById('stat-revenue').textContent = fmtMoney(revenue);
+    document.getElementById('stat-outstanding').textContent = fmtMoney(outstanding);
+
+    document.getElementById('bd-charter').textContent = fmtMoney(charterSubtotal);
+    document.getElementById('bd-addons').textContent = fmtMoney(addonTotal);
+    document.getElementById('bd-tax').textContent = fmtMoney(taxAmount);
+
+    document.getElementById('bd-drone').textContent = fmtMoney(addonRevenue.drone);
+    document.getElementById('bd-drone-ct').textContent = addonCounts.drone + ' booking' + (addonCounts.drone !== 1 ? 's' : '');
+    document.getElementById('bd-towels').textContent = fmtMoney(addonRevenue.towels);
+    document.getElementById('bd-towels-ct').textContent = addonCounts.towels + ' booking' + (addonCounts.towels !== 1 ? 's' : '');
+    document.getElementById('bd-water').textContent = fmtMoney(addonRevenue.water);
+    document.getElementById('bd-water-ct').textContent = addonCounts.water + ' booking' + (addonCounts.water !== 1 ? 's' : '');
+    document.getElementById('bd-ice').textContent = fmtMoney(addonRevenue.ice);
+    document.getElementById('bd-ice-ct').textContent = addonCounts.ice + ' booking' + (addonCounts.ice !== 1 ? 's' : '');
+    document.getElementById('bd-beerpong').textContent = fmtMoney(addonRevenue.beerpong);
+    document.getElementById('bd-beerpong-ct').textContent = addonCounts.beerpong + ' booking' + (addonCounts.beerpong !== 1 ? 's' : '');
+  }
+
+  function toggleRevenue() {
+    const panel = document.getElementById('revenue-breakdown');
+    const card = document.getElementById('revenue-card');
+    panel.classList.toggle('open');
+    card.classList.toggle('expanded');
+  }
+
+  /* ── Analytics ── */
+  function renderAnalytics() {
+    const filtered = filterByPeriod(allBookings, currentPeriod);
+    const returningEmails = getReturningEmails(allBookings);
+
+    // Volume
+    const yacht = filtered.filter(b => b.vessel === 'yacht');
+    const pontoon = filtered.filter(b => b.vessel !== 'yacht');
+    const avgParty = filtered.length ? (filtered.reduce((s,b) => s + parseInt(b.party_size||0), 0) / filtered.length).toFixed(1) : '—';
+    const avgDur = filtered.length ? (filtered.reduce((s,b) => s + parseInt(b.duration||0), 0) / filtered.length).toFixed(1) : '—';
+    const returningCount = filtered.filter(b => returningEmails.has((b.customer_email||'').toLowerCase())).length;
+
+    document.getElementById('vol-total').textContent = filtered.length;
+    document.getElementById('vol-yacht').textContent = yacht.length;
+    document.getElementById('vol-pontoon').textContent = pontoon.length;
+    document.getElementById('vol-party').textContent = avgParty;
+    document.getElementById('vol-duration').textContent = avgDur;
+    document.getElementById('vol-returning').textContent = returningCount;
+
+    // Vessel revenue
+    function vesselStats(arr) {
+      let rev = 0, ao = 0;
+      arr.forEach(b => {
+        rev += b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
+        ao += parseFloat(b.add_on_total || 0);
+      });
+      return { rev, ao, count: arr.length };
+    }
+
+    const ys = vesselStats(yacht);
+    const ps = vesselStats(pontoon);
+    document.getElementById('yacht-rev').textContent = fmtMoney(ys.rev);
+    document.getElementById('yacht-addons').textContent = fmtMoney(ys.ao);
+    document.getElementById('yacht-count').textContent = ys.count;
+    document.getElementById('pontoon-rev').textContent = fmtMoney(ps.rev);
+    document.getElementById('pontoon-addons').textContent = fmtMoney(ps.ao);
+    document.getElementById('pontoon-count').textContent = ps.count;
+
+    // Origins
+    const originCounts = {};
+    filtered.forEach(b => {
+      if (b.city && b.state) {
+        const key = b.city + ', ' + b.state;
+        originCounts[key] = (originCounts[key] || 0) + 1;
+      } else if (b.state) {
+        originCounts[b.state] = (originCounts[b.state] || 0) + 1;
+      }
+    });
+    const originEntries = Object.entries(originCounts).sort((a,b) => b[1]-a[1]);
+    const maxOrigin = originEntries.length ? originEntries[0][1] : 1;
+    const originEl = document.getElementById('origins-list');
+    if (originEntries.length === 0) {
+      originEl.innerHTML = '<div class="empty-state">No origin data yet — collected from Stripe billing address on new bookings.</div>';
+    } else {
+      originEl.innerHTML = originEntries.map(([loc, count]) => `
+        <div class="origin-row">
+          <div class="origin-location">${esc(loc)}</div>
+          <div class="origin-bar-wrap"><div class="origin-bar" style="width:${Math.round(count/maxOrigin*100)}%"></div></div>
+          <div class="origin-count">${count}</div>
+        </div>
+      `).join('');
+    }
   }
 
   /* ── Overdue ── */
-  function renderOverdue(upcoming) {
+  function renderOverdue(bookings) {
     const now = new Date();
     const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const overdue = upcoming.filter(b => {
+    const overdue = bookings.filter(b => {
       if (b.paid_in_full) return false;
       if (b.payment_type !== 'deposit') return false;
       if (!(parseFloat(b.remaining_balance) > 0)) return false;
       const d = new Date((b.date || '') + 'T12:00:00');
       return d <= in7;
     });
-
     const sec = document.getElementById('overdue-section');
-    if (overdue.length === 0) { sec.style.display = 'none'; return; }
+    if (!overdue.length) { sec.style.display = 'none'; return; }
     sec.style.display = 'block';
-
     document.getElementById('overdue-banner').textContent =
-      overdue.length + ' booking' + (overdue.length > 1 ? 's' : '') +
-      ' with outstanding deposits due within 7 days.';
-
-    const tbody = document.getElementById('overdue-tbody');
-    tbody.innerHTML = overdue.map(b => `
+      overdue.length + ' booking' + (overdue.length > 1 ? 's' : '') + ' with outstanding deposits due within 7 days.';
+    document.getElementById('overdue-tbody').innerHTML = overdue.map(b => `
       <tr>
         <td class="td-primary">${esc(fmtDate(b.date))}</td>
-        <td>${esc(b.charter_name || '—')}</td>
-        <td>
-          <div style="font-weight:600">${esc(b.full_name || '—')}</div>
-          <div style="font-size:11px;color:var(--gray-400)">${esc(b.customer_email || '')}</div>
-        </td>
-        <td>${esc(b.phone || '—')}</td>
-        <td>${fmtMoney(b.amount_total || 0)}</td>
-        <td style="color:var(--red);font-weight:700">${fmtDollars(b.remaining_balance)}</td>
-        <td>
-          <button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}', this)">
-            Mark Paid
-          </button>
-        </td>
+        <td>${esc(b.charter_name||'—')}</td>
+        <td><div style="font-weight:600">${esc(b.full_name||'—')}</div><div style="font-size:11px;color:var(--gray-400)">${esc(b.customer_email||'')}</div></td>
+        <td>${esc(b.phone||'—')}</td>
+        <td>${fmtCents(b.amount_total||0)}</td>
+        <td style="color:var(--red);font-weight:700">${fmtMoney(b.remaining_balance)}</td>
+        <td><button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}',this)">Mark Paid</button></td>
       </tr>
     `).join('');
   }
 
   /* ── Bookings table ── */
-  function renderBookings(upcoming) {
+  function renderBookings(bookings) {
     const wrap = document.getElementById('bookings-wrap');
-    if (upcoming.length === 0) {
+    const returningEmails = getReturningEmails(allBookings);
+
+    if (!bookings.length) {
       wrap.innerHTML = '<div class="empty-state">No upcoming bookings.</div>';
       return;
     }
-    const rows = upcoming.map(b => {
+
+    const rows = bookings.map(b => {
       const paidFull = b.paid_in_full || b.payment_type === 'full';
+      const isReturning = returningEmails.has((b.customer_email||'').toLowerCase());
       const badge = paidFull
         ? '<span class="badge badge-green">Paid in Full</span>'
         : '<span class="badge badge-amber">Deposit Only</span>';
+      const returningBadge = isReturning ? ' <span class="badge badge-teal">Returning</span>' : '';
       return `
         <tr>
           <td class="td-primary" style="white-space:nowrap">${esc(fmtDate(b.date))}</td>
-          <td>${esc(b.charter_name || '—')}</td>
+          <td>${esc(b.charter_name||'—')}</td>
           <td>
-            <div style="font-weight:600">${esc(b.full_name || '—')}</div>
+            <div style="font-weight:600">${esc(b.full_name||'—')}${returningBadge}</div>
+            <div style="font-size:11px;color:var(--gray-400)">${esc(b.customer_email||'')}</div>
           </td>
-          <td>
-            <div>${esc(b.customer_email || '—')}</div>
-          </td>
-          <td style="white-space:nowrap">${esc(b.phone || '—')}</td>
-          <td style="white-space:nowrap">${esc(vesselLabel(b.vessel))}</td>
-          <td>${esc(b.experience || '—')}</td>
-          <td style="white-space:nowrap">${esc(b.time_slot || '—')}</td>
-          <td>${esc(b.duration ? b.duration + ' hrs' : '—')}</td>
-          <td>${esc(b.party_size ? b.party_size + ' guests' : '—')}</td>
+          <td style="white-space:nowrap">${esc(b.phone||'—')}</td>
+          <td>${esc(b.city && b.state ? b.city+', '+b.state : (b.state || '—'))}</td>
+          <td style="white-space:nowrap"><span class="badge ${b.vessel==='yacht' ? 'badge-navy' : 'badge-red'}">${esc(vesselLabel(b.vessel))}</span></td>
+          <td>${esc(b.experience||'—')}</td>
+          <td style="white-space:nowrap">${esc(b.time_slot||'—')}</td>
+          <td>${esc(b.duration ? b.duration+' hrs' : '—')}</td>
+          <td>${esc(b.party_size ? b.party_size+' guests' : '—')}</td>
           <td class="addon-list">${esc(addOnText(b.add_ons))}</td>
-          <td style="white-space:nowrap;font-weight:700">${fmtMoney(b.amount_total || 0)}</td>
-          <td style="white-space:nowrap;color:${parseFloat(b.remaining_balance) > 0 ? 'var(--amber)' : 'var(--green)'}">
-            ${fmtDollars(b.remaining_balance)}
-          </td>
+          <td style="white-space:nowrap;font-weight:700">${fmtMoney(b.grand_total || (b.amount_total ? b.amount_total/100 : 0))}</td>
+          <td style="white-space:nowrap;color:${parseFloat(b.remaining_balance)>0?'var(--amber)':'var(--green)'}">${fmtMoney(b.remaining_balance)}</td>
           <td>${badge}</td>
           <td>
             ${paidFull
               ? '<span style="font-size:12px;color:var(--gray-400)">—</span>'
-              : `<button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}', this)">Mark Paid</button>`
-            }
+              : `<button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}',this)">Mark Paid</button>`}
           </td>
         </tr>
       `;
@@ -795,21 +1012,9 @@
       <table>
         <thead>
           <tr>
-            <th>Date</th>
-            <th>Charter</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Vessel</th>
-            <th>Experience</th>
-            <th>Time</th>
-            <th>Duration</th>
-            <th>Party</th>
-            <th>Add-Ons</th>
-            <th>Paid</th>
-            <th>Remaining</th>
-            <th>Status</th>
-            <th>Action</th>
+            <th>Date</th><th>Charter</th><th>Customer</th><th>Phone</th><th>Location</th>
+            <th>Vessel</th><th>Experience</th><th>Time</th><th>Duration</th><th>Party</th>
+            <th>Add-Ons</th><th>Total</th><th>Remaining</th><th>Status</th><th>Action</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -820,52 +1025,124 @@
   /* ── Mark paid ── */
   async function markPaid(session_id, btn) {
     if (!confirm('Mark this booking as paid in full?')) return;
-    btn.disabled = true;
-    btn.textContent = 'Saving...';
-    const result = await api('/api/admin-mark-paid', {
-      method: 'POST',
-      body: JSON.stringify({ session_id }),
-    });
-    if (result && result.ok) {
-      loadData();
-    } else {
-      showError('Failed to mark as paid. Check logs.');
-      btn.disabled = false;
-      btn.textContent = 'Mark Paid';
-    }
+    btn.disabled = true; btn.textContent = 'Saving...';
+    const result = await api('/api/admin-mark-paid', { method: 'POST', body: JSON.stringify({ session_id }) });
+    if (result && result.ok) { loadData(); } else { showError('Failed to mark as paid.'); btn.disabled = false; btn.textContent = 'Mark Paid'; }
   }
+
+  /* ── Calendar ── */
+  function renderCalendar() {
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('cal-title').textContent = months[calMonth] + ' ' + calYear;
+
+    const grid = document.getElementById('calendar-grid');
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    let html = days.map(d => `<div class="cal-day-header">${d}</div>`).join('');
+
+    const first = new Date(calYear, calMonth, 1);
+    const last = new Date(calYear, calMonth + 1, 0);
+    const today = new Date();
+
+    // Build booking map by date string
+    const bookingMap = {};
+    allBookings.forEach(b => {
+      if (b.date) {
+        if (!bookingMap[b.date]) bookingMap[b.date] = [];
+        bookingMap[b.date].push(b);
+      }
+    });
+    const blackoutSet = new Set(allBlackouts);
+
+    // Pad start
+    for (let i = 0; i < first.getDay(); i++) {
+      html += `<div class="cal-day other-month"></div>`;
+    }
+
+    for (let d = 1; d <= last.getDate(); d++) {
+      const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      const isToday = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+      const bookingsOnDay = bookingMap[dateStr] || [];
+      const isBlackout = blackoutSet.has(dateStr);
+      const hasBooking = bookingsOnDay.length > 0;
+
+      let cls = 'cal-day';
+      if (isToday) cls += ' today';
+      if (hasBooking) cls += ' has-booking';
+      if (isBlackout) cls += ' blackout';
+
+      const clickAttr = hasBooking ? `onclick="showDayModal('${dateStr}')"` : '';
+      const dot = hasBooking ? `<div class="cal-booking-dot"></div>` : '';
+      const count = hasBooking && bookingsOnDay.length > 1 ? `<div class="cal-booking-count">${bookingsOnDay.length}</div>` : '';
+
+      html += `<div class="${cls}" ${clickAttr}><span>${d}</span>${dot}${count}</div>`;
+    }
+
+    // Pad end
+    const remaining = 7 - ((first.getDay() + last.getDate()) % 7);
+    if (remaining < 7) for (let i = 0; i < remaining; i++) html += `<div class="cal-day other-month"></div>`;
+
+    grid.innerHTML = html;
+  }
+
+  function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
+  function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
+
+  /* ── Day modal ── */
+  function showDayModal(dateStr) {
+    const bookingMap = {};
+    allBookings.forEach(b => { if (b.date) { if (!bookingMap[b.date]) bookingMap[b.date] = []; bookingMap[b.date].push(b); } });
+    const bookings = bookingMap[dateStr] || [];
+    if (!bookings.length) return;
+
+    document.getElementById('modal-title').textContent = fmtDate(dateStr);
+    document.getElementById('modal-body').innerHTML = bookings.map(b => {
+      const paidFull = b.paid_in_full || b.payment_type === 'full';
+      return `
+        <div style="border:1px solid var(--gray-200);border-radius:8px;padding:16px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-weight:700;font-size:15px;color:var(--navy)">${esc(b.charter_name||'Charter')}</div>
+            <span class="badge ${paidFull ? 'badge-green' : 'badge-amber'}">${paidFull ? 'Paid' : 'Deposit Only'}</span>
+          </div>
+          <div class="modal-row"><span class="modal-row-label">Customer</span><span class="modal-row-value">${esc(b.full_name||'—')}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Email</span><span class="modal-row-value">${esc(b.customer_email||'—')}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Phone</span><span class="modal-row-value">${esc(b.phone||'—')}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Location</span><span class="modal-row-value">${esc(b.city&&b.state ? b.city+', '+b.state : (b.state||'—'))}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Vessel</span><span class="modal-row-value">${esc(vesselLabel(b.vessel))}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Experience</span><span class="modal-row-value">${esc(b.experience||'—')}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Time</span><span class="modal-row-value">${esc(b.time_slot||'—')}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Duration</span><span class="modal-row-value">${esc(b.duration ? b.duration+' hrs' : '—')}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Party Size</span><span class="modal-row-value">${esc(b.party_size ? b.party_size+' guests' : '—')}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Add-Ons</span><span class="modal-row-value">${esc(addOnText(b.add_ons))}</span></div>
+          <div class="modal-row"><span class="modal-row-label">Total</span><span class="modal-row-value" style="color:var(--navy);font-weight:700">${fmtMoney(b.grand_total||(b.amount_total?b.amount_total/100:0))}</span></div>
+          ${parseFloat(b.remaining_balance)>0 ? `<div class="modal-row"><span class="modal-row-label">Remaining</span><span class="modal-row-value" style="color:var(--amber);font-weight:700">${fmtMoney(b.remaining_balance)}</span></div>` : ''}
+          ${b.special_requests ? `<div class="modal-row"><span class="modal-row-label">Notes</span><span class="modal-row-value">${esc(b.special_requests)}</span></div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal(e) { if (e.target === document.getElementById('modal-overlay')) closeModalBtn(); }
+  function closeModalBtn() { document.getElementById('modal-overlay').classList.remove('open'); }
 
   /* ── Blackouts ── */
   async function addBlackout() {
     const input = document.getElementById('blackout-input');
     const date = input.value;
     if (!date) { showError('Select a date to block.'); return; }
-    const result = await api('/api/admin-blackouts', {
-      method: 'POST',
-      body: JSON.stringify({ date }),
-    });
-    if (Array.isArray(result)) {
-      input.value = '';
-      renderBlackouts(result);
-    } else {
-      showError('Failed to add blackout date.');
-    }
+    const result = await api('/api/admin-blackouts', { method: 'POST', body: JSON.stringify({ date }) });
+    if (Array.isArray(result)) { input.value = ''; allBlackouts = result; renderBlackouts(result); } else { showError('Failed to add blackout date.'); }
   }
 
   async function removeBlackout(date) {
-    const result = await api('/api/admin-blackouts?date=' + encodeURIComponent(date), {
-      method: 'DELETE',
-    });
-    if (Array.isArray(result)) {
-      renderBlackouts(result);
-    } else {
-      showError('Failed to remove blackout date.');
-    }
+    const result = await api('/api/admin-blackouts?date=' + encodeURIComponent(date), { method: 'DELETE' });
+    if (Array.isArray(result)) { allBlackouts = result; renderBlackouts(result); } else { showError('Failed to remove blackout date.'); }
   }
 
   function renderBlackouts(blackouts) {
     const wrap = document.getElementById('blackout-list-wrap');
-    if (!blackouts || blackouts.length === 0) {
+    if (!blackouts || !blackouts.length) {
       wrap.innerHTML = '<div class="blackout-empty">No blackout dates set.</div>';
       return;
     }
@@ -873,24 +1150,15 @@
       blackouts.map(d => `
         <div class="blackout-chip">
           <span>${esc(fmtDate(d))}</span>
-          <button class="blackout-remove" onclick="removeBlackout('${esc(d)}')" title="Remove">&times;</button>
+          <button class="blackout-remove" onclick="removeBlackout('${esc(d)}')">&times;</button>
         </div>
-      `).join('') +
-      '</div>';
+      `).join('') + '</div>';
   }
-
-  /* ── Enter key on login ── */
-  document.getElementById('pwd-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') doLogin();
-  });
 
   /* ── Init ── */
-  if (getToken()) {
-    showApp();
-    loadData();
-  } else {
-    showLogin();
-  }
+  document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  if (getToken()) { showApp(); loadData(); } else { showLogin(); }
 </script>
 </body>
 </html>
