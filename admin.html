@@ -821,14 +821,19 @@
         <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:14px;">5. Payment</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;"><input type="radio" name="ab-payment" value="external" checked onchange="abUpdatePaymentUI()"> Paid externally</label>
-          <div id="ab-external-sub" style="margin-left:24px;display:flex;align-items:center;gap:10px;">
-            <select class="edit-input" id="ab-external-method" style="max-width:200px;">
-              <option value="cash">Cash</option>
-              <option value="venmo">Venmo</option>
-              <option value="zelle">Zelle</option>
-              <option value="check">Check</option>
-              <option value="external_platform">External Platform</option>
-            </select>
+          <div id="ab-external-sub" style="margin-left:24px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <select class="edit-input" id="ab-external-method" style="max-width:200px;">
+                <option value="cash">Cash</option>
+                <option value="venmo">Venmo</option>
+                <option value="zelle">Zelle</option>
+                <option value="check">Check</option>
+                <option value="external_platform">External Platform</option>
+              </select>
+              <label class="edit-label" style="margin:0;">Amount Paid</label>
+              <input class="edit-input" id="ab-amount-paid" type="number" step="0.01" min="0" style="width:140px;" oninput="abUpdateAmountPaidStatus()">
+            </div>
+            <div id="ab-amount-paid-status" style="font-size:12px;color:var(--gray-600);"></div>
           </div>
           <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;"><input type="radio" name="ab-payment" value="stripe-link" onchange="abUpdatePaymentUI()"> Send Stripe payment link via email</label>
           <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;"><input type="radio" name="ab-payment" value="deposit" onchange="abUpdatePaymentUI()"> Deposit only — collect rest later</label>
@@ -849,6 +854,50 @@
         <button class="btn-sm btn-green" id="ab-save-send-btn" onclick="abSave(true)">Save &amp; Send Confirmation</button>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- Edit payment modal -->
+<div class="modal-overlay" id="edit-payment-overlay" onclick="closeEditPayment(event)">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">Edit Payment</div>
+      <button class="modal-close" onclick="closeEditPaymentBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-session-id">
+      <div id="ep-meta" style="font-size:13px;color:var(--gray-600);margin-bottom:14px;"></div>
+      <div class="edit-form-grid">
+        <div class="edit-form-group">
+          <label class="edit-label">Amount Paid</label>
+          <input class="edit-input" id="ep-amount-paid" type="number" step="0.01" min="0" oninput="epRecalc()">
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">Payment Method</label>
+          <select class="edit-input" id="ep-method">
+            <option value="cash">Cash</option>
+            <option value="venmo">Venmo</option>
+            <option value="zelle">Zelle</option>
+            <option value="check">Check</option>
+            <option value="stripe">Stripe (online)</option>
+            <option value="external_platform">Other (external platform)</option>
+          </select>
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">Remaining Balance</label>
+          <input class="edit-input" id="ep-remaining" type="number" step="0.01" min="0">
+        </div>
+        <div class="edit-form-group" style="justify-content:flex-end;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;margin-top:24px;">
+            <input type="checkbox" id="ep-paid-full" onchange="epOnPaidFullToggle()"> Paid in full
+          </label>
+        </div>
+      </div>
+      <div class="edit-modal-footer">
+        <button class="btn-sm btn-gray" onclick="closeEditPaymentBtn()">Cancel</button>
+        <button class="btn-sm btn-navy" id="ep-save-btn" onclick="epSave()">Save Payment</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1320,6 +1369,7 @@
           <td>
             <div class="action-btns">
               <button class="btn-sm btn-navy" onclick="openEditModal('${esc(b.session_id)}')">✏ Edit</button>
+              <button class="btn-sm" style="background:var(--teal);color:#fff;" onclick="openEditPayment('${esc(b.session_id)}')">💵 Edit Payment</button>
               ${!paidFull ? `
                 <button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}',this)">✓ Mark Paid</button>
                 ${b.payment_method_id ? `<button class="btn-sm btn-navy" onclick="chargeCard('${esc(b.session_id)}',this)">💳 Charge Card</button>` : ''}
@@ -1499,6 +1549,27 @@
     const val = document.querySelector('input[name="ab-payment"]:checked')?.value;
     document.getElementById('ab-external-sub').style.display = val === 'external' ? 'flex' : 'none';
     abRecalcPrice();
+    if (val === 'external') {
+      // Default amount paid to current grand total whenever external is selected
+      const total = parseFloat(document.getElementById('ab-grand-total').value) || 0;
+      document.getElementById('ab-amount-paid').value = total.toFixed(2);
+      abUpdateAmountPaidStatus();
+    }
+  }
+
+  function abUpdateAmountPaidStatus() {
+    const total = parseFloat(document.getElementById('ab-grand-total').value) || 0;
+    const paid  = parseFloat(document.getElementById('ab-amount-paid').value) || 0;
+    const status = document.getElementById('ab-amount-paid-status');
+    if (!status) return;
+    if (paid >= total) {
+      status.style.color = 'var(--green)';
+      status.textContent = '✓ Paid in full';
+    } else {
+      const remaining = total - paid;
+      status.style.color = 'var(--amber)';
+      status.textContent = 'Partial payment — $' + remaining.toFixed(2) + ' remaining';
+    }
   }
 
   /* ── Pricing calc (mirrors booking.html) ── */
@@ -1563,6 +1634,10 @@
       '<span style="color:var(--gray-700);font-weight:600">' + v + '</span></div>'
     ).join('');
     if (!abAdminOverrideTotal) document.getElementById('ab-grand-total').value = p.total.toFixed(2);
+    // Keep the amount-paid status in sync when external is selected
+    if (document.querySelector('input[name="ab-payment"]:checked')?.value === 'external') {
+      abUpdateAmountPaidStatus();
+    }
   }
 
   /* ── Conflict detection (same date+vessel+time_slot) ── */
@@ -1639,11 +1714,27 @@
     const externalMethod = document.getElementById('ab-external-method').value;
 
     const paymentType = payment === 'deposit' ? 'deposit' : 'full';
-    const paidInFull = payment === 'external' || payment === 'stripe-link';
-    const paymentMethodExternal = payment === 'external' ? externalMethod : (payment === 'invoice' ? 'invoice_pending' : null);
+    const externalAmountPaid = payment === 'external'
+      ? Math.max(0, parseFloat(document.getElementById('ab-amount-paid').value) || 0)
+      : 0;
     const depositAmount = payment === 'deposit' ? Math.round(grandTotal * 0.10 * 100) / 100 : 0;
-    const remaining = payment === 'deposit' ? grandTotal - depositAmount : 0;
-    const amountPaidCents = payment === 'external' ? Math.round(grandTotal * 100) : (payment === 'deposit' ? Math.round(depositAmount * 100) : 0);
+
+    let paidInFull, remaining, amountPaidCents;
+    if (payment === 'external') {
+      paidInFull       = externalAmountPaid >= grandTotal;
+      remaining        = paidInFull ? 0 : Math.round((grandTotal - externalAmountPaid) * 100) / 100;
+      amountPaidCents  = Math.round(externalAmountPaid * 100);
+    } else if (payment === 'deposit') {
+      paidInFull       = false;
+      remaining        = Math.round((grandTotal - depositAmount) * 100) / 100;
+      amountPaidCents  = Math.round(depositAmount * 100);
+    } else {
+      // stripe-link or invoice — nothing collected yet
+      paidInFull       = false;
+      remaining        = grandTotal;
+      amountPaidCents  = 0;
+    }
+    const paymentMethodExternal = payment === 'external' ? externalMethod : (payment === 'invoice' ? 'invoice_pending' : null);
 
     const booking = {
       source:                  document.getElementById('ab-source').value,
@@ -1707,6 +1798,86 @@
       btnSave.disabled = btnSend.disabled = false;
       btnSave.textContent = 'Save Booking';
       btnSend.textContent = 'Save & Send Confirmation';
+    }
+  }
+
+  /* ── Edit Payment modal ── */
+  function openEditPayment(session_id) {
+    const b = allBookings.find(x => x.session_id === session_id);
+    if (!b) return;
+    document.getElementById('ep-session-id').value = session_id;
+    const total = parseFloat(b.grand_total || 0) || ((b.amount_total || 0) / 100);
+    const paidNow = (b.amount_total || 0) / 100;
+    const remaining = parseFloat(b.remaining_balance || 0);
+    document.getElementById('ep-amount-paid').value = paidNow.toFixed(2);
+    document.getElementById('ep-remaining').value = remaining.toFixed(2);
+    document.getElementById('ep-paid-full').checked = !!b.paid_in_full;
+    // Map stored payment_method_external → dropdown value
+    const m = b.payment_method_external;
+    document.getElementById('ep-method').value =
+      (m && ['cash','venmo','zelle','check','external_platform'].includes(m)) ? m : 'stripe';
+    document.getElementById('ep-meta').textContent =
+      'Charter total: $' + total.toFixed(2) + ' · ' + (b.full_name || b.charter_name || '');
+    document.getElementById('edit-payment-overlay').classList.add('open');
+  }
+
+  function closeEditPayment(e) { if (e && e.target !== document.getElementById('edit-payment-overlay')) return; closeEditPaymentBtn(); }
+  function closeEditPaymentBtn() { document.getElementById('edit-payment-overlay').classList.remove('open'); }
+
+  function epRecalc() {
+    // When the user types an amount paid, auto-update remaining + paid_in_full
+    const session_id = document.getElementById('ep-session-id').value;
+    const b = allBookings.find(x => x.session_id === session_id);
+    if (!b) return;
+    const total = parseFloat(b.grand_total || 0) || ((b.amount_total || 0) / 100);
+    const paid = parseFloat(document.getElementById('ep-amount-paid').value) || 0;
+    document.getElementById('ep-remaining').value = Math.max(0, total - paid).toFixed(2);
+    document.getElementById('ep-paid-full').checked = paid >= total;
+  }
+
+  function epOnPaidFullToggle() {
+    // Manual override: when toggled on, force remaining to 0 (admin says it's settled)
+    if (document.getElementById('ep-paid-full').checked) {
+      document.getElementById('ep-remaining').value = '0.00';
+    }
+  }
+
+  async function epSave() {
+    const session_id = document.getElementById('ep-session-id').value;
+    const btn = document.getElementById('ep-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    const paid = parseFloat(document.getElementById('ep-amount-paid').value) || 0;
+    const remaining = parseFloat(document.getElementById('ep-remaining').value) || 0;
+    const paidInFull = document.getElementById('ep-paid-full').checked;
+    const methodSelect = document.getElementById('ep-method').value;
+    // 'stripe' means Stripe payment → store NULL in payment_method_external (per schema convention)
+    const payment_method_external = methodSelect === 'stripe' ? null : methodSelect;
+
+    const body = {
+      session_id,
+      amount_total: Math.round(paid * 100),
+      remaining_balance: paidInFull ? 0 : remaining,
+      paid_in_full: paidInFull,
+      payment_type: paidInFull ? 'full' : 'deposit',
+      payment_method_external,
+    };
+
+    try {
+      const result = await api('/api/admin?action=update-payment', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      if (result && result.ok) {
+        closeEditPaymentBtn();
+        loadData();
+      } else {
+        showError(result?.error || 'Failed to update payment.');
+        btn.disabled = false; btn.textContent = 'Save Payment';
+      }
+    } catch (e) {
+      showError(e.message || 'Update failed.');
+      btn.disabled = false; btn.textContent = 'Save Payment';
     }
   }
 

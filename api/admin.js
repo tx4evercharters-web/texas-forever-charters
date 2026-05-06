@@ -11,6 +11,7 @@ const {
   removeBlackout,
   searchCustomers,
   addManualBooking,
+  updateBookingPayment,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails } = require('../lib/send-emails');
 
@@ -305,6 +306,21 @@ async function handleAddBooking(req, res) {
   }
 }
 
+async function handleUpdatePayment(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { session_id, ...fields } = req.body || {};
+  if (!session_id) return res.status(400).json({ error: 'Missing session_id' });
+
+  try {
+    const updated = await updateBookingPayment(session_id, fields);
+    if (!updated) return res.status(404).json({ error: 'Booking not found' });
+    return res.status(200).json({ ok: true, booking: updated });
+  } catch (err) {
+    console.error('Update payment error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 /* ── Router ── */
 
 const PUBLIC_ACTIONS = new Set(['login']);
@@ -321,6 +337,7 @@ const ROUTES = {
   'send-payment-link': handleSendPaymentLink,
   'customer-search':   handleCustomerSearch,
   'add-booking':       handleAddBooking,
+  'update-payment':    handleUpdatePayment,
 };
 
 module.exports = async function handler(req, res) {
