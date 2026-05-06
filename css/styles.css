@@ -389,7 +389,9 @@ nav.scrolled .nav-logo img {
   .nav-book {
     width: fit-content;
     text-align: center;
-    padding: 10px 24px;
+    padding: 6px 14px;
+    font-size: 12px;
+    letter-spacing: 1.5px;
   }
 .hero-actions {
     flex-direction: row;
