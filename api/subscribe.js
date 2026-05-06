@@ -22,11 +22,14 @@ module.exports = async function handler(req, res) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Valid email required' });
   }
+  console.log('[subscribe] received:', email);
 
   const apiKey = process.env.MAILCHIMP_API_KEY;
   const audienceId = process.env.MAILCHIMP_AUDIENCE_ID;
 
   if (!apiKey || !audienceId) {
+    console.error('[subscribe] missing env vars',
+      { MAILCHIMP_API_KEY: !!apiKey, MAILCHIMP_AUDIENCE_ID: !!audienceId });
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
@@ -50,6 +53,7 @@ module.exports = async function handler(req, res) {
       let data = '';
       upstream.on('data', chunk => { data += chunk; });
       upstream.on('end', async () => {
+        console.log('[subscribe] mailchimp status:', upstream.statusCode);
         if (upstream.statusCode === 200) {
           // Send welcome email with promo code (best-effort, capped at 5s)
           try {
@@ -62,7 +66,15 @@ module.exports = async function handler(req, res) {
             await new Promise((resolveEmail) => {
               let settled = false;
               const done = () => { if (!settled) { settled = true; resolveEmail(); } };
-              const emailReq = https.request({ hostname: 'api.resend.com', path: '/emails', method: 'POST', headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(resendBody) } }, (r) => { r.on('data', () => {}); r.on('end', done); });
+              const emailReq = https.request({ hostname: 'api.resend.com', path: '/emails', method: 'POST', headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(resendBody) } }, (r) => {
+                let respData = '';
+                r.on('data', c => { respData += c; });
+                r.on('end', () => {
+                  if (r.statusCode < 200 || r.statusCode >= 300) console.error('[subscribe] resend non-2xx:', r.statusCode, respData);
+                  else console.log('[subscribe] resend OK:', r.statusCode);
+                  done();
+                });
+              });
               emailReq.on('error', (err) => { console.error('Resend request error:', err.message); done(); });
               emailReq.setTimeout(5000, () => { console.error('Resend request timed out after 5s'); emailReq.destroy(); done(); });
               emailReq.write(resendBody);
@@ -71,11 +83,16 @@ module.exports = async function handler(req, res) {
           } catch(e) { console.error('Welcome email failed:', e.message); }
           res.status(200).json({ success: true });
         } else {
+          console.error('[subscribe] mailchimp non-200:', upstream.statusCode, data);
           try {
             const parsed = JSON.parse(data);
-            res.status(400).json({ error: parsed.title || 'Subscription failed' });
+            res.status(400).json({
+              error: parsed.title || 'Subscription failed',
+              detail: parsed.detail || null,
+              status: upstream.statusCode,
+            });
           } catch {
-            res.status(502).json({ error: 'Upstream error' });
+            res.status(502).json({ error: 'Upstream error', status: upstream.statusCode });
           }
         }
         resolve();
@@ -83,6 +100,7 @@ module.exports = async function handler(req, res) {
     });
 
     request.on('error', (err) => {
+      console.error('[subscribe] mailchimp request error:', err.message);
       res.status(502).json({ error: 'Request failed', detail: err.message });
       resolve();
     });
