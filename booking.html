@@ -1262,12 +1262,18 @@
     @media (max-width: 768px) {
       .progress-wrap { top: 60px; padding: 12px 16px 10px; }
       .ps-label { display: none; }
+      .newsletter-popup { display: flex !important; }
       .ps-dot { width: 26px; height: 26px; font-size: 11px; }
       .ps-item::before { top: 13px; }
 
       .booking-form-wrap { padding: 28px 16px 100px; }
 
-      .vessel-grid { grid-template-columns: 1fr; gap: 14px; }
+      .vessel-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .vessel-img { aspect-ratio: 3/2; }
+      .vessel-info { padding: 12px 12px 14px; }
+      .vessel-name { font-size: 18px; }
+      .vessel-sub { font-size: 11px; }
+      .vessel-spec { font-size: 10px; padding: 3px 7px; }
       .exp-select-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .form-grid { grid-template-columns: 1fr; }
       .payment-buttons { grid-template-columns: 1fr; }
@@ -2358,6 +2364,14 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     /* ── Init ── */
     renderCalendar();
     updateProgress();
+
+    // Deep link: ?vessel=yacht or ?vessel=pontoon skips step 1
+    const urlParams = new URLSearchParams(window.location.search);
+    const preselect = urlParams.get('vessel');
+    if (preselect === 'yacht' || preselect === 'pontoon') {
+      selectVessel(preselect);
+      showStep(2, false);
+    }
   </script>
 
 </body>
