@@ -451,6 +451,23 @@
     .edit-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-600); }
     .edit-input { padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 14px; font-family: 'Barlow', sans-serif; outline: none; transition: border-color 0.15s; }
     .edit-input:focus { border-color: var(--navy); }
+    /* Per-field "edited" indicator for the Add Booking pricing section.
+       Hidden by default; flipped on when admin overrides an auto-calculated value. */
+    .ab-edited-flag {
+      display: none;
+      margin-left: 6px;
+      padding: 1px 6px;
+      background: var(--amber-bg);
+      border: 1px solid var(--amber-border);
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--amber);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      vertical-align: middle;
+    }
+    .ab-edited-flag.show { display: inline-block; }
     .edit-addon-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
     .edit-addon-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--gray-200); border-radius: 6px; cursor: pointer; transition: border-color 0.15s; }
     .edit-addon-item:hover { border-color: var(--navy); }
@@ -1419,34 +1436,40 @@
           <input type="number" class="edit-input" id="ab-towel-qty" min="0" max="20" value="0" placeholder="Qty" style="width:80px;">
         </div>
         <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:14px;">
-          <div id="ab-price-rows" style="font-size:13px;color:var(--gray-700);"></div>
-          <div id="ab-fee-overrides" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);">
-            <div class="edit-form-grid">
-              <div class="edit-form-group">
-                <label class="edit-label">Charter Subtotal</label>
-                <input class="edit-input" id="ab-charter-subtotal" type="number" step="0.01" min="0">
-              </div>
-              <div class="edit-form-group">
-                <label class="edit-label">Admin Fee</label>
-                <input class="edit-input" id="ab-admin-fee" type="number" step="0.01" min="0">
-              </div>
-              <div class="edit-form-group">
-                <label class="edit-label">Sales Tax</label>
-                <input class="edit-input" id="ab-tax-amount" type="number" step="0.01" min="0">
-              </div>
-              <div class="edit-form-group">
-                <label class="edit-label">Processing Fee</label>
-                <input class="edit-input" id="ab-processing-fee" type="number" step="0.01" min="0">
-              </div>
-              <div class="edit-form-group">
-                <label class="edit-label">Promo Discount</label>
-                <input class="edit-input" id="ab-promo-discount" type="number" step="0.01" min="0">
-              </div>
+          <div class="edit-form-grid">
+            <div class="edit-form-group">
+              <label class="edit-label">Charter Subtotal <span class="ab-edited-flag" id="ab-edited-subtotal">edited</span></label>
+              <input class="edit-input" id="ab-charter-subtotal" type="number" step="0.01" min="0" oninput="abFieldEdited('subtotal')">
+            </div>
+            <div class="edit-form-group">
+              <label class="edit-label">Admin Fee (10% default) <span class="ab-edited-flag" id="ab-edited-admin">edited</span></label>
+              <input class="edit-input" id="ab-admin-fee" type="number" step="0.01" min="0" oninput="abFieldEdited('adminFee')">
+            </div>
+            <div class="edit-form-group">
+              <label class="edit-label">Sales Tax (8.5% default) <span class="ab-edited-flag" id="ab-edited-tax">edited</span></label>
+              <input class="edit-input" id="ab-tax-amount" type="number" step="0.01" min="0" oninput="abFieldEdited('tax')">
+            </div>
+            <div class="edit-form-group">
+              <label class="edit-label">Processing Fee (2.9% on Stripe) <span class="ab-edited-flag" id="ab-edited-processing">edited</span></label>
+              <input class="edit-input" id="ab-processing-fee" type="number" step="0.01" min="0" oninput="abFieldEdited('processing')">
+            </div>
+            <div class="edit-form-group">
+              <label class="edit-label">Promo Code</label>
+              <input class="edit-input" id="ab-promo-code" type="text" placeholder="LAKELIFE10" autocomplete="off" oninput="abPromoCodeInput()">
+              <div id="ab-promo-status" style="font-size:11px;margin-top:2px;display:none;"></div>
+            </div>
+            <div class="edit-form-group">
+              <label class="edit-label">Promo Discount ($) <span class="ab-edited-flag" id="ab-edited-promo">edited</span></label>
+              <input class="edit-input" id="ab-promo-discount" type="number" step="0.01" min="0" oninput="abFieldEdited('promo')">
             </div>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);">
-            <label class="edit-label" for="ab-grand-total">Grand Total (override)</label>
-            <input class="edit-input" id="ab-grand-total" type="number" step="0.01" min="0" style="width:140px;text-align:right;font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--navy);">
+            <label class="edit-label" for="ab-grand-total">Grand Total <span class="ab-edited-flag" id="ab-edited-total">edited</span></label>
+            <input class="edit-input" id="ab-grand-total" type="number" step="0.01" min="0" style="width:140px;text-align:right;font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--navy);" oninput="abFieldEdited('total')">
+          </div>
+          <div style="font-size:11px;color:var(--gray-400);margin-top:8px;line-height:1.5;">
+            Grand Total = Subtotal + Admin Fee + Sales Tax + Processing Fee − Promo Discount.
+            Edit any field to override the auto-calculated value.
           </div>
         </div>
       </div>
@@ -3229,7 +3252,73 @@
   /* ── Add Booking modal ── */
   const AB_ADDON_PRICES = { drone: 200, towels: 8, water: 25, ice: 50, beerpong: 50 };
   let abCustomerSearchTimer = null;
-  let abAdminOverrideTotal = false;
+  /* Per-field override map for the Add Booking pricing section.
+     A field flips to true when the admin manually edits it; recalcs
+     skip overridden fields so manual values stick across upstream changes
+     (vessel/duration/add-on toggles, etc.). */
+  let abFieldOverrides = {
+    subtotal:   false,
+    adminFee:   false,
+    tax:        false,
+    processing: false,
+    promo:      false,
+    total:      false,
+  };
+  const AB_VALID_PROMO_CODES = ['LAKELIFE10', 'FOREVER10', 'TXF10'];
+
+  function abClearAllOverrides() {
+    Object.keys(abFieldOverrides).forEach(k => { abFieldOverrides[k] = false; });
+    ['subtotal','admin','tax','processing','promo','total'].forEach(suffix => {
+      const el = document.getElementById('ab-edited-' + suffix);
+      if (el) el.classList.remove('show');
+    });
+    const codeEl = document.getElementById('ab-promo-code');
+    if (codeEl) codeEl.value = '';
+    const status = document.getElementById('ab-promo-status');
+    if (status) { status.style.display = 'none'; status.textContent = ''; }
+  }
+
+  function abMarkAllOverridden() {
+    /* Used in edit mode so the stored row values are never overwritten
+       by auto-calc when the modal opens. */
+    Object.keys(abFieldOverrides).forEach(k => { abFieldOverrides[k] = true; });
+    [['subtotal','subtotal'],['adminFee','admin'],['tax','tax'],['processing','processing'],['promo','promo'],['total','total']].forEach(([_, suffix]) => {
+      const el = document.getElementById('ab-edited-' + suffix);
+      if (el) el.classList.add('show');
+    });
+  }
+
+  function abFieldEdited(field) {
+    abFieldOverrides[field] = true;
+    const suffixMap = { subtotal: 'subtotal', adminFee: 'admin', tax: 'tax', processing: 'processing', promo: 'promo', total: 'total' };
+    const flag = document.getElementById('ab-edited-' + suffixMap[field]);
+    if (flag) flag.classList.add('show');
+    abRecalcPrice();
+    if (abEditingSessionId) abEditPaymentRecalc();
+  }
+
+  function abPromoCodeInput() {
+    const raw = (document.getElementById('ab-promo-code').value || '').trim().toUpperCase();
+    const status = document.getElementById('ab-promo-status');
+    if (!raw) {
+      status.style.display = 'none';
+      status.textContent = '';
+      return;
+    }
+    if (AB_VALID_PROMO_CODES.includes(raw)) {
+      const subtotal = parseFloat(document.getElementById('ab-charter-subtotal').value) || 0;
+      const discount = Math.round(subtotal * 0.10 * 100) / 100;
+      document.getElementById('ab-promo-discount').value = discount.toFixed(2);
+      abFieldEdited('promo');
+      status.style.color = 'var(--green)';
+      status.style.display = 'block';
+      status.textContent = '✓ ' + raw + ' applied — 10% off subtotal ($' + discount.toFixed(2) + ')';
+    } else {
+      status.style.color = 'var(--red)';
+      status.style.display = 'block';
+      status.textContent = 'Not a valid code (try LAKELIFE10, FOREVER10, or TXF10) — or just type a discount amount.';
+    }
+  }
 
   function openAddBooking(prefillDate) {
     // Reset edit-mode state and modal chrome
@@ -3241,8 +3330,6 @@
     document.getElementById('ab-save-send-btn').style.display = '';
     document.getElementById('ab-payment-add').style.display = 'flex';
     document.getElementById('ab-payment-edit').style.display = 'none';
-    document.getElementById('ab-fee-overrides').style.display = 'none';
-    document.getElementById('ab-price-rows').style.display = '';
     document.getElementById('ab-special-requests').value = '';
 
     // Reset form
@@ -3271,7 +3358,11 @@
     document.getElementById('ab-conflict-warning').style.display = 'none';
     document.getElementById('ab-customer-suggestions').style.display = 'none';
     document.getElementById('ab-customer-match').style.display = 'none';
-    abAdminOverrideTotal = false;
+    // Clear any pricing values + override flags so the next open is a fresh auto-calc
+    ['ab-charter-subtotal','ab-admin-fee','ab-tax-amount','ab-processing-fee','ab-promo-discount','ab-grand-total'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    abClearAllOverrides();
     abRecalcPrice();
     abUpdatePaymentUI();
     document.getElementById('add-booking-overlay').classList.add('open');
@@ -3360,21 +3451,56 @@
     };
   }
 
+  /* Recompute the pricing fields, honouring any per-field overrides.
+     For each non-overridden field we write the auto value derived from the
+     CURRENT effective values of its inputs (so changing a manually-set
+     subtotal still flows through admin fee/tax/etc, while overridden
+     fields stay put). Grand Total = Subtotal + Admin Fee + Sales Tax +
+     Processing Fee − Promo Discount. */
   function abRecalcPrice() {
     const p = abComputePricing();
-    const dayLabel = p.day === 6 ? 'Sat rate' : (p.day === 0 || p.day === 5) ? 'Fri/Sun rate' : 'Mon–Thu rate';
-    const rows = [];
-    rows.push(['Charter (' + p.duration + ' hrs × $' + p.rate + '/hr · ' + dayLabel + ')', '$' + p.charterBase.toFixed(2)]);
-    if (p.addOnsTotal) rows.push(['Add-Ons', '$' + p.addOnsTotal.toFixed(2)]);
-    rows.push(['Admin Fee (10%)', '+$' + p.adminFee.toFixed(2)]);
-    rows.push(['Sales Tax (8.5%)', '+$' + p.tax.toFixed(2)]);
-    if (p.processingFee) rows.push(['Credit Card Processing (2.9%)', '+$' + p.processingFee.toFixed(2)]);
-    document.getElementById('ab-price-rows').innerHTML = rows.map(([l, v]) =>
-      '<div style="display:flex;justify-content:space-between;padding:3px 0;">' +
-      '<span style="color:var(--gray-600)">' + esc(l) + '</span>' +
-      '<span style="color:var(--gray-700);font-weight:600">' + v + '</span></div>'
-    ).join('');
-    if (!abAdminOverrideTotal) document.getElementById('ab-grand-total').value = p.total.toFixed(2);
+    const subtotalField = document.getElementById('ab-charter-subtotal');
+    const adminField    = document.getElementById('ab-admin-fee');
+    const taxField      = document.getElementById('ab-tax-amount');
+    const procField     = document.getElementById('ab-processing-fee');
+    const promoField    = document.getElementById('ab-promo-discount');
+    const totalField    = document.getElementById('ab-grand-total');
+
+    const round2 = (n) => Math.round(n * 100) / 100;
+
+    if (!abFieldOverrides.subtotal) {
+      subtotalField.value = (p.charterBase + p.addOnsTotal).toFixed(2);
+    }
+    const subtotal = parseFloat(subtotalField.value) || 0;
+
+    if (!abFieldOverrides.adminFee) {
+      adminField.value = round2(subtotal * 0.10).toFixed(2);
+    }
+    const adminFee = parseFloat(adminField.value) || 0;
+
+    if (!abFieldOverrides.tax) {
+      taxField.value = round2((subtotal + adminFee) * 0.085).toFixed(2);
+    }
+    const tax = parseFloat(taxField.value) || 0;
+
+    if (!abFieldOverrides.processing) {
+      const usesStripe = document.querySelector('input[name="ab-payment"]:checked')?.value === 'stripe-link';
+      procField.value = usesStripe
+        ? round2((subtotal + adminFee + tax) * 0.029).toFixed(2)
+        : '0.00';
+    }
+    const processing = parseFloat(procField.value) || 0;
+
+    if (!abFieldOverrides.promo) {
+      // Default 0; promo is only set by the promo-code helper or admin override.
+      if (promoField.value === '') promoField.value = '0.00';
+    }
+    const promo = parseFloat(promoField.value) || 0;
+
+    if (!abFieldOverrides.total) {
+      totalField.value = round2(subtotal + adminFee + tax + processing - promo).toFixed(2);
+    }
+
     // Keep the amount-paid status in sync when external is selected
     if (document.querySelector('input[name="ab-payment"]:checked')?.value === 'external') {
       abUpdateAmountPaidStatus();
@@ -3505,8 +3631,16 @@
     }
 
 
-    const p = abComputePricing();
-    const grandTotal = parseFloat(document.getElementById('ab-grand-total').value) || p.total;
+    /* Read the editable pricing fields directly so admin overrides stick.
+       abRecalcPrice keeps non-overridden fields in sync with auto-calc, so
+       these values reflect the final state shown in the modal. */
+    const fieldNum = (id) => parseFloat(document.getElementById(id).value) || 0;
+    const charterSubtotal = fieldNum('ab-charter-subtotal');
+    const adminFee        = fieldNum('ab-admin-fee');
+    const taxAmount       = fieldNum('ab-tax-amount');
+    const processingFee   = fieldNum('ab-processing-fee');
+    const promoDiscount   = fieldNum('ab-promo-discount');
+    const grandTotal      = fieldNum('ab-grand-total');
     const payment = document.querySelector('input[name="ab-payment"]:checked')?.value;
     const externalMethod = document.getElementById('ab-external-method').value;
 
@@ -3561,12 +3695,12 @@
       paid_in_full:    paidInFull,
       remaining_balance: remaining,
 
-      charter_subtotal: parseFloat((p.charterBase + p.addOnsTotal).toFixed(2)),
-      admin_fee:        p.adminFee,
-      tax_amount:       p.tax,
-      processing_fee:   p.processingFee,
-      promo_discount:   0,
-      promo_applied:    'false',
+      charter_subtotal: charterSubtotal,
+      admin_fee:        adminFee,
+      tax_amount:       taxAmount,
+      processing_fee:   processingFee,
+      promo_discount:   promoDiscount,
+      promo_applied:    String(promoDiscount > 0),
     };
 
     try {
@@ -3694,8 +3828,6 @@
     document.getElementById('ab-customer-match').style.display = 'none';
     document.getElementById('ab-payment-add').style.display = 'none';
     document.getElementById('ab-payment-edit').style.display = 'block';
-    document.getElementById('ab-fee-overrides').style.display = 'block';
-    document.getElementById('ab-price-rows').style.display = 'none';
 
     // Charter fields
     document.getElementById('ab-source').value         = b.source || 'website';
@@ -3724,14 +3856,15 @@
     document.getElementById('ab-addon-towels').checked   = !!(ao.towels > 0);
     document.getElementById('ab-towel-qty').value        = ao.towels || 0;
 
-    // Pricing — overrides preserve stored values exactly
-    abAdminOverrideTotal = true;
+    /* Pricing — populate stored values exactly and mark every field
+       overridden so a re-render won't overwrite them with auto-calc. */
     document.getElementById('ab-grand-total').value      = parseFloat(b.grand_total || 0).toFixed(2);
     document.getElementById('ab-charter-subtotal').value = parseFloat(b.charter_subtotal || 0).toFixed(2);
     document.getElementById('ab-admin-fee').value        = parseFloat(b.admin_fee       || 0).toFixed(2);
     document.getElementById('ab-tax-amount').value       = parseFloat(b.tax_amount      || 0).toFixed(2);
     document.getElementById('ab-processing-fee').value   = parseFloat(b.processing_fee  || 0).toFixed(2);
     document.getElementById('ab-promo-discount').value   = parseFloat(b.promo_discount  || 0).toFixed(2);
+    abMarkAllOverridden();
     abRecalcPrice();
 
     // Payment edit panel
@@ -5097,13 +5230,9 @@
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', abRecalcPrice);
   });
-  const grandTotalInput = document.getElementById('ab-grand-total');
-  if (grandTotalInput) {
-    grandTotalInput.addEventListener('input', () => {
-      abAdminOverrideTotal = true;
-      if (abEditingSessionId) abEditPaymentRecalc();
-    });
-  }
+  /* The pricing field oninput handlers in the markup call abFieldEdited(),
+     which marks the field overridden, recalculates downstream values, and
+     refreshes the edit-mode payment summary. No extra listener needed here. */
   ['ab-email','ab-phone'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', abOnEmailPhoneInput);
