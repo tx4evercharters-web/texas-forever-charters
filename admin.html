@@ -964,11 +964,12 @@
                 <th class="cust-sort active desc" data-sort="lifetime">Lifetime</th>
                 <th class="cust-sort" data-sort="last">Last</th>
                 <th class="cust-sort" data-sort="first">First</th>
+                <th class="cust-sort" data-sort="subscribed" title="Newsletter subscribed">📧</th>
                 <th>Tags</th>
               </tr>
             </thead>
             <tbody id="cust-tbody">
-              <tr><td colspan="9" class="loading">Loading customers…</td></tr>
+              <tr><td colspan="10" class="loading">Loading customers…</td></tr>
             </tbody>
           </table>
         </div>
@@ -2694,7 +2695,7 @@
 
     const tbody = document.getElementById('cust-tbody');
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No customers match those filters.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No customers match those filters.</td></tr>';
       return;
     }
 
@@ -2704,6 +2705,7 @@
       const lifetime = parseFloat(c.derived_lifetime || c.lifetime_value || c.total_spent || 0);
       const last = c.derived_last_date || c.last_booking_date;
       const first = c.derived_first_date || c.first_booking_date;
+      const subscribed = isCustSubscribed(c);
       const expanded = (String(custExpandedId) === String(c.id)) ? ' expanded' : '';
       const detailHtml = (String(custExpandedId) === String(c.id)) ? renderCustDetail(c) : '';
       return `
@@ -2716,9 +2718,10 @@
           <td style="font-weight:700;color:var(--navy)">${fmtMoney(lifetime)}</td>
           <td>${last ? esc(fmtDate((last+'').slice(0,10))) : '—'}</td>
           <td>${first ? esc(fmtDate((first+'').slice(0,10))) : '—'}</td>
+          <td style="text-align:center;font-size:14px;" title="${subscribed ? 'Newsletter subscribed' : 'Not subscribed'}">${subscribed ? '📧' : '<span style="color:var(--gray-200)">—</span>'}</td>
           <td>${tags || '<span style="color:var(--gray-400);font-size:11px">—</span>'}</td>
         </tr>
-        ${detailHtml ? `<tr class="cust-detail-row"><td colspan="9">${detailHtml}</td></tr>` : ''}
+        ${detailHtml ? `<tr class="cust-detail-row"><td colspan="10">${detailHtml}</td></tr>` : ''}
       `;
     }).join('');
 
@@ -2741,16 +2744,24 @@
     });
   }
 
+  function isCustSubscribed(c) {
+    if (c == null) return false;
+    if (c.derived_newsletter !== undefined) return !!c.derived_newsletter;
+    if (c.newsletter_subscribed) return true;
+    return (c.bookings || []).some(b => b.newsletter === true || b.newsletter === 'true' || b.newsletter === 1);
+  }
+
   function custSortKey(c, key) {
     switch (key) {
-      case 'full_name': return (c.full_name || '').toLowerCase();
-      case 'email':     return (c.email || '').toLowerCase();
-      case 'phone':     return (c.phone || '').replace(/\D/g, '');
-      case 'location':  return ((c.city || '') + (c.state || '')).toLowerCase();
-      case 'bookings':  return c.derived_total_bookings || c.total_bookings || 0;
-      case 'lifetime':  return parseFloat(c.derived_lifetime || c.lifetime_value || c.total_spent || 0) || 0;
-      case 'last':      return c.derived_last_date || c.last_booking_date || '';
-      case 'first':     return c.derived_first_date || c.first_booking_date || '';
+      case 'full_name':  return (c.full_name || '').toLowerCase();
+      case 'email':      return (c.email || '').toLowerCase();
+      case 'phone':      return (c.phone || '').replace(/\D/g, '');
+      case 'location':   return ((c.city || '') + (c.state || '')).toLowerCase();
+      case 'bookings':   return c.derived_total_bookings || c.total_bookings || 0;
+      case 'lifetime':   return parseFloat(c.derived_lifetime || c.lifetime_value || c.total_spent || 0) || 0;
+      case 'last':       return c.derived_last_date || c.last_booking_date || '';
+      case 'first':      return c.derived_first_date || c.first_booking_date || '';
+      case 'subscribed': return isCustSubscribed(c) ? 1 : 0;
       default: return '';
     }
   }
@@ -2784,6 +2795,14 @@
 
     const mailto = c.email ? `mailto:${esc(c.email)}` : '#';
     const sourceBadge = c.derived_source ? `<span class="badge badge-navy">${esc(c.derived_source)}</span>` : '';
+    const subscribed = isCustSubscribed(c);
+    const smsSubscribed = !!c.sms_subscribed;
+    const subBadges = `
+      <span class="badge ${subscribed ? 'badge-green' : ''}" style="${subscribed ? '' : 'background:var(--gray-100);color:var(--gray-400);border:1px solid var(--gray-200);'}">
+        ${subscribed ? '✓ Email Subscribed' : 'Not subscribed'}
+      </span>
+      ${smsSubscribed ? '<span class="badge badge-teal">📱 SMS Subscribed</span>' : ''}
+    `;
 
     return `
       <div class="cust-detail" data-cust="${esc(c.id)}" onclick="event.stopPropagation()">
@@ -2792,6 +2811,7 @@
             <a class="btn-sm btn-navy" href="${mailto}" style="text-decoration:none;display:inline-block;">📧 Send Email</a>
             <button class="btn-sm btn-red" onclick="custAddBookingFor('${esc(c.id)}')">+ Add Booking</button>
             ${sourceBadge}
+            ${subBadges}
           </div>
           <h4>Booking History</h4>
           ${bookingsHtml}
@@ -2911,6 +2931,8 @@
     { key: 'charter_name',   label: 'Charter Name',   required: false },
     { key: 'city',           label: 'City',           required: false },
     { key: 'state',          label: 'State',          required: false },
+    { key: 'newsletter',     label: 'Email Subscribed', required: false, hint: '"Subscribed" / Yes / true → true' },
+    { key: 'sms_subscribed', label: 'SMS Subscribed', required: false, hint: '"Subscribed" / Yes / true → true' },
   ];
 
   let importHeaders = [];
@@ -2996,6 +3018,8 @@
       charter_name:   ['charter name','trip name','occasion','charter','booking name'],
       city:           ['city'],
       state:          ['state','st'],
+      newsletter:     ['subscribed to email?','subscribed to email','email subscribed','newsletter','newsletter subscribed','email opt-in','email opt in'],
+      sms_subscribed: ['subscribed to text messages?','subscribed to text messages','sms subscribed','text subscribed','sms opt-in','sms opt in'],
     };
     for (const [key, candidates] of Object.entries(matchers)) {
       const idx = lc.findIndex(h => candidates.includes(h));
@@ -3059,6 +3083,13 @@
     if (t.includes('yacht') || t.includes('carver') || t.includes('40ft') || t.includes('40 ft')) return 'yacht';
     if (t.includes('pontoon') || t.includes('bentley') || t.includes('24ft') || t.includes('24 ft')) return 'pontoon';
     return null;
+  }
+
+  function normalizeBool(s) {
+    if (s === true) return true;
+    if (s == null || s === false) return false;
+    const t = String(s).trim().toLowerCase();
+    return t === 'true' || t === '1' || t === 'yes' || t === 'y' || t === 'subscribed' || t === 'on';
   }
 
   function normalizeEmail(s) {
@@ -3159,20 +3190,22 @@
 
   async function importConfirm() {
     const validRows = importMapped.filter((_, i) => importValid[i]).map(r => ({
-      date:           r._dateNorm,
-      vessel:         r._vesselNorm,
-      grand_total:    r._totalNorm,
-      full_name:      r.full_name || null,
-      customer_email: r.customer_email || null,
-      phone:          r.phone || null,
-      experience:     r.experience || null,
-      time_slot:      r.time_slot || null,
-      duration:       r.duration || null,
-      party_size:     r.party_size || null,
-      charter_name:   r.charter_name || null,
-      city:           r.city || null,
-      state:          r.state || null,
-      source_notes:   r.source || null,
+      date:            r._dateNorm,
+      vessel:          r._vesselNorm,
+      grand_total:     r._totalNorm,
+      full_name:       r.full_name || null,
+      customer_email:  r.customer_email || null,
+      phone:           r.phone || null,
+      experience:      r.experience || null,
+      time_slot:       r.time_slot || null,
+      duration:        r.duration || null,
+      party_size:      r.party_size || null,
+      charter_name:    r.charter_name || null,
+      city:            r.city || null,
+      state:           r.state || null,
+      source_notes:    r.source || null,
+      newsletter:      normalizeBool(r.newsletter),
+      sms_subscribed:  normalizeBool(r.sms_subscribed),
     }));
     if (!validRows.length) { showError('No valid rows to import.'); return; }
 
@@ -3247,7 +3280,9 @@
         custSort.dir = custSort.dir === 'asc' ? 'desc' : 'asc';
       } else {
         custSort.key = key;
+        // Text-ish columns default ascending; numeric/boolean default descending
         custSort.dir = (key === 'full_name' || key === 'email' || key === 'phone' || key === 'location') ? 'asc' : 'desc';
+        if (key === 'subscribed') custSort.dir = 'desc';
       }
       renderCustomers();
     });

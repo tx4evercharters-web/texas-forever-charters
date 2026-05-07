@@ -353,6 +353,8 @@ async function handleListCustomers(req, res) {
         const v = b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
         return s + (isFinite(v) ? v : 0);
       }, 0);
+      // Fallback newsletter flag from bookings until newsletter_subscribed column is populated everywhere
+      const derivedNewsletter = bk.some(b => b.newsletter === true || b.newsletter === 'true' || b.newsletter === 1);
       return {
         ...c,
         derived_source:        source,
@@ -360,6 +362,7 @@ async function handleListCustomers(req, res) {
         derived_first_date:    firstBooking ? (firstBooking.date || firstBooking.booked_at) : c.first_booking_date,
         derived_last_date:     lastBooking  ? (lastBooking.date  || lastBooking.booked_at)  : c.last_booking_date,
         derived_lifetime:      computedLifetime || parseFloat(c.lifetime_value || c.total_spent || 0),
+        derived_newsletter:    !!c.newsletter_subscribed || derivedNewsletter,
         bookings:              bk,
       };
     });
