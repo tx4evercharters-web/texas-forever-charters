@@ -244,6 +244,18 @@
       box-shadow: 0 12px 32px rgba(0,0,0,0.4);
     }
 
+    /* Auto-advance confirmation pulse — runs briefly on the just-selected
+       vessel / experience / duration / date / time-slot card so the user
+       sees their click registered before the wizard advances. */
+    @keyframes selectionPulse {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+    .flash-confirm {
+      animation: selectionPulse 0.4s ease-out;
+    }
+
     .vessel-card.selected {
       border-color: var(--red);
       box-shadow: 0 0 0 3px rgba(200,16,46,0.2), 0 12px 32px rgba(0,0,0,0.4);
@@ -1992,8 +2004,11 @@
       document.getElementById('btnBack').disabled = currentStep === 1;
       document.getElementById('btnNext').textContent =
         currentStep === 8 ? '' : 'Continue →';
+      // Steps 1–5 auto-advance on selection, so the manual Continue button
+      // is hidden there. Steps 6 (form) and 7 (add-ons) need an explicit
+      // confirm. Step 8 has its own Pay button so btnNext stays hidden too.
       document.getElementById('btnNext').style.display =
-        currentStep === 8 ? 'none' : '';
+        (currentStep <= 5 || currentStep === 8) ? 'none' : '';
     }
 
     /* ── Navigation ── */
@@ -2016,7 +2031,33 @@
     }
 
     function goBack() {
+      // Cancel any pending auto-advance so a stale timer can't push the
+      // user forward again right after they tapped Back.
+      if (_autoAdvanceTimer) { clearTimeout(_autoAdvanceTimer); _autoAdvanceTimer = null; }
       if (currentStep > 1) showStep(currentStep - 1, true);
+    }
+
+    /* ── Auto-advance on selection (steps 1–5) ──
+       Adds a brief pulse to the just-tapped element, then calls goNext()
+       after a short delay so the customer sees the confirmation. A pending
+       timer is replaced if the user re-taps a different option, and is
+       cancelled by goBack() so we never advance after a back tap. */
+    let _autoAdvanceTimer = null;
+    const AUTO_ADVANCE_DELAY_MS = 380;
+    function flashAndAdvance(el) {
+      if (_autoAdvanceTimer) { clearTimeout(_autoAdvanceTimer); _autoAdvanceTimer = null; }
+      if (el && el.classList) {
+        el.classList.remove('flash-confirm');
+        // Force reflow so the animation can re-trigger when the same
+        // element is tapped again (e.g., re-confirming a selection).
+        void el.offsetWidth;
+        el.classList.add('flash-confirm');
+        setTimeout(() => el.classList.remove('flash-confirm'), 500);
+      }
+      _autoAdvanceTimer = setTimeout(() => {
+        _autoAdvanceTimer = null;
+        goNext();
+      }, AUTO_ADVANCE_DELAY_MS);
     }
 
     /* ── Validation ── */
@@ -2088,6 +2129,10 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       // Refresh full-day blackouts for the selected vessel so the calendar
       // disables any dates that don't apply to this vessel.
       fetchVesselBlackouts(v);
+      // Pulse the chosen card and advance to step 2. Skip auto-advance if
+      // we're not on step 1 — selectVessel also runs from the deep-link
+      // path, where the caller decides whether to advance.
+      if (currentStep === 1) flashAndAdvance(document.getElementById('card-' + v));
     }
 
     function filterExperiencesByVessel(vessel) {
@@ -2222,6 +2267,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       // Reset duration if experience type changed (short vs long)
       booking.duration = null;
       booking.timeSlot = null;
+      flashAndAdvance(el);
     }
 
     /* ── Step 3: Duration ── */
@@ -2257,6 +2303,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
           booking.timeSlot = null;
           document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
           btn.classList.add('selected');
+          flashAndAdvance(btn);
         };
         grid.appendChild(btn);
       }
@@ -2309,13 +2356,13 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         if (isBlackedOut) cell.title = 'Unavailable for ' + (booking.vessel || 'this vessel');
 
         if (!isPast && !isBlackedOut) {
-          cell.onclick = () => selectDate(date);
+          cell.onclick = () => selectDate(date, cell);
         }
         cells.appendChild(cell);
       }
     }
 
-    function selectDate(date) {
+    function selectDate(date, cellEl) {
       booking.date = date;
       booking.timeSlot = null;
       renderCalendar();
@@ -2330,6 +2377,10 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       // Pre-warm the per-day availability cache so the time-slot step renders
       // booked/blacked-out slots correctly the moment the user advances.
       if (booking.vessel) fetchDayAvailability(ymd(date), booking.vessel);
+      // renderCalendar() rebuilds cells, so the originally-clicked cell is
+      // detached. Look up the live one for the pulse.
+      const liveCell = document.querySelector('#calCells .cal-cell.selected') || cellEl;
+      flashAndAdvance(liveCell);
     }
 
     /* ── Step 5: Time Slots ── */
@@ -2427,6 +2478,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
             booking.timeSlot = slot;
             document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
+            flashAndAdvance(btn);
           };
         }
         row.appendChild(btn);
@@ -2752,6 +2804,10 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     const preselect = urlParams.get('vessel');
     if (preselect === 'yacht' || preselect === 'pontoon') {
       selectVessel(preselect);
+      // selectVessel queued an auto-advance for step 1 → step 2; we're
+      // jumping there manually so cancel it to avoid a stray advance
+      // from step 2 (where validateStep would toast about no experience).
+      if (_autoAdvanceTimer) { clearTimeout(_autoAdvanceTimer); _autoAdvanceTimer = null; }
       showStep(2, false);
     }
   </script>
