@@ -974,8 +974,8 @@
         </div>
         <div class="volume-grid" id="volume-grid">
           <div class="volume-item"><div class="volume-label">Total Charters</div><div class="volume-value" id="vol-total">—</div></div>
-          <div class="volume-item"><div class="volume-label">Yacht Charters</div><div class="volume-value" id="vol-yacht">—</div></div>
-          <div class="volume-item"><div class="volume-label">Pontoon Charters</div><div class="volume-value" id="vol-pontoon">—</div></div>
+          <div class="volume-item"><div class="volume-label">YACHT Charters</div><div class="volume-value" id="vol-yacht">—</div></div>
+          <div class="volume-item"><div class="volume-label">24FT BENTLEY Charters</div><div class="volume-value" id="vol-pontoon">—</div></div>
           <div class="volume-item"><div class="volume-label">Avg Party Size</div><div class="volume-value" id="vol-party">—</div></div>
           <div class="volume-item"><div class="volume-label">Avg Duration</div><div class="volume-value" id="vol-duration">—</div><div class="volume-sub">hours</div></div>
           <div class="volume-item"><div class="volume-label">Returning Customers</div><div class="volume-value" id="vol-returning">—</div></div>
@@ -987,8 +987,8 @@
         <div class="vessel-card">
           <div class="vessel-card-header yacht">
             <div>
-              <div class="vessel-card-title">⚓ Yacht</div>
-              <div class="vessel-card-sub">40ft Carver Aft Cabin</div>
+              <div class="vessel-card-title">⚓ YACHT</div>
+              <div class="vessel-card-sub">YACHT</div>
             </div>
           </div>
           <div class="vessel-stats">
@@ -1000,8 +1000,8 @@
         <div class="vessel-card">
           <div class="vessel-card-header pontoon">
             <div>
-              <div class="vessel-card-title">🚤 Pontoon</div>
-              <div class="vessel-card-sub">24ft Bentley Navigator 243</div>
+              <div class="vessel-card-title">🚤 24FT BENTLEY</div>
+              <div class="vessel-card-sub">24FT BENTLEY</div>
             </div>
           </div>
           <div class="vessel-stats">
@@ -1040,11 +1040,11 @@
             </div>
             <div class="calendar-title" id="cal-title">—</div>
             <div class="cal-nav-group" style="font-size:11px;color:var(--gray-600);flex-wrap:wrap;justify-content:flex-end;">
-              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#1B2A6B;border-radius:3px;"></div> Yacht</div>
-              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#C8102E;border-radius:3px;"></div> Pontoon</div>
+              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#1B2A6B;border-radius:3px;"></div> YACHT</div>
+              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:#C8102E;border-radius:3px;"></div> 24FT BENTLEY</div>
               <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:3px;"></div> Blackout (both)</div>
-              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:rgba(27,42,107,0.25);border:1px solid var(--navy);border-radius:3px;"></div> Yacht-only</div>
-              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background-image:repeating-linear-gradient(45deg,rgba(200,16,46,0.30) 0,rgba(200,16,46,0.30) 3px,transparent 3px,transparent 6px);border:1px solid var(--red);border-radius:3px;"></div> Pontoon-only</div>
+              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background:rgba(27,42,107,0.25);border:1px solid var(--navy);border-radius:3px;"></div> YACHT-only</div>
+              <div style="display:flex;align-items:center;gap:6px;"><div style="width:12px;height:12px;background-image:repeating-linear-gradient(45deg,rgba(200,16,46,0.30) 0,rgba(200,16,46,0.30) 3px,transparent 3px,transparent 6px);border:1px solid var(--red);border-radius:3px;"></div> 24FT BENTLEY-only</div>
             </div>
           </div>
           <div class="calendar-grid" id="calendar-grid"></div>
@@ -1196,8 +1196,8 @@
           <div class="edit-form-group">
             <label class="edit-label">Vessel</label>
             <select class="edit-input" id="ab-vessel">
-              <option value="yacht">40ft Carver Aft Cabin (Yacht)</option>
-              <option value="pontoon">24ft Bentley Navigator 243 (Pontoon)</option>
+              <option value="yacht">YACHT</option>
+              <option value="pontoon">24FT BENTLEY</option>
             </select>
           </div>
           <div class="edit-form-group">
@@ -1485,8 +1485,8 @@
           <label class="edit-label">Vessel</label>
           <select class="edit-input" id="bk-blackout-vessel">
             <option value="both">Both vessels</option>
-            <option value="yacht">Yacht only</option>
-            <option value="pontoon">Pontoon only</option>
+            <option value="yacht">YACHT only</option>
+            <option value="pontoon">24FT BENTLEY only</option>
           </select>
         </div>
         <div class="edit-form-group">
@@ -1729,7 +1729,10 @@
   }
 
   function vesselLabel(v) {
-    return v === 'yacht' ? '40ft Carver' : '24ft Bentley';
+    const s = String(v == null ? '' : v).toLowerCase().replace(/\s+/g, '');
+    if (s.includes('yacht') || s.includes('carver')) return 'YACHT';
+    if (s.includes('pontoon') || s.includes('bentley')) return '24FT BENTLEY';
+    return String(v || '—').toUpperCase();
   }
 
   function parseAddOns(raw) {
@@ -2662,7 +2665,7 @@
   }
 
   function vesselScopeLabel(vessel, time_slot) {
-    const v = vessel === 'both' ? 'Both vessels' : vessel === 'yacht' ? 'Yacht only' : vessel === 'pontoon' ? 'Pontoon only' : esc(vessel);
+    const v = vessel === 'both' ? 'Both vessels' : vessel === 'yacht' ? 'YACHT only' : vessel === 'pontoon' ? '24FT BENTLEY only' : esc(vessel);
     return (time_slot && time_slot !== 'all') ? (v + ' · ' + esc(time_slot)) : v;
   }
 
@@ -2681,8 +2684,8 @@
     const blockItems =
       '<div class="cal-ctx-section-label">' + (dayBlackouts.length ? 'Add another blackout' : 'Block this date') + '</div>' +
       `<button class="cal-ctx-item danger" onclick="ctxBlockDate('${esc(dateStr)}','both')">🚫 Both vessels (full day)</button>
-       <button class="cal-ctx-item" onclick="ctxBlockDate('${esc(dateStr)}','yacht')">⛵ Yacht only (full day)</button>
-       <button class="cal-ctx-item" onclick="ctxBlockDate('${esc(dateStr)}','pontoon')">🛥 Pontoon only (full day)</button>
+       <button class="cal-ctx-item" onclick="ctxBlockDate('${esc(dateStr)}','yacht')">⛵ YACHT only (full day)</button>
+       <button class="cal-ctx-item" onclick="ctxBlockDate('${esc(dateStr)}','pontoon')">🛥 24FT BENTLEY only (full day)</button>
        <button class="cal-ctx-item" onclick="ctxBlockTimeSlot('${esc(dateStr)}')">🕐 Block specific time slot…</button>`;
 
     const bookItem = `<button class="cal-ctx-item" onclick="ctxAddBooking('${esc(dateStr)}')">+ Add Booking${dayBlackouts.length ? ' anyway' : ''}</button>`;
