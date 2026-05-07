@@ -1,10 +1,61 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const https = require('https');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
+
+/* Direct Supabase REST query — kept inline rather than imported from
+   lib/storage to avoid pulling in unused helpers on this hot checkout path.
+   Returns null on any failure so a Supabase outage never blocks a sale. */
+function findRecentDuplicateBooking({ email, date, time_slot, withinMinutes }) {
+  return new Promise((resolve) => {
+    const base = process.env.SUPABASE_URL;
+    const key  = process.env.SUPABASE_SECRET_KEY;
+    if (!base || !key || !email || !date || !time_slot) return resolve(null);
+
+    const since = new Date(Date.now() - withinMinutes * 60 * 1000).toISOString();
+    const path = '/rest/v1/bookings?select=session_id,booked_at,customer_email,date,time_slot,status' +
+      '&customer_email=eq.' + encodeURIComponent(email.toLowerCase()) +
+      '&date=eq.'           + encodeURIComponent(date) +
+      '&time_slot=eq.'      + encodeURIComponent(time_slot) +
+      '&booked_at=gte.'     + encodeURIComponent(since) +
+      '&order=booked_at.desc&limit=1';
+
+    let url;
+    try { url = new URL(base.replace(/\/+$/, '') + path); }
+    catch { return resolve(null); }
+
+    const req = https.request(
+      { hostname: url.hostname, path: url.pathname + url.search, method: 'GET',
+        headers: { apikey: key, Authorization: 'Bearer ' + key, Accept: 'application/json' } },
+      (res) => {
+        let raw = '';
+        res.on('data', c => { raw += c; });
+        res.on('end', () => {
+          if (res.statusCode >= 400) {
+            console.error('[create-checkout] dup-check supabase error', res.statusCode, raw);
+            return resolve(null);
+          }
+          try {
+            const rows = JSON.parse(raw);
+            const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+            // Cancelled bookings shouldn't block a re-book — caller wanted the slot back.
+            if (row && row.status === 'cancelled') return resolve(null);
+            resolve(row);
+          } catch { resolve(null); }
+        });
+      }
+    );
+    req.on('error', (err) => {
+      console.error('[create-checkout] dup-check request failed', err.message);
+      resolve(null);
+    });
+    req.end();
+  });
+}
 
 module.exports = async function handler(req, res) {
   Object.entries(CORS_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
@@ -20,6 +71,29 @@ module.exports = async function handler(req, res) {
 
   if (!process.env.STRIPE_SECRET_KEY) {
     return res.status(500).json({ error: 'Payment processor not configured' });
+  }
+
+  /* Duplicate-booking guard — protects against the "didn't get a confirmation
+     email so I tried again" double-charge pattern. We block when the same
+     email + date + time_slot was booked in the last 2 hours. Cancelled rows
+     are intentionally ignored (the slot is open again). */
+  if (booking.email && booking.date && booking.timeSlot) {
+    const dup = await findRecentDuplicateBooking({
+      email:         booking.email,
+      date:          booking.date,
+      time_slot:     booking.timeSlot,
+      withinMinutes: 120,
+    });
+    if (dup) {
+      console.log('[create-checkout] duplicate booking blocked',
+        'email:', booking.email, '| date:', booking.date, '| slot:', booking.timeSlot,
+        '| existing_session:', dup.session_id);
+      return res.status(409).json({
+        error:   'duplicate_booking',
+        message: 'A booking for this date and time already exists for this email address.',
+        existing_session_id: dup.session_id,
+      });
+    }
   }
 
   const proto = req.headers['x-forwarded-proto'] || 'https';

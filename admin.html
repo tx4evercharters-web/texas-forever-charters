@@ -845,6 +845,7 @@
     .loading { padding: 40px; text-align: center; color: var(--gray-400); }
     .empty-state { padding: 40px; text-align: center; color: var(--gray-400); font-size: 14px; }
     .error-bar { background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: var(--red); display: none; }
+    .success-bar { background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: #047857; display: none; }
 
     @media (max-width: 700px) {
       .vessel-split { grid-template-columns: 1fr; }
@@ -889,6 +890,7 @@
 
   <main>
     <div class="error-bar" id="error-bar"></div>
+    <div class="success-bar" id="success-bar"></div>
 
     <!-- ══ BOOKINGS TAB ══ -->
     <div class="tab-panel active" id="tab-bookings">
@@ -1924,6 +1926,7 @@
     const items = [];
     if (s !== 'concluded') items.push(`<button class="bk-menu-item" onclick="bkMarkConcluded('${id}')">✓ Mark Concluded</button>`);
     if (s !== 'cancelled') items.push(`<button class="bk-menu-item" onclick="bkCancel('${id}')">⊘ Cancel Booking</button>`);
+    items.push(`<button class="bk-menu-item" onclick="bkResendConfirmation('${id}')">📧 Resend Confirmation</button>`);
     if (hasIntent && refundable > 0) {
       items.push(`<button class="bk-menu-item" onclick="bkFullRefund('${id}')">↩ Full Refund (${fmtMoney(refundable)})</button>`);
       items.push(`<button class="bk-menu-item" onclick="bkPartialRefund('${id}')">↪ Partial Refund…</button>`);
@@ -1979,6 +1982,39 @@
     const b = bkFindBooking(id); if (!b) return;
     if (!confirm(`Mark this booking on ${fmtDate(b.date)} as concluded?`)) return;
     await bkPostAndRefresh('mark-concluded', { session_id: id }, 'Mark concluded');
+  }
+
+  async function bkResendConfirmation(id) {
+    bkCloseMenus();
+    const b = bkFindBooking(id); if (!b) return;
+    const target = b.customer_email;
+    if (!target) { showError('No customer email on this booking — cannot resend.'); return; }
+    if (!confirm(`Resend confirmation email to ${target}?`)) return;
+
+    /* Hits the public endpoint (same one customers use from the
+       confirmation page). It looks up the booking, sends, and stamps
+       confirmation_email_sent=true on success — so a refresh below picks
+       up the updated state. */
+    const token = getToken();
+    let result = null;
+    try {
+      const res = await fetch('/api/resend-confirmation', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body:    JSON.stringify({ session_id: id }),
+      });
+      result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.ok) {
+        showError(result.detail || result.error || 'Resend failed.');
+        return;
+      }
+    } catch (err) {
+      showError('Resend failed: ' + err.message);
+      return;
+    }
+
+    showSuccess(`Confirmation email resent to ${result.email || target}`);
+    await loadData();
   }
 
   async function bkCancel(id) {
@@ -2241,6 +2277,13 @@
     bar.textContent = msg;
     bar.style.display = 'block';
     setTimeout(() => { bar.style.display = 'none'; }, 8000);
+  }
+
+  function showSuccess(msg) {
+    const bar = document.getElementById('success-bar');
+    bar.textContent = msg;
+    bar.style.display = 'block';
+    setTimeout(() => { bar.style.display = 'none'; }, 6000);
   }
 
   function esc(s) {

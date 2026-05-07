@@ -1193,6 +1193,77 @@
       opacity: 0.8;
     }
 
+    /* ── Duplicate booking warning ── */
+    .dup-warning {
+      background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04));
+      border: 1.5px solid rgba(245,158,11,0.55);
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 18px;
+    }
+    .dup-warning-icon {
+      font-size: 32px;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .dup-warning-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 2px;
+      color: #FBBF24;
+      text-align: center;
+      line-height: 1.1;
+      margin: 0 0 10px;
+    }
+    .dup-warning-text {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.65;
+      text-align: center;
+      margin: 0 0 18px;
+    }
+    .dup-warning-text a {
+      color: #FBBF24;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .dup-warning-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .dup-btn {
+      flex: 1 1 220px;
+      max-width: 280px;
+      padding: 13px 18px;
+      border-radius: 8px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1.5px solid;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .dup-btn:active { transform: translateY(1px); }
+    .dup-btn-back {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.25);
+      color: #fff;
+    }
+    .dup-btn-back:hover { background: rgba(255,255,255,0.16); }
+    .dup-btn-call {
+      background: #C8102E;
+      border-color: #C8102E;
+      color: #fff;
+    }
+    .dup-btn-call:hover { background: #A00D25; }
+
     /* ── Nav Buttons ── */
     .step-nav {
       position: fixed;
@@ -1856,6 +1927,22 @@
             <div class="pay-btn-amount" id="fullAmountBtn">$0</div>
             <div class="pay-btn-label">Total amount due today</div>
           </button>
+        </div>
+
+        <!-- Duplicate booking warning (shown when /api/create-checkout returns 409) -->
+        <div class="dup-warning" id="dupWarning" style="display:none;">
+          <div class="dup-warning-icon">⚠️</div>
+          <h3 class="dup-warning-title">Looks Like You Already Booked This Slot</h3>
+          <p class="dup-warning-text">
+            It looks like you already have a booking for this date and time.
+            If you didn't receive a confirmation email, please check your spam folder
+            or call/text us at <a href="tel:+17373681669">(737) 368-1669</a> and we'll resend it.
+            If you'd like to book a different time, click Back.
+          </p>
+          <div class="dup-warning-actions">
+            <button type="button" class="dup-btn dup-btn-back" onclick="dupGoBackToTime()">← Go Back and Change Time</button>
+            <a class="dup-btn dup-btn-call" href="tel:+17373681669">Contact Us · (737) 368-1669</a>
+          </div>
         </div>
 
       </div>
@@ -2786,6 +2873,18 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
 
         const data = await res.json();
 
+        if (res.status === 409 && data.error === 'duplicate_booking') {
+          // Customer (or our retry guard) thinks they've already booked this
+          // exact slot recently. Show the resend-help banner instead of
+          // creating a second Stripe charge.
+          document.getElementById('paymentButtons').style.display = 'none';
+          document.getElementById('dupWarning').style.display = 'block';
+          btn.innerHTML = originalHTML;
+          btnDeposit.disabled = false;
+          btnFull.disabled = false;
+          return;
+        }
+
         if (data.url) {
           window.location.href = data.url;
         } else {
@@ -2797,6 +2896,14 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         btnDeposit.disabled = false;
         btnFull.disabled = false;
       }
+    }
+
+    function dupGoBackToTime() {
+      // Hide the warning + restore payment buttons before navigating, so when
+      // the customer returns to step 8 it's in its normal state.
+      document.getElementById('dupWarning').style.display = 'none';
+      document.getElementById('paymentButtons').style.display = '';
+      showStep(5, true);
     }
 
     /* ── Init ── */

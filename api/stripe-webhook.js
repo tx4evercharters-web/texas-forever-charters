@@ -1,6 +1,6 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { sendConfirmationEmails } = require('../lib/send-emails');
-const { saveBooking } = require('../lib/storage');
+const { saveBooking, patchBooking } = require('../lib/storage');
 
 // Vercel must not parse the body — Stripe signature verification needs the raw bytes.
 module.exports.config = { api: { bodyParser: false } };
@@ -202,8 +202,10 @@ module.exports = async function handler(req, res) {
   };
 
   console.log('[stripe-webhook] dispatching confirmation emails', session.id);
+  let customerEmailOk = false;
   try {
     const result = await sendConfirmationEmails(emailData);
+    customerEmailOk = !result.customerError;
     console.log('[stripe-webhook] email dispatch complete', session.id,
       '| customer:', result.customerError ? 'FAILED (' + result.customerError.message + ')' : 'ok',
       '| business:', result.businessError ? 'FAILED (' + result.businessError.message + ')' : 'ok');
@@ -212,6 +214,16 @@ module.exports = async function handler(req, res) {
        sends failed. Stripe has already charged — return 200 anyway so it
        doesn't enter the retry loop, but the error is loud in logs. */
     console.error('[stripe-webhook] BOTH confirmation emails failed', session.id, '|', err.message, '\n', err.stack);
+  }
+
+  /* Track delivery success so the confirmation page and admin can detect
+     failures and offer a resend. PATCH failure isn't fatal — the next
+     resend attempt will set it correctly. */
+  try {
+    await patchBooking(session.id, { confirmation_email_sent: customerEmailOk });
+    console.log('[stripe-webhook] confirmation_email_sent =', customerEmailOk, 'for', session.id);
+  } catch (err) {
+    console.error('[stripe-webhook] failed to update confirmation_email_sent for', session.id, ':', err.message);
   }
 
   return res.status(200).json({ received: true });

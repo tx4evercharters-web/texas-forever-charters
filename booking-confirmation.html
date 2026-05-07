@@ -161,6 +161,69 @@
 
     .confirm-ref span { color: rgba(255,255,255,0.6); }
 
+    /* ── Email-failure resend banner ── */
+    .email-fail-banner {
+      background: linear-gradient(135deg, rgba(245,158,11,0.18), rgba(245,158,11,0.06));
+      border: 1.5px solid rgba(245,158,11,0.55);
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s ease both;
+    }
+    .email-fail-headline {
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: #FCD34D;
+      line-height: 1.65;
+      margin: 0 0 14px;
+    }
+    .email-fail-headline strong { color: #FFFFFF; }
+    .email-fail-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .email-fail-input {
+      flex: 1 1 220px;
+      min-width: 0;
+      background: rgba(0,0,0,0.35);
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: #fff;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .email-fail-input:focus { border-color: #FBBF24; }
+    .email-fail-input.bad { border-color: #C8102E; }
+    .email-fail-btn {
+      background: #FBBF24;
+      border: 1.5px solid #FBBF24;
+      border-radius: 8px;
+      padding: 11px 22px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #1F2937;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .email-fail-btn:hover:not(:disabled) { background: #F59E0B; border-color: #F59E0B; }
+    .email-fail-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .email-fail-msg {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      margin-top: 12px;
+      line-height: 1.55;
+    }
+    .email-fail-msg.ok    { color: #6EE7B7; }
+    .email-fail-msg.error { color: #FCA5A5; }
+
     /* ── Cards ── */
     .confirm-card {
       background: var(--navy-dark);
@@ -487,6 +550,17 @@
     <!-- Main content -->
     <div class="confirm-content" id="confirmContent">
 
+      <!-- Confirmation-email failure banner (shown only when the webhook
+           reports the customer email did not deliver) -->
+      <div class="email-fail-banner" id="emailFailBanner" style="display:none;">
+        <div class="email-fail-headline" id="emailFailHeadline"></div>
+        <div class="email-fail-form">
+          <input type="email" class="email-fail-input" id="emailFailInput" placeholder="your@email.com" autocomplete="email">
+          <button type="button" class="email-fail-btn" id="emailFailBtn" onclick="resendConfirmation()">Resend Confirmation Email</button>
+        </div>
+        <div class="email-fail-msg" id="emailFailMsg"></div>
+      </div>
+
       <!-- Payment summary -->
       <div class="payment-summary" id="paymentSummary">
         <div class="payment-summary-title">Payment Summary</div>
@@ -651,6 +725,10 @@
       if (msg) document.getElementById('confirmErrorMsg').textContent = msg;
     }
 
+    // Track current session/email so the resend handler can hit the API.
+    let currentSessionId = null;
+    let currentEmail     = '';
+
     function renderConfirmation(session) {
       document.getElementById('confirmLoading').style.display = 'none';
 
@@ -660,10 +738,21 @@
       const depositAmount = parseFloat(meta.deposit_amount || 0);
       const paymentType = meta.payment_type || 'full';
 
+      currentSessionId = session.id;
+      currentEmail     = session.customer_email || meta.email || (session.booking && session.booking.customer_email) || '';
+
       // Hero
       document.getElementById('confirmHero').style.display = 'block';
-      document.getElementById('confirmEmail').textContent = session.customer_email || meta.email || '';
+      document.getElementById('confirmEmail').textContent = currentEmail;
       document.getElementById('confirmRef').textContent = session.id.slice(-12).toUpperCase();
+
+      // Email-failure banner: show only when the booking row exists AND
+      // explicitly reports the confirmation email did not go through.
+      // If the booking row is missing (Supabase lookup failed), we stay
+      // optimistic and don't show the banner.
+      if (session.booking && session.booking.confirmation_email_sent === false) {
+        showEmailFailBanner(currentEmail);
+      }
 
       // Payment grid
       const paymentGrid = document.getElementById('paymentGrid');
@@ -748,6 +837,74 @@
 
       // Show content
       document.getElementById('confirmContent').style.display = 'block';
+    }
+
+    function showEmailFailBanner(email) {
+      const banner = document.getElementById('emailFailBanner');
+      const headline = document.getElementById('emailFailHeadline');
+      const input = document.getElementById('emailFailInput');
+      const target = email || 'your email address';
+      headline.innerHTML =
+        '✅ <strong>Your payment went through and your booking is confirmed!</strong> ' +
+        'However we had trouble sending your confirmation email to <strong>' + escapeHtml(target) + '</strong>. ' +
+        'Please verify your email address below and we\'ll resend it right away.';
+      input.value = email || '';
+      banner.style.display = 'block';
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function resendConfirmation() {
+      const input = document.getElementById('emailFailInput');
+      const btn = document.getElementById('emailFailBtn');
+      const msg = document.getElementById('emailFailMsg');
+      const email = (input.value || '').trim();
+
+      msg.textContent = '';
+      msg.className = 'email-fail-msg';
+      input.classList.remove('bad');
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        input.classList.add('bad');
+        msg.textContent = 'Please enter a valid email address.';
+        msg.className = 'email-fail-msg error';
+        return;
+      }
+
+      btn.disabled = true;
+      const oldText = btn.textContent;
+      btn.textContent = 'Sending…';
+
+      try {
+        const res = await fetch('/api/resend-confirmation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: currentSessionId, email }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.detail || data.error || 'Send failed');
+        }
+        msg.innerHTML = '✅ Confirmation email sent to <strong>' + escapeHtml(data.email || email) + '</strong>!';
+        msg.className = 'email-fail-msg ok';
+        // Hide the form + button so the success state is clean.
+        document.querySelector('.email-fail-form').style.display = 'none';
+        // Update the hero subtitle email too.
+        document.getElementById('confirmEmail').textContent = data.email || email;
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = oldText;
+        msg.textContent = 'Something went wrong. Please call us at (737) 368-1669.';
+        msg.className = 'email-fail-msg error';
+        console.error('[resend-confirmation] failed:', err);
+      }
     }
 
     loadSession();
