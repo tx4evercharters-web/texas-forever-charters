@@ -1031,7 +1031,6 @@
         <div class="ax-section-body">
           <div class="stats-grid" style="margin-bottom:0;">
             <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value" id="rev-total">—</div><div class="stat-sub">paid amount</div></div>
-            <div class="stat-card"><div class="stat-label">Charter Subtotal</div><div class="stat-value" id="rev-charter">—</div></div>
             <div class="stat-card"><div class="stat-label">Add-On Revenue</div><div class="stat-value" id="rev-addons">—</div></div>
             <div class="stat-card"><div class="stat-label">Tax Collected</div><div class="stat-value" id="rev-tax">—</div></div>
             <div class="stat-card"><div class="stat-label">Admin Fees</div><div class="stat-value" id="rev-admin">—</div></div>
@@ -2595,18 +2594,16 @@
     const bookingPaid = b => b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
 
     // ── Revenue ──
-    let totalRev = 0, charterSubtotal = 0, addonRev = 0, taxRev = 0, adminFees = 0, refunds = 0;
+    let totalRev = 0, addonRev = 0, taxRev = 0, adminFees = 0, refunds = 0;
     bookings.forEach(b => {
-      totalRev        += bookingPaid(b);
-      charterSubtotal += parseFloat(b.charter_subtotal || 0);
-      addonRev        += parseFloat(b.add_on_total      || 0);
-      taxRev          += parseFloat(b.tax_amount        || 0);
-      adminFees       += parseFloat(b.admin_fee         || 0);
-      refunds         += parseFloat(b.refund_amount     || 0);
+      totalRev    += bookingPaid(b);
+      addonRev    += parseFloat(b.add_on_total  || 0);
+      taxRev      += parseFloat(b.tax_amount    || 0);
+      adminFees   += parseFloat(b.admin_fee     || 0);
+      refunds     += parseFloat(b.refund_amount || 0);
     });
     const netRev = totalRev - refunds;
     document.getElementById('rev-total').textContent   = fmtMoney(totalRev);
-    document.getElementById('rev-charter').textContent = fmtMoney(charterSubtotal);
     document.getElementById('rev-addons').textContent  = fmtMoney(addonRev);
     document.getElementById('rev-tax').textContent     = fmtMoney(taxRev);
     document.getElementById('rev-admin').textContent   = fmtMoney(adminFees);
