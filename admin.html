@@ -2286,6 +2286,26 @@
     setTimeout(() => { bar.style.display = 'none'; }, 6000);
   }
 
+  /* Single source of truth for the payment-status badge.
+     Reads paid_in_full + remaining_balance + amount_total directly so the
+     label can never disagree with the booking row. payment_type is the
+     customer's *chosen* option at checkout (full vs deposit) and is NOT
+     a payment-success signal — the prior `paid_in_full || payment_type==='full'`
+     OR-check was lighting up "Paid in Full" on rows that hadn't actually
+     been paid in full. */
+  function bkPaymentStatus(b) {
+    const paid      = (b && b.amount_total) ? Number(b.amount_total) / 100 : 0;
+    const remaining = parseFloat(b && b.remaining_balance);
+    const remainingNum = isFinite(remaining) ? remaining : 0;
+    if (paid <= 0) {
+      return { label: 'UNPAID', cls: 'badge-red' };
+    }
+    if (b && b.paid_in_full === true && remainingNum <= 0) {
+      return { label: 'PAID IN FULL', cls: 'badge-green' };
+    }
+    return { label: 'DEPOSIT ONLY', cls: 'badge-amber' };
+  }
+
   function esc(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -2843,11 +2863,9 @@
     }
 
     const rows = bookings.map(b => {
-      const paidFull = b.paid_in_full || b.payment_type === 'full';
+      const pay = bkPaymentStatus(b);
       const isReturning = returningEmails.has((b.customer_email||'').toLowerCase());
-      const badge = paidFull
-        ? '<span class="badge badge-green">Paid in Full</span>'
-        : '<span class="badge badge-amber">Deposit Only</span>';
+      const badge = `<span class="badge ${pay.cls}">${pay.label}</span>`;
       const returningBadge = isReturning ? ' <span class="badge badge-teal">Returning</span>' : '';
 
       // Customer cell: name + charter name + city/state as subtitles
@@ -3178,12 +3196,12 @@
 
     document.getElementById('modal-title').textContent = fmtDate(dateStr);
     document.getElementById('modal-body').innerHTML = bookings.map(b => {
-      const paidFull = b.paid_in_full || b.payment_type === 'full';
+      const pay = bkPaymentStatus(b);
       return `
         <div style="border:1px solid var(--gray-200);border-radius:8px;padding:16px;margin-bottom:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
             <div style="font-weight:700;font-size:15px;color:var(--navy)">${esc(b.charter_name||'Charter')}</div>
-            <span class="badge ${paidFull ? 'badge-green' : 'badge-amber'}">${paidFull ? 'Paid' : 'Deposit Only'}</span>
+            <span class="badge ${pay.cls}">${pay.label}</span>
           </div>
           <div class="modal-row"><span class="modal-row-label">Customer</span><span class="modal-row-value">${esc(b.full_name||'—')}</span></div>
           <div class="modal-row"><span class="modal-row-label">Email</span><span class="modal-row-value">${esc(b.customer_email||'—')}</span></div>
@@ -4041,9 +4059,8 @@
       <table class="cust-bookings-mini">
         <thead><tr><th>Date</th><th>Vessel</th><th>Experience</th><th>Total</th><th>Status</th><th></th></tr></thead>
         <tbody>${bookings.map(b => {
-          const paidFull = b.paid_in_full || b.payment_type === 'full';
-          const payment = paidFull ? '<span class="badge badge-green">Paid</span>'
-                                   : (parseFloat(b.remaining_balance) > 0 ? '<span class="badge badge-amber">Deposit</span>' : '<span class="badge badge-red">Unpaid</span>');
+          const pay = bkPaymentStatus(b);
+          const payment = `<span class="badge ${pay.cls}">${pay.label}</span>`;
           const lifecycle = bkStatusBadge(b);
           const damage = bkDamageBadge(b);
           const total = b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
