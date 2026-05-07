@@ -2611,7 +2611,20 @@
     document.getElementById('rev-net').textContent     = fmtMoney(netRev);
 
     // ── Charter ──
-    const completed = bookings.filter(b => String(b.status || '').toLowerCase() === 'concluded').length;
+    // "Completed" = manually concluded OR past-dated charter still flagged
+    // 'upcoming' (the charter date passed without anyone toggling status).
+    // Compared against local midnight so a charter scheduled for today
+    // doesn't count as completed yet.
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const completed = bookings.filter(b => {
+      const status = String(b.status || '').toLowerCase();
+      if (status === 'concluded') return true;
+      if (status === 'upcoming') {
+        const d = bookingDate(b);
+        return d && d < todayStart;
+      }
+      return false;
+    }).length;
     const cancelled = bookings.filter(b => String(b.status || '').toLowerCase() === 'cancelled').length;
     const cancelRate = bookings.length ? ((cancelled / bookings.length) * 100).toFixed(1) + '%' : '—';
     const avgParty = bookings.length ? (bookings.reduce((s, b) => s + parseInt(b.party_size || 0), 0) / bookings.length).toFixed(1) : '—';
