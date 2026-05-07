@@ -42,11 +42,18 @@ async function handleGetInfo(req, res) {
       console.log('[waiver/get] no booking found for session_id=' + JSON.stringify(session_id));
       return res.status(404).json({ error: 'Booking not found' });
     }
-    console.log('[waiver/get] match: id=' + b.id + ' date=' + b.date + ' vessel=' + b.vessel + ' full_name=' + JSON.stringify(b.full_name));
+    console.log('[waiver/get] match: id=' + b.id + ' date=' + b.date + ' vessel=' + JSON.stringify(b.vessel) + ' full_name=' + JSON.stringify(b.full_name) + ' charter_name=' + JSON.stringify(b.charter_name));
+
+    // Pre-format the vessel display string server-side so the client doesn't
+    // need any case/whitespace-sensitive matching. Format: "<Name> — <Type>".
+    const vesselKey = String(b.vessel || '').trim().toLowerCase();
+    let vesselDisplay = b.vessel || null;
+    if (vesselKey === 'yacht')        vesselDisplay = '40ft Carver Aft Cabin — Yacht';
+    else if (vesselKey === 'pontoon') vesselDisplay = '24ft Bentley Navigator 243 — Pontoon';
 
     // Spec: SELECT charter_name, vessel, date, time_slot, full_name FROM bookings
-    // — return each field explicitly so the client can render whichever it
-    // prefers, plus the combined organizer_name as a convenience.
+    // — return each field explicitly plus a pre-formatted vessel_display and the
+    // combined organizer_name (charter_name preferred, full_name fallback per spec).
     return res.status(200).json({
       ok: true,
       booking: {
@@ -54,9 +61,10 @@ async function handleGetInfo(req, res) {
         charter_date:   b.date || null,
         charter_time:   b.time_slot || null,
         vessel:         b.vessel || null,
+        vessel_display: vesselDisplay,
         full_name:      b.full_name || null,
         charter_name:   b.charter_name || null,
-        organizer_name: b.full_name || b.charter_name || null,
+        organizer_name: b.charter_name || b.full_name || null,
       },
     });
   } catch (err) {

@@ -625,13 +625,20 @@
             return;
           }
           const b = data.booking;
-          document.getElementById('wvOrganizerOut').textContent = b.organizer_name || '—';
+          document.getElementById('wvOrganizerOut').textContent =
+            b.organizer_name || b.charter_name || b.full_name || '—';
           document.getElementById('wvDateOut').textContent = b.charter_date ? formatDate(b.charter_date) : '—';
           document.getElementById('wvTimeOut').textContent = b.charter_time || '—';
-          document.getElementById('wvVesselOut').textContent =
-            b.vessel === 'yacht' ? 'Yacht — 40ft Carver Aft Cabin'
-            : b.vessel === 'pontoon' ? 'Pontoon — 24ft Bentley Navigator 243'
-            : (b.vessel || '—');
+          // Prefer the server's pre-formatted vessel_display (always "<Name> — <Type>");
+          // fall back to a case-insensitive client format for older API versions.
+          let vesselText = b.vessel_display || null;
+          if (!vesselText) {
+            const v = String(b.vessel || '').trim().toLowerCase();
+            if (v === 'yacht')        vesselText = '40ft Carver Aft Cabin — Yacht';
+            else if (v === 'pontoon') vesselText = '24ft Bentley Navigator 243 — Pontoon';
+            else                      vesselText = b.vessel || '—';
+          }
+          document.getElementById('wvVesselOut').textContent = vesselText;
         })
         .catch(() => {
           // Network error → fall back to manual
