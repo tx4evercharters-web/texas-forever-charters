@@ -1352,20 +1352,6 @@ section {
   margin: 18px 0 30px;
 }
 
-.nl-code {
-  display: inline-block;
-  padding: 2px 12px;
-  margin: 0 4px;
-  background: rgba(200,16,46,0.12);
-  border: 1px solid rgba(200,16,46,0.5);
-  border-radius: 5px;
-  color: #C8102E;
-  font-weight: 700;
-  font-size: 1.4em;
-  letter-spacing: 4px;
-  vertical-align: middle;
-}
-
 .nl-perks {
   display: flex;
   justify-content: center;
