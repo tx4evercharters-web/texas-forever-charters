@@ -2897,11 +2897,11 @@
 
   /* ── Bulk CSV import ── */
   const IMPORT_FIELDS = [
-    { key: 'date',           label: 'Booking Date',   required: true,  hint: 'YYYY-MM-DD or MM/DD/YYYY' },
+    { key: 'date',           label: 'Booking Date',   required: true,  hint: 'YYYY-MM-DD, MM/DD/YYYY, or "2024-07-09 at 1:03 PM"' },
     { key: 'full_name',      label: 'Customer Name',  required: true },
-    { key: 'customer_email', label: 'Customer Email', required: true },
-    { key: 'phone',          label: 'Customer Phone', required: false },
-    { key: 'vessel',         label: 'Vessel',         required: true,  hint: 'Yacht / Pontoon (or 40ft / 24ft)' },
+    { key: 'customer_email', label: 'Customer Email', required: false, hint: 'Optional — "no" / "n/a" treated as blank' },
+    { key: 'phone',          label: 'Customer Phone', required: false, hint: 'Used as fallback dedup key when email is blank' },
+    { key: 'vessel',         label: 'Vessel',         required: true,  hint: 'Yacht Rental / Pontoon Rental / 40ft / 24ft' },
     { key: 'grand_total',    label: 'Total Amount',   required: true,  hint: '$1,200 or 1200.00' },
     { key: 'source',         label: 'Source',         required: false, hint: 'Optional — overridden to historical_import on save' },
     { key: 'experience',     label: 'Experience',     required: false },
@@ -2982,18 +2982,18 @@
     const lc = importHeaders.map(h => (h || '').toLowerCase().trim());
     const guess = {};
     const matchers = {
-      date:           ['date','booking date','booking_date','start date','event date'],
-      full_name:      ['name','full name','customer name','customer','client'],
-      customer_email: ['email','customer email','e-mail','mail'],
-      phone:          ['phone','mobile','cell','phone number'],
-      vessel:         ['vessel','boat','yacht/pontoon','vessel type'],
-      grand_total:    ['total','amount','total amount','grand total','price','revenue'],
+      date:           ['date','booking date','booking_date','start date','event date','availability','start','start time','start date/time'],
+      full_name:      ['name','full name','customer name','customer','client','contact name','contact'],
+      customer_email: ['email','customer email','e-mail','mail','contact email'],
+      phone:          ['phone','mobile','cell','phone number','contact phone'],
+      vessel:         ['vessel','boat','yacht/pontoon','vessel type','item','item name','product','tour'],
+      grand_total:    ['total','amount','total amount','grand total','price','revenue','total paid','paid','net total','order total'],
       source:         ['source','origin','channel','platform'],
-      experience:     ['experience','event','event type','tour','package'],
+      experience:     ['experience','event','event type','tour type','package'],
       time_slot:      ['time','time slot','start time'],
       duration:       ['duration','hours','hrs'],
-      party_size:     ['party size','guests','people','party'],
-      charter_name:   ['charter name','trip name','occasion','charter'],
+      party_size:     ['party size','guests','people','party','customer count','headcount','# of customers'],
+      charter_name:   ['charter name','trip name','occasion','charter','booking name'],
       city:           ['city'],
       state:          ['state','st'],
     };
@@ -3031,7 +3031,12 @@
 
   function parseDateLoose(s) {
     if (!s) return null;
-    const t = String(s).trim();
+    let t = String(s).trim();
+    if (!t) return null;
+    // FareHarbor: "2024-07-09 at 1:03 PM" — strip the " at TIME" suffix
+    t = t.replace(/\s+at\s+\d{1,2}(:\d{2})?\s*(AM|PM|am|pm)?\s*$/i, '').trim();
+    // Also strip any trailing time component like " 13:05" or " 1:03 PM" without "at"
+    t = t.replace(/\s+\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM|am|pm)?\s*$/, '').trim();
     // YYYY-MM-DD
     let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
@@ -3050,9 +3055,18 @@
   function normalizeVessel(s) {
     if (!s) return null;
     const t = String(s).toLowerCase();
-    if (t.includes('yacht') || t.includes('carver') || t.includes('40')) return 'yacht';
-    if (t.includes('pontoon') || t.includes('bentley') || t.includes('24')) return 'pontoon';
+    // FareHarbor: "Yacht Rental" / "Pontoon Rental" — and other common variants
+    if (t.includes('yacht') || t.includes('carver') || t.includes('40ft') || t.includes('40 ft')) return 'yacht';
+    if (t.includes('pontoon') || t.includes('bentley') || t.includes('24ft') || t.includes('24 ft')) return 'pontoon';
     return null;
+  }
+
+  function normalizeEmail(s) {
+    if (s == null) return null;
+    const t = String(s).trim().toLowerCase();
+    // FareHarbor exports "no" when email is missing — also handle other common blanks
+    if (!t || t === 'no' || t === 'none' || t === 'n/a' || t === 'na' || t === '-' || t === '—') return null;
+    return t;
   }
 
   function parseMoney(s) {
@@ -3075,19 +3089,23 @@
       for (const [field, colIdx] of Object.entries(importMap)) {
         obj[field] = r[colIdx] != null ? String(r[colIdx]).trim() : '';
       }
-      // Normalize
-      if (obj.date)         obj._dateNorm   = parseDateLoose(obj.date);
-      if (obj.vessel)       obj._vesselNorm = normalizeVessel(obj.vessel);
-      if (obj.grand_total)  obj._totalNorm  = parseMoney(obj.grand_total);
-      if (obj.customer_email) obj.customer_email = obj.customer_email.toLowerCase();
+      // Normalize — overwrite raw email with normalized value (null when blank/"no"/etc.)
+      obj.customer_email = normalizeEmail(obj.customer_email);
+      if (obj.date)        obj._dateNorm   = parseDateLoose(obj.date);
+      if (obj.vessel)      obj._vesselNorm = normalizeVessel(obj.vessel);
+      if (obj.grand_total) obj._totalNorm  = parseMoney(obj.grand_total);
       return obj;
     });
 
-    // Validate each row
-    const errs = { missing_email: 0, missing_name: 0, bad_date: 0, bad_vessel: 0, bad_total: 0 };
+    // Validate each row. Email is optional — but every row must have email OR phone.
+    const errs = { no_dedup_key: 0, bad_email: 0, missing_name: 0, bad_date: 0, bad_vessel: 0, bad_total: 0, blank_email: 0 };
     importValid = importMapped.map(r => {
       let ok = true;
-      if (!r.customer_email || !r.customer_email.includes('@')) { errs.missing_email++; ok = false; }
+      const hasEmail = !!r.customer_email;
+      const hasPhone = !!(r.phone && r.phone.trim());
+      if (!hasEmail && !hasPhone)                    { errs.no_dedup_key++; ok = false; }
+      if (hasEmail && !r.customer_email.includes('@')) { errs.bad_email++; ok = false; }
+      if (!hasEmail && hasPhone)                     { errs.blank_email++; /* still ok */ }
       if (!r.full_name)   { errs.missing_name++;  ok = false; }
       if (!r._dateNorm)   { errs.bad_date++;      ok = false; }
       if (!r._vesselNorm) { errs.bad_vessel++;    ok = false; }
@@ -3100,7 +3118,9 @@
     const totalCount = importMapped.length;
     const warnEl = document.getElementById('import-warnings');
     const messages = [];
-    if (errs.missing_email) messages.push(`<div class="import-warning red">${errs.missing_email} row(s) have a missing or invalid email.</div>`);
+    if (errs.no_dedup_key)  messages.push(`<div class="import-warning red">${errs.no_dedup_key} row(s) have neither an email nor a phone number — at least one is required.</div>`);
+    if (errs.bad_email)     messages.push(`<div class="import-warning red">${errs.bad_email} row(s) have an email value that's missing the @ sign.</div>`);
+    if (errs.blank_email)   messages.push(`<div class="import-warning amber">${errs.blank_email} row(s) are missing an email — these will be matched/created by phone instead.</div>`);
     if (errs.missing_name)  messages.push(`<div class="import-warning red">${errs.missing_name} row(s) are missing a customer name.</div>`);
     if (errs.bad_date)      messages.push(`<div class="import-warning red">${errs.bad_date} row(s) have a date that couldn't be parsed.</div>`);
     if (errs.bad_vessel)    messages.push(`<div class="import-warning amber">${errs.bad_vessel} row(s) have a vessel value that wasn't recognized as Yacht or Pontoon.</div>`);
