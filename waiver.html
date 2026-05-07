@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liability Waiver | Texas Forever Charters</title>
+  <meta name="description" content="Sign your liability waiver for your Texas Forever Charters charter on Lake Travis. Required for all guests before boarding.">
+  <meta name="robots" content="noindex,nofollow">
+
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    .wv-page {
+      background: #F0F2F8;
+      min-height: 100vh;
+      padding: 32px 16px 80px;
+      font-family: 'Barlow', Arial, sans-serif;
+    }
+    .wv-wrap {
+      max-width: 780px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border-radius: 14px;
+      padding: 40px 44px 36px;
+      box-shadow: 0 8px 32px rgba(15,26,69,0.08);
+    }
+    .wv-eyebrow {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #C8102E;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .wv-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 38px;
+      letter-spacing: 4px;
+      color: #1B2A6B;
+      text-align: center;
+      line-height: 1.05;
+      margin: 0 0 6px;
+    }
+    .wv-subtitle {
+      font-size: 14px;
+      color: #6B7280;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .wv-divider {
+      width: 48px; height: 3px; background: #C8102E;
+      margin: 18px auto 28px; border-radius: 2px;
+    }
+
+    .wv-section {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid #F0F2F8;
+    }
+    .wv-section:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+    .wv-h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 3px;
+      color: #1B2A6B;
+      margin: 0 0 4px;
+    }
+    .wv-h2-num {
+      display: inline-block;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #C8102E;
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 28px;
+      margin-right: 10px;
+      vertical-align: middle;
+      font-family: 'Barlow', sans-serif;
+    }
+    .wv-section-hint {
+      font-size: 13px;
+      color: #6B7280;
+      margin: 0 0 14px 38px;
+    }
+
+    .wv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .wv-grid.full > * { grid-column: 1 / -1; }
+    .wv-field { display: flex; flex-direction: column; gap: 6px; }
+    .wv-field.full { grid-column: 1 / -1; }
+    .wv-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #4B5563;
+    }
+    .wv-label .req { color: #C8102E; margin-left: 3px; }
+    .wv-input,
+    .wv-select {
+      padding: 12px 14px;
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s;
+      background: #FFFFFF;
+      color: #1B2A6B;
+    }
+    .wv-input:focus, .wv-select:focus { border-color: #1B2A6B; }
+    .wv-input.bad { border-color: #C8102E; }
+
+    .wv-readonly-card {
+      background: #F8F9FC;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 16px 18px;
+    }
+    .wv-readonly-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+    .wv-readonly-row + .wv-readonly-row { border-top: 1px solid #EEF0F6; }
+    .wv-readonly-label { color: #6B7280; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
+    .wv-readonly-value { color: #1B2A6B; font-weight: 700; }
+
+    .wv-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      background: #F8F9FC;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .wv-toggle input { width: 18px; height: 18px; accent-color: #1B2A6B; cursor: pointer; }
+    .wv-toggle-label { font-size: 14px; color: #1B2A6B; font-weight: 600; }
+    .wv-toggle-hint { font-size: 12px; color: #6B7280; margin-top: 2px; }
+
+    .wv-minor-block {
+      margin-top: 12px;
+      padding: 16px;
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 8px;
+    }
+
+    .wv-agreement {
+      max-height: 360px;
+      overflow-y: auto;
+      background: #F8F9FC;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      padding: 18px 22px;
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: #374151;
+    }
+    .wv-agreement h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: #1B2A6B;
+      margin: 16px 0 6px;
+    }
+    .wv-agreement h3:first-child { margin-top: 0; }
+    .wv-agreement p { margin: 0 0 10px; }
+    .wv-agreement ul { padding-left: 20px; margin: 6px 0 12px; }
+    .wv-agreement li { margin-bottom: 4px; }
+    .wv-agreement strong { color: #1B2A6B; }
+
+    .wv-emergency {
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+    .wv-emergency summary {
+      cursor: pointer;
+      padding: 14px 18px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #1B2A6B;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .wv-emergency summary::-webkit-details-marker { display: none; }
+    .wv-emergency summary::after {
+      content: '▾';
+      font-size: 12px;
+      color: #9CA3AF;
+      transition: transform 0.15s;
+    }
+    .wv-emergency[open] summary::after { transform: rotate(180deg); }
+    .wv-emergency-body {
+      padding: 8px 22px 22px;
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: #374151;
+      border-top: 1px solid #F0F2F8;
+    }
+    .wv-emergency-body h4 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #C8102E;
+      margin: 14px 0 4px;
+    }
+    .wv-emergency-body ol { padding-left: 22px; margin: 4px 0 12px; }
+
+    .wv-checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #F8F9FC;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .wv-checkbox-row + .wv-checkbox-row { margin-top: 10px; }
+    .wv-checkbox-row input { width: 20px; height: 20px; min-width: 20px; accent-color: #1B2A6B; cursor: pointer; margin-top: 2px; }
+    .wv-checkbox-row label { font-size: 14px; line-height: 1.6; color: #374151; cursor: pointer; }
+    .wv-checkbox-row label strong { color: #1B2A6B; }
+
+    .wv-sign-input {
+      padding: 16px 18px;
+      font-family: 'Source Serif 4', 'Barlow', cursive;
+      font-style: italic;
+      font-size: 22px;
+      letter-spacing: 1px;
+      border: 2px solid #1B2A6B;
+      border-radius: 8px;
+      background: #FFFFFF;
+      width: 100%;
+      color: #1B2A6B;
+      outline: none;
+    }
+    .wv-sign-input:focus { border-color: #C8102E; }
+    .wv-sign-input.bad { border-color: #C8102E; background: #FEF2F2; }
+
+    .wv-submit {
+      display: block;
+      width: 100%;
+      padding: 18px;
+      margin-top: 22px;
+      background: #1B2A6B;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .wv-submit:hover { background: #0F1A45; }
+    .wv-submit:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+    .wv-error {
+      margin: 14px 0 0;
+      padding: 12px 16px;
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 6px;
+      color: #C8102E;
+      font-size: 13px;
+      display: none;
+    }
+    .wv-error.show { display: block; }
+
+    .wv-success {
+      display: none;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .wv-success.show { display: block; }
+    .wv-success-icon { font-size: 56px; margin-bottom: 14px; }
+    .wv-success-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 4px;
+      color: #1B2A6B;
+      margin: 0 0 12px;
+    }
+    .wv-success-text {
+      font-size: 16px;
+      color: #374151;
+      line-height: 1.7;
+      max-width: 420px;
+      margin: 0 auto 24px;
+    }
+    .wv-success-anchor { font-size: 32px; }
+
+    @media (max-width: 700px) {
+      .wv-page { padding: 16px 10px 60px; }
+      .wv-wrap { padding: 26px 22px 24px; border-radius: 10px; }
+      .wv-title { font-size: 30px; letter-spacing: 3px; }
+      .wv-grid { grid-template-columns: 1fr; }
+      .wv-h2 { font-size: 17px; }
+      .wv-section-hint { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="wv-page">
+    <div class="wv-wrap">
+
+      <!-- ── FORM ── -->
+      <div id="wvForm">
+        <div class="wv-eyebrow">Texas Forever Charters</div>
+        <h1 class="wv-title">Liability Waiver</h1>
+        <p class="wv-subtitle">Required for every guest before boarding.</p>
+        <div class="wv-divider"></div>
+
+        <!-- Section 1 — Charter info (read-only if pre-filled, editable otherwise) -->
+        <div class="wv-section">
+          <h2 class="wv-h2"><span class="wv-h2-num">1</span>Charter Details</h2>
+
+          <div id="wvCharterReadonly" class="wv-readonly-card" style="display:none;">
+            <div class="wv-readonly-row">
+              <span class="wv-readonly-label">Organizer</span>
+              <span class="wv-readonly-value" id="wvOrganizerOut">—</span>
+            </div>
+            <div class="wv-readonly-row">
+              <span class="wv-readonly-label">Charter Date</span>
+              <span class="wv-readonly-value" id="wvDateOut">—</span>
+            </div>
+            <div class="wv-readonly-row">
+              <span class="wv-readonly-label">Start Time</span>
+              <span class="wv-readonly-value" id="wvTimeOut">—</span>
+            </div>
+            <div class="wv-readonly-row">
+              <span class="wv-readonly-label">Vessel</span>
+              <span class="wv-readonly-value" id="wvVesselOut">—</span>
+            </div>
+          </div>
+
+          <div id="wvCharterManual" class="wv-grid">
+            <div class="wv-field full">
+              <label class="wv-label" for="wvOrganizer">Charter Organizer Name <span class="req">*</span></label>
+              <input class="wv-input" id="wvOrganizer" type="text" autocomplete="off" placeholder="The person who booked the charter">
+            </div>
+            <div class="wv-field">
+              <label class="wv-label" for="wvDate">Charter Date <span class="req">*</span></label>
+              <input class="wv-input" id="wvDate" type="date">
+            </div>
+            <div class="wv-field">
+              <label class="wv-label" for="wvTime">Start Time <span class="req">*</span></label>
+              <select class="wv-select" id="wvTime">
+                <option value="">— select —</option>
+                <option value="9:00 AM">9:00 AM</option>
+                <option value="9:30 AM">9:30 AM</option>
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="10:30 AM">10:30 AM</option>
+                <option value="11:00 AM">11:00 AM</option>
+                <option value="2:30 PM">2:30 PM</option>
+                <option value="3:00 PM">3:00 PM</option>
+                <option value="4:00 PM">4:00 PM</option>
+                <option value="5:00 PM">5:00 PM</option>
+              </select>
+            </div>
+            <div class="wv-field full">
+              <label class="wv-label" for="wvVessel">Vessel <span class="req">*</span></label>
+              <select class="wv-select" id="wvVessel">
+                <option value="">— select —</option>
+                <option value="yacht">Yacht — 40ft Carver Aft Cabin</option>
+                <option value="pontoon">Pontoon — 24ft Bentley Navigator 243</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2 — Signer info -->
+        <div class="wv-section">
+          <h2 class="wv-h2"><span class="wv-h2-num">2</span>Your Information</h2>
+          <div class="wv-grid">
+            <div class="wv-field">
+              <label class="wv-label" for="wvFirst">First Name <span class="req">*</span></label>
+              <input class="wv-input" id="wvFirst" type="text" autocomplete="given-name">
+            </div>
+            <div class="wv-field">
+              <label class="wv-label" for="wvLast">Last Name <span class="req">*</span></label>
+              <input class="wv-input" id="wvLast" type="text" autocomplete="family-name">
+            </div>
+            <div class="wv-field">
+              <label class="wv-label" for="wvDob">Date of Birth <span class="req">*</span></label>
+              <input class="wv-input" id="wvDob" type="date">
+            </div>
+            <div class="wv-field">
+              <label class="wv-label">Age</label>
+              <input class="wv-input" id="wvAge" type="text" readonly placeholder="—" style="background:#F0F2F8;color:#6B7280;">
+            </div>
+            <div class="wv-field">
+              <label class="wv-label" for="wvEmail">Email Address</label>
+              <input class="wv-input" id="wvEmail" type="email" autocomplete="email">
+            </div>
+            <div class="wv-field">
+              <label class="wv-label" for="wvPhone">Phone Number</label>
+              <input class="wv-input" id="wvPhone" type="tel" autocomplete="tel" placeholder="(737) 555-1234">
+            </div>
+          </div>
+
+          <label class="wv-toggle" style="margin-top:16px;">
+            <input type="checkbox" id="wvIsMinor">
+            <div>
+              <div class="wv-toggle-label">I am signing for a minor under 18.</div>
+              <div class="wv-toggle-hint">Check this if you're a parent or legal guardian signing on behalf of a child.</div>
+            </div>
+          </label>
+
+          <div class="wv-minor-block" id="wvMinorBlock" style="display:none;">
+            <div class="wv-grid">
+              <div class="wv-field">
+                <label class="wv-label" for="wvMinorFirst">Minor's First Name</label>
+                <input class="wv-input" id="wvMinorFirst" type="text">
+              </div>
+              <div class="wv-field">
+                <label class="wv-label" for="wvMinorLast">Minor's Last Name</label>
+                <input class="wv-input" id="wvMinorLast" type="text">
+              </div>
+              <div class="wv-field">
+                <label class="wv-label" for="wvGuardianName">Guardian Full Name <span class="req">*</span></label>
+                <input class="wv-input" id="wvGuardianName" type="text">
+              </div>
+              <div class="wv-field">
+                <label class="wv-label" for="wvGuardianRel">Relationship to Minor <span class="req">*</span></label>
+                <input class="wv-input" id="wvGuardianRel" type="text" placeholder="Parent, Legal Guardian, etc.">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3 — Emergency Contact -->
+        <div class="wv-section">
+          <h2 class="wv-h2"><span class="wv-h2-num">3</span>Emergency Contact</h2>
+          <p class="wv-section-hint">Someone we can reach who isn't on the boat with you.</p>
+          <div class="wv-grid">
+            <div class="wv-field">
+              <label class="wv-label" for="wvEcName">Full Name <span class="req">*</span></label>
+              <input class="wv-input" id="wvEcName" type="text">
+            </div>
+            <div class="wv-field">
+              <label class="wv-label" for="wvEcPhone">Phone <span class="req">*</span></label>
+              <input class="wv-input" id="wvEcPhone" type="tel">
+            </div>
+            <div class="wv-field full">
+              <label class="wv-label" for="wvEcRel">Relationship <span class="req">*</span></label>
+              <input class="wv-input" id="wvEcRel" type="text" placeholder="Spouse, parent, sibling, friend…">
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4 — Waiver text -->
+        <div class="wv-section">
+          <h2 class="wv-h2"><span class="wv-h2-num">4</span>Waiver &amp; Release Agreement</h2>
+          <p class="wv-section-hint">Please scroll through and read the full agreement before signing.</p>
+          <div class="wv-agreement">
+            <h3>Texas Forever Charters, LLC — Liability Waiver and Release Agreement</h3>
+
+            <h3>1. Assumption of Risk</h3>
+            <p>I acknowledge that participation in boating and related recreational activities aboard the vessel operated by Texas Forever Charters, LLC involves <strong>inherent risks</strong>, including but not limited to slips, falls, drowning, collisions, sun exposure, and bodily injury. I voluntarily assume all such risks, whether anticipated or not. These risks apply whether I am swimming, using paddle boards or float mats, jumping off the vessel, climbing, consuming alcohol, or participating in any other activity while on or near the vessel.</p>
+
+            <h3>2. Rules, Conduct &amp; Compliance</h3>
+            <ul>
+              <li><strong>Alcohol:</strong> Guests 21+ may bring their own alcohol. Underage drinking is prohibited.</li>
+              <li>No illegal drugs or unauthorized substances. Violation results in immediate removal and possible legal action.</li>
+              <li>No glass containers on deck (glass permitted in yacht cabin only).</li>
+              <li>No standing while vessel is underway.</li>
+              <li>No limbs outside railings while underway.</li>
+              <li>No littering.</li>
+              <li>No smoking anything that produces ash on the vessel. Vaping is permitted on deck. Smoking is permitted in the water or on float mats while anchored.</li>
+              <li>No nudity.</li>
+              <li>No sexual activity.</li>
+              <li>Reckless or unsafe behavior may result in removal without refund.</li>
+            </ul>
+
+            <h3>3. Health, Safety &amp; Medical</h3>
+            <p>I certify that I am physically and mentally fit. USCG-approved life jackets are available for all guests. <strong>Children under 13 must wear one</strong> while on deck unless inside the cabin. I acknowledge that Lake Travis is a natural body of water and that water conditions including bacteria, pollutants, and environmental factors are outside the control of Texas Forever Charters, LLC. By entering the water I voluntarily assume all related risks.</p>
+
+            <h3>4. Passenger Limits &amp; Off-Boat Liability</h3>
+            <p>The vessel is licensed for <strong>20 guests plus crew (yacht)</strong> or <strong>13 guests plus crew (pontoon)</strong>. If I leave the vessel and board another boat while anchored, I do so at my own risk and release Texas Forever Charters, LLC from any liability during that time.</p>
+
+            <h3>5. Vessel Operation</h3>
+            <p>The vessel is operated by Daniel Kilpatrick and/or Dane Kilpatrick, certified Party Boat Operators. I agree to follow all captain and crew instructions at all times.</p>
+
+            <h3>6. Indemnification &amp; Release</h3>
+            <p>I agree to <strong>fully release, indemnify, and hold harmless</strong> Texas Forever Charters, LLC from all claims or liabilities including those arising from negligence or accident.</p>
+
+            <h3>7. Damage</h3>
+            <p>I will be financially responsible for any damage caused by my actions. A <strong>minimum $250 fee applies</strong> for damage. If damage exceeds $250, I agree to pay the full cost of repair or replacement.</p>
+
+            <h3>8. Governing Law</h3>
+            <p>This agreement is governed by the laws of the <strong>State of Texas</strong>. Disputes will be resolved in Travis County, Texas.</p>
+
+            <h3>9. Minors</h3>
+            <p>Minors must be accompanied by a parent or guardian who signs on their behalf. The guardian assumes full responsibility for the minor's actions and safety.</p>
+
+            <h3>10. Electronic Signature</h3>
+            <p>By typing my full legal name below, I agree that my electronic signature is the <strong>legally binding equivalent of my handwritten signature</strong>. I will not claim at any future time that my electronic signature is not legally binding or enforceable.</p>
+
+            <h3>11. Media Release</h3>
+            <p>I grant Texas Forever Charters, LLC the right to use my name, image, voice, and likeness in photos or videos taken during the charter for marketing purposes. If I do not consent, I will notify the captain before the charter begins.</p>
+          </div>
+        </div>
+
+        <!-- Section — Emergency procedures (collapsible) -->
+        <div class="wv-section">
+          <details class="wv-emergency">
+            <summary>📋 Emergency Procedures — Please Read</summary>
+            <div class="wv-emergency-body">
+              <h4>Man Overboard</h4>
+              <ol>
+                <li>Shout "Man overboard!" loudly and point continuously at the person — do not look away.</li>
+                <li>The captain will throw a flotation device, slow the vessel, and circle back.</li>
+                <li>Do not jump in unless instructed by the captain.</li>
+                <li>Help guide the captain back to the person in the water by maintaining your point.</li>
+              </ol>
+
+              <h4>Abandon Ship</h4>
+              <ol>
+                <li>Put on a life jacket immediately if you don't already have one on.</li>
+                <li>Stay calm. Listen for and follow the captain's directions exactly.</li>
+                <li>Help children, elderly guests, and weaker swimmers into life jackets first.</li>
+                <li>Stay with the group and the vessel until rescue arrives unless the captain directs otherwise.</li>
+              </ol>
+
+              <h4>Fire</h4>
+              <ol>
+                <li>Alert the captain and other guests immediately.</li>
+                <li>Move away from the fire toward the bow or stern as directed by the captain.</li>
+                <li>If the captain instructs you to use a fire extinguisher, aim at the base of the flames.</li>
+                <li>Be prepared to put on a life jacket and evacuate if the captain calls for it.</li>
+              </ol>
+
+              <h4>Medical Emergency</h4>
+              <ol>
+                <li>Notify the captain immediately. The captain will call for emergency services.</li>
+                <li>If trained, provide first aid until help arrives. A first-aid kit is on board.</li>
+                <li>Do not move a seriously injured person unless they are in further danger.</li>
+                <li>Stay with the injured guest, keep them calm, and be ready to assist.</li>
+              </ol>
+
+              <h4>Equipment Locations</h4>
+              <ul>
+                <li><strong>Life jackets:</strong> Stored in clearly labeled compartments under the bow seating and inside the cabin closet (yacht). On the pontoon, life jackets are under the rear bench seating.</li>
+                <li><strong>Fire extinguishers:</strong> Mounted near the helm and inside the cabin entry (yacht). Mounted near the helm on the pontoon.</li>
+                <li><strong>First-aid kit:</strong> Stored next to the helm on both vessels.</li>
+                <li><strong>Emergency exits:</strong> The bow, stern, and side ladders on both vessels. The cabin door is the secondary exit on the yacht.</li>
+              </ul>
+            </div>
+          </details>
+        </div>
+
+        <!-- Section 5 — Media release -->
+        <div class="wv-section">
+          <h2 class="wv-h2"><span class="wv-h2-num">5</span>Media Release</h2>
+          <label class="wv-checkbox-row" style="margin-top:8px;">
+            <input type="checkbox" id="wvMediaRelease" checked>
+            <label for="wvMediaRelease">
+              <strong>I consent</strong> to being photographed or filmed during my charter, and I grant Texas Forever Charters, LLC the right to use my name, image, voice, and likeness for marketing purposes. <span style="color:#6B7280;">(Uncheck to opt out.)</span>
+            </label>
+          </label>
+        </div>
+
+        <!-- Section 6 — Signature -->
+        <div class="wv-section">
+          <h2 class="wv-h2"><span class="wv-h2-num">6</span>Digital Signature</h2>
+          <p class="wv-section-hint">Type your full legal name to sign. This is your legally binding signature.</p>
+
+          <input class="wv-sign-input" id="wvSignature" type="text" autocomplete="off" placeholder="Your full legal name">
+
+          <label class="wv-checkbox-row" style="margin-top:14px;">
+            <input type="checkbox" id="wvAck">
+            <label for="wvAck">
+              <strong>I confirm I am 18 years of age or older</strong>, OR I am a parent/legal guardian signing on behalf of a minor listed above, and I have read and agree to all terms above.
+            </label>
+          </label>
+
+          <button class="wv-submit" id="wvSubmit" onclick="wvSubmit()">Sign Waiver</button>
+          <div class="wv-error" id="wvError"></div>
+        </div>
+      </div>
+
+      <!-- ── SUCCESS ── -->
+      <div class="wv-success" id="wvSuccess">
+        <div class="wv-success-icon">✅</div>
+        <h2 class="wv-success-title">Waiver Signed</h2>
+        <p class="wv-success-text" id="wvSuccessText">Your waiver has been recorded.</p>
+        <div class="wv-success-anchor">⚓</div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('session_id');
+    const isPrefillMode = !!sessionId;
+
+    // Toggle charter info display: prefilled card vs manual inputs
+    if (isPrefillMode) {
+      document.getElementById('wvCharterReadonly').style.display = '';
+      document.getElementById('wvCharterManual').style.display = 'none';
+      // Fetch the booking to populate read-only fields
+      fetch('/api/waiver?session_id=' + encodeURIComponent(sessionId))
+        .then(r => r.json())
+        .then(data => {
+          if (!data || !data.ok || !data.booking) {
+            // Fall back to manual entry if the lookup fails
+            document.getElementById('wvCharterReadonly').style.display = 'none';
+            document.getElementById('wvCharterManual').style.display = '';
+            return;
+          }
+          const b = data.booking;
+          document.getElementById('wvOrganizerOut').textContent = b.organizer_name || '—';
+          document.getElementById('wvDateOut').textContent = b.charter_date ? formatDate(b.charter_date) : '—';
+          document.getElementById('wvTimeOut').textContent = b.charter_time || '—';
+          document.getElementById('wvVesselOut').textContent =
+            b.vessel === 'yacht' ? 'Yacht — 40ft Carver Aft Cabin'
+            : b.vessel === 'pontoon' ? 'Pontoon — 24ft Bentley Navigator 243'
+            : (b.vessel || '—');
+        })
+        .catch(() => {
+          // Network error → fall back to manual
+          document.getElementById('wvCharterReadonly').style.display = 'none';
+          document.getElementById('wvCharterManual').style.display = '';
+        });
+    } else {
+      document.getElementById('wvCharterReadonly').style.display = 'none';
+      document.getElementById('wvCharterManual').style.display = '';
+    }
+
+    function formatDate(s) {
+      if (!s) return '';
+      const d = new Date(s + 'T12:00:00');
+      if (isNaN(d)) return s;
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    // Auto-calc age when DOB changes
+    document.getElementById('wvDob').addEventListener('change', () => {
+      const dob = document.getElementById('wvDob').value;
+      const ageEl = document.getElementById('wvAge');
+      if (!dob) { ageEl.value = ''; return; }
+      const d = new Date(dob + 'T12:00:00');
+      if (isNaN(d)) { ageEl.value = ''; return; }
+      const now = new Date();
+      let age = now.getFullYear() - d.getFullYear();
+      const m = now.getMonth() - d.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1;
+      ageEl.value = age >= 0 && age < 130 ? age : '';
+    });
+
+    // Toggle minor block
+    document.getElementById('wvIsMinor').addEventListener('change', () => {
+      document.getElementById('wvMinorBlock').style.display =
+        document.getElementById('wvIsMinor').checked ? '' : 'none';
+    });
+
+    function showError(msg) {
+      const el = document.getElementById('wvError');
+      el.textContent = msg;
+      el.classList.add('show');
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    function clearError() {
+      document.getElementById('wvError').classList.remove('show');
+    }
+    function markBad(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('bad');
+    }
+    function clearBad() {
+      document.querySelectorAll('.wv-input.bad, .wv-sign-input.bad').forEach(el => el.classList.remove('bad'));
+    }
+
+    async function wvSubmit() {
+      clearError(); clearBad();
+
+      const v = id => document.getElementById(id).value.trim();
+
+      const required = [
+        ['wvFirst',     'First name'],
+        ['wvLast',      'Last name'],
+        ['wvDob',       'Date of birth'],
+        ['wvEcName',    'Emergency contact name'],
+        ['wvEcPhone',   'Emergency contact phone'],
+        ['wvEcRel',     'Relationship to emergency contact'],
+        ['wvSignature', 'Digital signature'],
+      ];
+      // Charter fields required only when manually entering
+      if (!isPrefillMode) {
+        required.unshift(['wvOrganizer', 'Charter organizer name']);
+        required.push(['wvDate',   'Charter date']);
+        required.push(['wvTime',   'Start time']);
+        required.push(['wvVessel', 'Vessel']);
+      }
+
+      for (const [id, label] of required) {
+        if (!v(id)) { markBad(id); showError(label + ' is required.'); return; }
+      }
+
+      if (!document.getElementById('wvAck').checked) {
+        showError('You must acknowledge the agreement before signing.');
+        return;
+      }
+
+      const isMinor = document.getElementById('wvIsMinor').checked;
+      if (isMinor) {
+        if (!v('wvGuardianName')) { markBad('wvGuardianName'); showError('Guardian name is required when signing for a minor.'); return; }
+        if (!v('wvGuardianRel'))  { markBad('wvGuardianRel');  showError('Guardian relationship is required when signing for a minor.'); return; }
+      }
+
+      const btn = document.getElementById('wvSubmit');
+      btn.disabled = true;
+      btn.textContent = 'Signing…';
+
+      const payload = {
+        session_id:        sessionId || null,
+        // Charter fields — sent for both modes; backend overrides from booking when session_id is present
+        organizer_name:    isPrefillMode ? null : v('wvOrganizer'),
+        charter_date:      isPrefillMode ? null : v('wvDate'),
+        charter_time:      isPrefillMode ? null : v('wvTime'),
+        vessel:            isPrefillMode ? null : v('wvVessel'),
+        // Signer
+        signer_first_name: v('wvFirst'),
+        signer_last_name:  v('wvLast'),
+        signer_email:      v('wvEmail'),
+        signer_phone:      v('wvPhone'),
+        date_of_birth:     v('wvDob'),
+        // Emergency contact
+        emergency_contact_name:         v('wvEcName'),
+        emergency_contact_phone:        v('wvEcPhone'),
+        emergency_contact_relationship: v('wvEcRel'),
+        // Minor
+        is_minor:              isMinor,
+        guardian_name:         isMinor ? v('wvGuardianName') : null,
+        guardian_relationship: isMinor ? v('wvGuardianRel')  : null,
+        // Media release + signature + acknowledgement
+        media_release_accepted: document.getElementById('wvMediaRelease').checked,
+        digital_signature:      v('wvSignature'),
+        terms_acknowledged:     true,
+      };
+
+      try {
+        const res = await fetch('/api/waiver', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          btn.disabled = false; btn.textContent = 'Sign Waiver';
+          showError(data.error || 'Sorry — we couldn\'t record your waiver. Please call (737) 368-1669.');
+          return;
+        }
+
+        // Success — replace form with confirmation
+        const dateText = isPrefillMode
+          ? document.getElementById('wvDateOut').textContent
+          : (v('wvDate') ? formatDate(v('wvDate')) : 'your');
+        document.getElementById('wvSuccessText').innerHTML =
+          'Thank you, <strong>' + escapeHtml(v('wvFirst')) + '</strong>! ' +
+          'Your waiver for the <strong>' + escapeHtml(dateText) + '</strong> charter has been recorded. ' +
+          'See you on the water!';
+        document.getElementById('wvForm').style.display = 'none';
+        document.getElementById('wvSuccess').classList.add('show');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        btn.disabled = false; btn.textContent = 'Sign Waiver';
+        showError('Network error — please try again or call (737) 368-1669.');
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>

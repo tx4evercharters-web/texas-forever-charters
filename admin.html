@@ -1328,6 +1328,9 @@
         <textarea class="edit-input" id="ab-internal-notes" rows="2" style="resize:vertical;width:100%;" placeholder="Admin-only notes — never shown to customer"></textarea>
       </div>
 
+      <!-- Waivers (edit mode only — populated by openEditModal) -->
+      <div id="ab-waivers-section"></div>
+
       <div class="edit-modal-footer">
         <button class="btn-sm btn-gray" onclick="closeAddBookingBtn()">Cancel</button>
         <button class="btn-sm btn-navy" id="ab-save-btn" onclick="abSave(false)">Save Booking</button>
@@ -1379,6 +1382,20 @@
         <button class="btn-sm btn-navy" id="ep-save-btn" onclick="epSave()">Save Payment</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Waivers list modal -->
+<div class="modal-overlay" id="waivers-overlay" onclick="closeWaiversModal(event)">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="waivers-modal-title">Signed Waivers</div>
+        <div id="waivers-modal-sub" style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;letter-spacing:1px;"></div>
+      </div>
+      <button class="modal-close" onclick="closeWaiversModalBtn()">✕</button>
+    </div>
+    <div class="modal-body" id="waivers-modal-body"></div>
   </div>
 </div>
 
@@ -1639,6 +1656,13 @@
     return '';
   }
 
+  function bkWaiverCell(b) {
+    const list = (b && b.waivers) || [];
+    const id = esc(b.session_id);
+    if (list.length === 0) return '<span style="color:var(--gray-400);font-size:11px;">None</span>';
+    return `<button class="btn-sm btn-green" onclick="bkOpenWaiverList('${id}', event)">${list.length} signed</button>`;
+  }
+
   function bkDamageBadge(b) {
     if (!b || !b.damage_hold_intent_id) return '';
     const s = (b.damage_hold_status || 'pending').toLowerCase();
@@ -1768,6 +1792,113 @@
     bkCloseMenus();
     if (!confirm('Permanently delete this booking? This cannot be undone.')) return;
     await bkPostAndRefresh('delete-booking', { session_id: id }, 'Delete booking');
+  }
+
+  /* ── Waiver helpers (table column + modal + edit-modal section) ── */
+  function bkWaiverPublicLink(session_id) {
+    return 'https://www.texasforevercharters.com/waiver.html?session_id=' + encodeURIComponent(session_id);
+  }
+
+  function bkOpenWaiverList(session_id, ev) {
+    if (ev) ev.stopPropagation();
+    const b = bkFindBooking(session_id);
+    if (!b) return;
+    const waivers = b.waivers || [];
+    const headerLine = `${esc(b.full_name || '—')} — ${esc(fmtDate(b.date))} — ${esc(vesselLabel(b.vessel))}`;
+    const rows = waivers.length ? waivers.map(w => {
+      const fullName = (w.signer_first_name || '') + ' ' + (w.signer_last_name || '');
+      const minorBadge = w.is_minor ? ' <span class="badge badge-amber">Minor</span>' : '';
+      const mediaBadge = w.media_release_accepted === false ? ' <span class="badge badge-red">No media</span>' : '';
+      const dob = w.date_of_birth ? fmtDate(String(w.date_of_birth).slice(0, 10)) : '—';
+      const signed = w.signed_at ? new Date(w.signed_at).toLocaleString('en-US') : '—';
+      return `<tr>
+        <td><strong>${esc(fullName.trim() || '—')}</strong>${minorBadge}${mediaBadge}</td>
+        <td>${esc(dob)}</td>
+        <td>${esc(w.age != null ? w.age + '' : '—')}</td>
+        <td>${esc(signed)}</td>
+        <td><span style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--gray-600)">${esc(w.ip_address || '—')}</span></td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" class="empty-state">No waivers yet.</td></tr>';
+
+    document.getElementById('waivers-modal-title').textContent = waivers.length + ' Signed Waiver' + (waivers.length === 1 ? '' : 's');
+    document.getElementById('waivers-modal-sub').textContent = headerLine.replace(/—/g, '·');
+    document.getElementById('waivers-modal-body').innerHTML = `
+      <div class="table-wrap">
+        <table style="font-size:13px;">
+          <thead><tr><th>Signer</th><th>DOB</th><th>Age</th><th>Signed At</th><th>IP</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+    document.getElementById('waivers-overlay').classList.add('open');
+  }
+  function closeWaiversModal(e) { if (e && e.target !== document.getElementById('waivers-overlay')) return; document.getElementById('waivers-overlay').classList.remove('open'); }
+  function closeWaiversModalBtn() { document.getElementById('waivers-overlay').classList.remove('open'); }
+
+  async function bkCopyWaiverLink(session_id, btn) {
+    const link = bkWaiverPublicLink(session_id);
+    try {
+      await navigator.clipboard.writeText(link);
+      const original = btn.textContent;
+      btn.textContent = '✓ Copied';
+      btn.disabled = true;
+      setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1500);
+    } catch {
+      // Fallback for older browsers / insecure contexts
+      const ta = document.createElement('textarea');
+      ta.value = link; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      ta.remove();
+      btn.textContent = '✓ Copied';
+      setTimeout(() => { btn.textContent = '📋 Copy Waiver Link'; }, 1500);
+    }
+  }
+
+  async function bkSendWaiverLink(session_id, btn) {
+    const b = bkFindBooking(session_id);
+    if (!b) return;
+    const target = b.customer_email || '';
+    if (!target) { showError('No customer email on this booking — cannot send.'); return; }
+    if (!confirm(`Email the waiver link to ${target}?`)) return;
+    const original = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Sending…';
+    const result = await api('/api/admin?action=send-waiver-link', { method: 'POST', body: JSON.stringify({ session_id }) });
+    if (result && result.ok) {
+      btn.textContent = '✓ Sent';
+      setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+    } else {
+      showError(result?.error || 'Failed to send waiver link.');
+      btn.textContent = original; btn.disabled = false;
+    }
+  }
+
+  function renderWaiverEditSection(b) {
+    if (!b || !b.session_id) return '';
+    const waivers = b.waivers || [];
+    const link = bkWaiverPublicLink(b.session_id);
+    const rows = waivers.length ? waivers.map(w => {
+      const fullName = ((w.signer_first_name || '') + ' ' + (w.signer_last_name || '')).trim() || '—';
+      const dob = w.date_of_birth ? fmtDate(String(w.date_of_birth).slice(0, 10)) : '—';
+      const signed = w.signed_at ? new Date(w.signed_at).toLocaleString('en-US') : '—';
+      return `<div style="padding:6px 0;border-bottom:1px solid var(--gray-100);font-size:13px;">
+        <strong>${esc(fullName)}</strong> · DOB ${esc(dob)} · Signed ${esc(signed)}
+      </div>`;
+    }).join('') : '<div style="font-size:12px;color:var(--gray-400);padding:6px 0;">No waivers signed yet for this booking.</div>';
+
+    return `
+      <div style="margin-top:18px;padding:14px 16px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--navy);letter-spacing:2px;margin-bottom:10px;">
+          Waivers — ${waivers.length} signed
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <button class="btn-sm btn-navy" onclick="bkCopyWaiverLink('${esc(b.session_id)}', this)">📋 Copy Waiver Link</button>
+          <button class="btn-sm btn-gray" onclick="bkSendWaiverLink('${esc(b.session_id)}', this)">📧 Send Waiver Link</button>
+          <a class="btn-sm btn-gray" href="${esc(link)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block;">↗ Open Waiver Page</a>
+        </div>
+        <div>${rows}</div>
+        <div style="font-size:11px;color:var(--gray-400);margin-top:8px;word-break:break-all;">${esc(link)}</div>
+      </div>
+    `;
   }
 
   /* ── Damage hold actions ── */
@@ -2143,6 +2274,7 @@
           <td style="white-space:nowrap;font-weight:700">${fmtMoney(b.grand_total || (b.amount_total ? b.amount_total/100 : 0))}</td>
           <td style="white-space:nowrap;color:${parseFloat(b.remaining_balance)>0?'var(--amber)':'var(--green)'}">${fmtMoney(b.remaining_balance)}</td>
           <td style="white-space:nowrap">${badge}${statusBadge ? '<div style="margin-top:4px">'+statusBadge+'</div>' : ''}${(() => { const d = bkDamageBadge(b); return d ? '<div style="margin-top:4px">'+d+'</div>' : ''; })()}</td>
+          <td style="white-space:nowrap">${bkWaiverCell(b)}</td>
           <td>
             <div class="action-btns">
               <button class="btn-sm btn-navy" onclick="openEditModal('${esc(b.session_id)}')">✏ Edit</button>
@@ -2172,6 +2304,7 @@
             <th>Total</th>
             <th>Remaining</th>
             <th>Status</th>
+            <th>Waivers</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -2405,6 +2538,8 @@
   function openAddBooking(prefillDate) {
     // Reset edit-mode state and modal chrome
     abEditingSessionId = null;
+    const waiversSlot = document.getElementById('ab-waivers-section');
+    if (waiversSlot) waiversSlot.innerHTML = '';
     document.getElementById('ab-modal-title').textContent = '+ Add Booking';
     document.getElementById('ab-save-btn').textContent = 'Save Booking';
     document.getElementById('ab-save-send-btn').style.display = '';
@@ -2913,6 +3048,10 @@
     const m = b.payment_method_external;
     document.getElementById('ab-edit-method').value =
       (m && ['cash','venmo','zelle','check','external_platform'].includes(m)) ? m : 'stripe';
+
+    // Waivers section (edit mode only)
+    const waiversSlot = document.getElementById('ab-waivers-section');
+    if (waiversSlot) waiversSlot.innerHTML = renderWaiverEditSection(b);
 
     document.getElementById('add-booking-overlay').classList.add('open');
   }

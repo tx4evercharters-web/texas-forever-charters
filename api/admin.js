@@ -20,8 +20,10 @@ const {
   patchBooking,
   findBookingBySessionId,
   deleteBookingRow,
+  listWaivers,
+  getAllWaivers,
 } = require('../lib/storage');
-const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail } = require('../lib/send-emails');
+const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail } = require('../lib/send-emails');
 
 /* ── Direct Supabase PATCH for booking edits ── */
 function supabasePatch(session_id, updates) {
@@ -77,17 +79,32 @@ async function handleLogin(req, res) {
 async function handleBookings(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
-  const bookings = await getBookings();
-  const today = new Date().toISOString().split('T')[0];
+  const [bookings, waivers] = await Promise.all([getBookings(), getAllWaivers()]);
 
+  // Group waivers by session_id (and by booking_id as fallback) so the admin
+  // table can render per-booking waiver counts without a second round trip.
+  const waiversBySession = {};
+  const waiversByBookingId = {};
+  for (const w of waivers || []) {
+    if (w.session_id) (waiversBySession[w.session_id] || (waiversBySession[w.session_id] = [])).push(w);
+    if (w.booking_id) (waiversByBookingId[w.booking_id] || (waiversByBookingId[w.booking_id] = [])).push(w);
+  }
+  const enrich = (b) => {
+    const list = waiversBySession[b.session_id] || waiversByBookingId[b.id] || [];
+    return { ...b, waivers: list, waiver_count: list.length };
+  };
+
+  const today = new Date().toISOString().split('T')[0];
   const upcoming = bookings
     .filter(b => (b.date || '') >= today)
-    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+    .map(enrich);
   const past = bookings
     .filter(b => (b.date || '') < today)
-    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+    .map(enrich);
 
-  return res.status(200).json({ upcoming, past, all: bookings });
+  return res.status(200).json({ upcoming, past, all: bookings.map(enrich) });
 }
 
 async function handleListBlackouts(req, res) {
@@ -482,6 +499,44 @@ async function handleCaptureDamageCharge(req, res) {
   }
 }
 
+async function handleListWaivers(req, res) {
+  if (req.method !== 'GET') return res.status(405).end();
+  const filter = {
+    session_id:   req.query.session_id   || undefined,
+    booking_id:   req.query.booking_id   || undefined,
+    charter_date: req.query.charter_date || undefined,
+    signer_email: req.query.signer_email || undefined,
+  };
+  if (!filter.session_id && !filter.booking_id && !filter.charter_date && !filter.signer_email) {
+    return res.status(400).json({ error: 'Provide one of: session_id, booking_id, charter_date, signer_email' });
+  }
+  try {
+    const waivers = await listWaivers(filter);
+    return res.status(200).json({ ok: true, waivers });
+  } catch (err) {
+    console.error('list-waivers error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleSendWaiverLink(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { session_id } = req.body || {};
+  if (!session_id) return res.status(400).json({ error: 'session_id required' });
+
+  try {
+    const booking = await findBookingBySessionId(session_id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (!booking.customer_email) return res.status(400).json({ error: 'No customer email on this booking — cannot send.' });
+
+    await sendWaiverLinkEmail(booking);
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error('send-waiver-link error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 async function handleDeleteBooking(req, res) {
   if (req.method !== 'POST' && req.method !== 'DELETE') return res.status(405).end();
   const session_id = (req.body && req.body.session_id) || req.query.session_id;
@@ -732,6 +787,8 @@ const ROUTES = {
   'delete-booking':       handleDeleteBooking,
   'release-damage-hold':  handleReleaseDamageHold,
   'capture-damage-charge':handleCaptureDamageCharge,
+  'list-waivers':         handleListWaivers,
+  'send-waiver-link':     handleSendWaiverLink,
 };
 
 module.exports = async function handler(req, res) {
