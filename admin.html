@@ -1293,7 +1293,7 @@
 <div class="modal-overlay" id="import-overlay" onclick="closeImport(event)">
   <div class="modal" style="max-width:920px;">
     <div class="modal-header">
-      <div class="modal-title">📥 Import Historical Bookings</div>
+      <div class="modal-title">📥 Import Historical Bookings <span style="font-size:11px;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:100px;letter-spacing:1px;margin-left:6px;font-family:'Barlow',sans-serif;">v5</span></div>
       <button class="modal-close" onclick="closeImportBtn()">✕</button>
     </div>
     <div class="modal-body">
@@ -3489,15 +3489,44 @@
         // if the parser/auto-mapper ever picks the wrong row or misreads a header.
         const diag = document.getElementById('import-upload-diagnostic');
         if (diag) {
-          const headerList = importHeaders.map((h, i) => `<li style="margin:0;"><span style="color:var(--gray-400);">col ${i + 1}.</span> ${esc(h)}</li>`).join('');
+          // Per-character codepoint dump for the first header — surfaces hidden BOM,
+          // NBSP, smart-quote, or zero-width characters at a glance.
+          const charDump = importHeaders.length ? importHeaders[0].split('').map(c => {
+            const cp = c.codePointAt(0);
+            const hex = cp.toString(16).toUpperCase().padStart(4, '0');
+            const printable = (cp >= 0x20 && cp < 0x7f) ? c : ' ';
+            const flag = (cp === 0xFEFF || cp === 0x00A0 || cp === 0x200B || cp === 0x201C || cp === 0x201D)
+              ? ' style="background:#FEF3C7;color:#92400E;"' : '';
+            return `<span${flag} title="U+${hex}${cp === 0xFEFF ? ' BOM' : cp === 0x00A0 ? ' NBSP' : cp === 0x200B ? ' ZWSP' : ''}">${esc(printable)}<sub style="font-size:8px;color:var(--gray-400);">${hex}</sub></span>`;
+          }).join('') : '';
+
+          const headerList = importHeaders.map((h, i) => {
+            const lengths = `${h.length} char${h.length === 1 ? '' : 's'}`;
+            return `<li style="margin:0;font-family:ui-monospace,Menlo,Consolas,monospace;"><span style="color:var(--gray-400);">col ${i + 1}.</span> "${esc(h)}" <span style="color:var(--gray-400);font-size:10px;">(${lengths})</span></li>`;
+          }).join('');
+
           diag.style.display = '';
           diag.innerHTML = `
             <details open style="font-size:12px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;padding:10px 14px;">
-              <summary style="cursor:pointer;font-weight:700;color:var(--navy);">📋 Detected ${importHeaders.length} CSV columns ${importIsFareharbor ? '— FareHarbor export' : ''}</summary>
-              <ol style="margin:8px 0 0 18px;padding:0;color:var(--gray-700);line-height:1.6;">${headerList}</ol>
+              <summary style="cursor:pointer;font-weight:700;color:var(--navy);">📋 Detected ${importHeaders.length} CSV columns ${importIsFareharbor ? '— FareHarbor signature ✓' : ''}</summary>
+              <div style="margin-top:10px;padding:8px;background:var(--white);border:1px solid var(--gray-200);border-radius:4px;">
+                <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray-600);margin-bottom:6px;">First header — character codepoints</div>
+                <div style="font-family:ui-monospace,Menlo,Consolas,monospace;line-height:2.6;word-break:break-all;">${charDump}</div>
+                <div style="font-size:10px;color:var(--gray-400);margin-top:4px;">Yellow highlight = hidden character (BOM / NBSP / zero-width / smart quote)</div>
+              </div>
+              <ol style="margin:10px 0 0 18px;padding:0;color:var(--gray-700);line-height:1.6;">${headerList}</ol>
             </details>
           `;
         }
+
+        // Console: per-character dump of every header — copyable for debugging
+        try {
+          console.log('[CSV import v5] First raw row, character by character:');
+          importHeaders.forEach((h, i) => {
+            const chars = h.split('').map(c => 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0') + (c >= ' ' && c < '\x7f' ? '(' + c + ')' : ''));
+            console.log('  col ' + (i + 1) + ': ' + chars.join(' '));
+          });
+        } catch (_) {}
 
         // Decide where to land: straight to preview if all required fields auto-detected,
         // otherwise show only the missing required fields on a slim mapping screen.
