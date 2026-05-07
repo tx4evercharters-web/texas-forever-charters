@@ -140,13 +140,24 @@ async function handlePost(req, res) {
       ip_address:                     ip,
       user_agent:                     req.headers['user-agent'] || null,
     });
-    // Fire-and-forget the confirmation email so the API response isn't gated
-    // on Resend latency. Skipped silently inside the helper if signer_email
-    // is missing. Errors are logged but never bubble up to the client.
+    // Send the confirmation email BEFORE responding. Fire-and-forget on Vercel
+    // is unreliable — the function instance can be frozen or recycled the
+    // instant the response flushes, killing in-flight HTTP requests. Awaiting
+    // adds ~200–500ms but guarantees the email actually leaves. Wrap in
+    // try/catch so a Resend failure never breaks waiver submission — the row
+    // is already saved by this point.
     if (waiver && waiver.signer_email) {
-      sendWaiverConfirmationEmail(waiver).catch(err => {
-        console.error('[waiver] confirmation email failed for', waiver.signer_email, '—', err.message);
-      });
+      console.log('[waiver/post] attempting confirmation email to', waiver.signer_email, 'waiver_id:', waiver.id);
+      try {
+        const emailResult = await sendWaiverConfirmationEmail(waiver);
+        console.log('[waiver/post] confirmation email sent OK. resend_id:', emailResult && emailResult.id);
+      } catch (err) {
+        console.error('[waiver/post] confirmation email FAILED for', waiver.signer_email, '—', err.message);
+        if (err.stack) console.error(err.stack);
+        // Swallow — waiver row is saved; admin can resend manually if needed
+      }
+    } else {
+      console.log('[waiver/post] no signer_email on saved waiver — skipping confirmation email. waiver:', JSON.stringify({ id: waiver && waiver.id, signer_email: waiver && waiver.signer_email }));
     }
 
     return res.status(200).json({ ok: true, waiver_id: waiver && waiver.id });
