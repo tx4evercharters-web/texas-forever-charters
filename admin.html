@@ -1323,6 +1323,7 @@
 
       <!-- Step 3: Preview -->
       <div id="import-step-preview" style="display:none;">
+        <div id="import-automap-banner" style="margin-bottom:12px;"></div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;">
           <h4 style="font-family:'Bebas Neue',sans-serif;color:var(--navy);letter-spacing:2px;font-size:18px;">Preview &amp; Validate</h4>
           <div id="import-preview-summary" style="font-size:12px;color:var(--gray-600);"></div>
@@ -1335,7 +1336,7 @@
           </table>
         </div>
         <div class="edit-modal-footer" style="margin-top:18px;">
-          <button class="btn-sm btn-gray" onclick="importBack('map')">← Back to Mapping</button>
+          <button class="btn-sm btn-gray" onclick="importAdjustMapping()">⚙ Adjust mapping</button>
           <button class="btn-sm btn-navy" id="import-confirm-btn" onclick="importConfirm()">Import Bookings</button>
         </div>
       </div>
@@ -2940,6 +2941,8 @@
   let importMap = {};    // { fieldKey: csvColumnIndex }
   let importMapped = []; // mapped row objects
   let importValid = [];  // boolean per row
+  let importFileName = '';
+  let importMapShowAll = false; // toggle for slim vs full mapping UI
 
   function openImport() {
     importReset();
@@ -2950,6 +2953,7 @@
 
   function importReset() {
     importHeaders = []; importRows = []; importMap = {}; importMapped = []; importValid = [];
+    importFileName = ''; importMapShowAll = false;
     document.getElementById('import-step-upload').style.display = '';
     document.getElementById('import-step-map').style.display = 'none';
     document.getElementById('import-step-preview').style.display = 'none';
@@ -3034,31 +3038,36 @@
       'pax':                           'party_size',
     };
 
-    // Tier 2: generic fallback candidates — used only if Tier 1 didn't already claim the field
-    // and no Tier 1 column was claimed for this header.
-    const fallback = {
-      date:           ['date','booking date','booking_date','start date','event date','start','start time','start date/time'],
-      full_name:      ['name','full name','customer name','customer','client'],
-      customer_email: ['customer email','e-mail','mail','contact email'],
-      phone:          ['mobile','cell','phone number','contact phone'],
-      vessel:         ['vessel','boat','yacht/pontoon','vessel type','item name','product'],
-      grand_total:    ['amount','total amount','grand total','price','revenue','paid','net total','order total'],
-      source:         ['source','origin','channel','platform'],
-      experience:     ['experience','event','event type','tour type','package'],
-      time_slot:      ['time','time slot'],
-      duration:       ['duration','hours','hrs'],
-      party_size:     ['party size','guests','people','party','customer count','headcount','# of customers'],
-      charter_name:   ['charter name','trip name','occasion','charter','booking name'],
-      city:           ['city'],
-      state:          ['state','st'],
-      newsletter:     ['email subscribed','newsletter','newsletter subscribed','email opt-in','email opt in'],
-      sms_subscribed: ['sms subscribed','text subscribed','sms opt-in','sms opt in'],
-    };
+    // Tier 2: substring/fuzzy match. Field-priority order matters — more specific keywords
+    // claim columns first so general terms like "customer" don't snatch the email/phone column.
+    // Each entry is processed against UNCLAIMED headers in CSV column order.
+    const fuzzyOrder = [
+      // Most specific signals first
+      { field: 'customer_email',  keywords: ['email','e-mail','mail'] },
+      { field: 'phone',           keywords: ['phone','mobile','cell'] },
+      { field: 'newsletter',      keywords: ['subscribed to email','email subscribed','newsletter','email opt'] },
+      { field: 'sms_subscribed',  keywords: ['subscribed to text','text messages','sms subscribed','sms opt','text opt'] },
+      { field: 'party_size',      keywords: ['# of pax','pax','guests','headcount','party size','people','customer count'] },
+      { field: 'time_slot',       keywords: ['pickup time','start time','time slot','time'] },
+      { field: 'date',            keywords: ['booking date','charter date','event date','start date','availability','date'] },
+      { field: 'vessel',          keywords: ['vessel','yacht','pontoon','boat','activity','item'] },
+      { field: 'grand_total',     keywords: ['total paid','grand total','total amount','order total','net total','revenue','total','amount','paid','price'] },
+      // Name is intentionally last — broad keywords ('customer', 'name') would otherwise
+      // hijack columns like "Customer Email" or "Customer Phone".
+      { field: 'full_name',       keywords: ['contact name','customer name','full name','contact','customer','client','name'] },
+      // Optional / less-critical fields
+      { field: 'source',          keywords: ['source','origin','channel','platform'] },
+      { field: 'experience',      keywords: ['experience','event type','tour type','package','event'] },
+      { field: 'duration',        keywords: ['duration','hours','hrs'] },
+      { field: 'charter_name',    keywords: ['charter name','trip name','booking name','occasion','charter'] },
+      { field: 'city',            keywords: ['city'] },
+      { field: 'state',           keywords: ['state'] },
+    ];
 
     const guess = {};
     const claimedCols = new Set();
 
-    // Tier 1 pass: walk the actual header order so a column is only claimed once
+    // Tier 1 pass: exact-name match using FareHarbor's actual headers — walks columns in order
     lc.forEach((h, i) => {
       const fieldKey = fareharborExact[h];
       if (fieldKey && guess[fieldKey] === undefined && !claimedCols.has(i)) {
@@ -3067,10 +3076,10 @@
       }
     });
 
-    // Tier 2 pass: fallback matches for any field still unmapped
-    for (const [field, candidates] of Object.entries(fallback)) {
+    // Tier 2 pass: fuzzy substring match for any field still unmapped
+    for (const { field, keywords } of fuzzyOrder) {
       if (guess[field] !== undefined) continue;
-      const idx = lc.findIndex((h, i) => !claimedCols.has(i) && candidates.includes(h));
+      const idx = lc.findIndex((h, i) => !claimedCols.has(i) && keywords.some(kw => h.includes(kw)));
       if (idx >= 0) {
         guess[field] = idx;
         claimedCols.add(idx);
@@ -3088,16 +3097,56 @@
     return guess;
   }
 
-  function importBuildMapUI() {
+  function importBuildMapUI(opts) {
+    opts = opts || {};
+    if (opts.onlyUnmappedRequired !== undefined) {
+      importMapShowAll = !opts.onlyUnmappedRequired;
+    }
     const grid = document.getElementById('import-map-grid');
-    grid.innerHTML = IMPORT_FIELDS.map(f => {
+    const container = grid.parentElement; // #import-step-map
+
+    const missingRequired = IMPORT_FIELDS.filter(f => f.required && importMap[f.key] === undefined);
+    const visibleFields = importMapShowAll
+      ? IMPORT_FIELDS
+      : (missingRequired.length ? missingRequired : IMPORT_FIELDS);
+
+    // Heading + show-all toggle inserted above the grid
+    let headingEl = container.querySelector('.import-map-heading');
+    if (!headingEl) {
+      headingEl = document.createElement('div');
+      headingEl.className = 'import-map-heading';
+      container.insertBefore(headingEl, container.firstChild);
+    }
+    if (!importMapShowAll && missingRequired.length) {
+      headingEl.innerHTML = `
+        <div class="import-warning amber" style="margin-bottom:14px;">
+          <strong>${missingRequired.length} required field${missingRequired.length === 1 ? '' : 's'} need${missingRequired.length === 1 ? 's' : ''} manual mapping</strong>
+          — pick the matching column from your CSV below, or
+          <a href="#" id="import-show-all" style="color:inherit;text-decoration:underline;">show all fields</a>.
+        </div>
+      `;
+    } else {
+      const detected = Object.keys(importMap).length;
+      headingEl.innerHTML = `
+        <div style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">
+          Auto-detected <strong>${detected} of ${IMPORT_FIELDS.length}</strong> fields. Adjust below if needed${missingRequired.length === 0 ? `, or <a href="#" id="import-show-required" style="color:var(--navy);text-decoration:underline;">hide non-essential fields</a>` : ''}.
+        </div>
+      `;
+    }
+    const showAll = headingEl.querySelector('#import-show-all');
+    if (showAll) showAll.addEventListener('click', e => { e.preventDefault(); importMapShowAll = true; importBuildMapUI(); });
+    const showReq = headingEl.querySelector('#import-show-required');
+    if (showReq) showReq.addEventListener('click', e => { e.preventDefault(); importMapShowAll = false; importBuildMapUI(); });
+
+    grid.innerHTML = visibleFields.map(f => {
       const opts = ['<option value="">— skip —</option>']
         .concat(importHeaders.map((h, i) =>
           `<option value="${i}" ${importMap[f.key] === i ? 'selected' : ''}>${esc(h)} (col ${i + 1})</option>`
         )).join('');
+      const requiredBadge = f.required ? '<span style="color:var(--red);font-weight:700;">*</span>' : '';
       return `
         <div class="edit-form-group">
-          <label class="edit-label">${esc(f.label)}${f.required ? ' *' : ''}</label>
+          <label class="edit-label">${esc(f.label)} ${requiredBadge}</label>
           <select class="edit-input" data-field="${esc(f.key)}">${opts}</select>
           ${f.hint ? `<span style="font-size:10px;color:var(--gray-400);">${esc(f.hint)}</span>` : ''}
         </div>
@@ -3167,12 +3216,36 @@
     return isFinite(v) ? v : null;
   }
 
+  function importAdjustMapping() {
+    importMapShowAll = true;
+    importBuildMapUI();
+    importBack('map');
+  }
+
   function importBuildPreview() {
     // Validate required mappings
-    const missing = IMPORT_FIELDS.filter(f => f.required && importMap[f.key] === undefined).map(f => f.label);
-    if (missing.length) {
-      showError('Map all required fields: ' + missing.join(', '));
+    const missingFields = IMPORT_FIELDS.filter(f => f.required && importMap[f.key] === undefined);
+    if (missingFields.length) {
+      // Bounce back to the slim mapping screen rather than failing silently
+      importMapShowAll = false;
+      importBuildMapUI();
+      importBack('map');
+      showError('Map all required fields: ' + missingFields.map(f => f.label).join(', '));
       return;
+    }
+
+    // Auto-map success banner
+    const mappedCount = Object.keys(importMap).length;
+    const isFareharbor = importHeaders.some(h => normalizeHeader(h) === 'availability') &&
+                        importHeaders.some(h => normalizeHeader(h) === 'item') &&
+                        importHeaders.some(h => normalizeHeader(h) === '# of pax');
+    const banner = document.getElementById('import-automap-banner');
+    if (banner) {
+      banner.innerHTML = `
+        <div class="import-warning green">
+          ✓ Auto-mapped <strong>${mappedCount} of ${importHeaders.length}</strong> columns from your ${isFareharbor ? 'FareHarbor export' : 'CSV'}${importFileName ? ` (${esc(importFileName)})` : ''}.
+        </div>
+      `;
     }
 
     importMapped = importRows.map(r => {
@@ -3357,7 +3430,7 @@
     custRemoveTag(id, tag);
   });
 
-  // Import: handle file upload
+  // Import: handle file upload — auto-map and skip the mapping screen when possible
   const importFileEl = document.getElementById('import-file');
   if (importFileEl) {
     importFileEl.addEventListener('change', async (e) => {
@@ -3374,10 +3447,21 @@
         importHeaders = all[0];
         importRows    = all.slice(1);
         importMap     = importGuessMapping();
-        importBuildMapUI();
-        info.textContent = `Loaded ${importRows.length} rows. Auto-detected ${Object.keys(importMap).length} column matches — adjust below.`;
-        info.style.color = 'var(--gray-600)';
-        importBack('map');
+        importFileName = file.name;
+
+        // Decide where to land: straight to preview if all required fields auto-detected,
+        // otherwise show only the missing required fields on a slim mapping screen.
+        const missing = IMPORT_FIELDS.filter(f => f.required && importMap[f.key] === undefined);
+        if (missing.length === 0) {
+          info.textContent = `Loaded ${importRows.length} rows. All required fields auto-detected — skipping to preview.`;
+          info.style.color = 'var(--green)';
+          importBuildPreview();
+        } else {
+          importBuildMapUI({ onlyUnmappedRequired: true });
+          info.textContent = `Loaded ${importRows.length} rows. ${missing.length} required field${missing.length === 1 ? '' : 's'} need${missing.length === 1 ? 's' : ''} manual mapping.`;
+          info.style.color = 'var(--amber)';
+          importBack('map');
+        }
       } catch (err) {
         info.textContent = 'Failed to read file: ' + err.message;
         info.style.color = 'var(--red)';
