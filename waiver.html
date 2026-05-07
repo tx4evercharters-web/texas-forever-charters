@@ -14,7 +14,7 @@
     .wv-page {
       background: #F0F2F8;
       min-height: 100vh;
-      padding: 32px 16px 80px;
+      padding: 110px 16px 80px;
       font-family: 'Barlow', Arial, sans-serif;
     }
     .wv-wrap {
@@ -306,7 +306,7 @@
     @keyframes wvSpin { to { transform: rotate(360deg); } }
 
     @media (max-width: 700px) {
-      .wv-page { padding: 16px 10px 60px; }
+      .wv-page { padding: 96px 10px 60px; }
       .wv-wrap { padding: 26px 22px 24px; border-radius: 10px; }
       .wv-title { font-size: 30px; letter-spacing: 3px; }
       .wv-grid { grid-template-columns: 1fr; }
@@ -316,6 +316,38 @@
   </style>
 </head>
 <body>
+
+  <!-- ── NAVIGATION ── -->
+  <nav id="mainNav" class="scrolled">
+    <div class="nav-left">
+      <div class="nav-logo">
+        <a href="index.html"><img src="images/New_Tx4Ever_Logo.png" alt="Texas Forever Charters Logo"></a>
+      </div>
+      <div class="nav-call-wrap">
+        <a href="tel:7373681669" class="nav-call" aria-label="Call Texas Forever Charters">Call Now</a>
+        <div class="nav-call-tip" role="status" aria-live="polite">📞 (737) 368-1669</div>
+      </div>
+    </div>
+    <button class="nav-toggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="nav-links">
+      <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+    </button>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="index.html#experiences">Experiences</a></li>
+      <li><a href="index.html#fleet">Our Fleet</a></li>
+      <li><a href="index.html#crew">The Crew</a></li>
+      <li><a href="index.html#reviews">Reviews</a></li>
+      <li><a href="index.html#faq">FAQ</a></li>
+      <li><a href="booking.html" class="nav-book">Book Now</a></li>
+      <li class="nav-contact-item">
+        <button type="button" class="nav-contact-toggle" aria-expanded="false" aria-controls="nav-contact-sub">Contact</button>
+        <div class="nav-contact-sub" id="nav-contact-sub">
+          <a href="tel:7373681669"><span class="nav-contact-label">📞 Call Us</span> — <span class="nav-contact-value">(737) 368-1669</span></a>
+          <a href="mailto:tx4evercharters@gmail.com"><span class="nav-contact-label">✉️ Email Us</span> — <span class="nav-contact-value">tx4evercharters@gmail.com</span></a>
+        </div>
+      </li>
+    </ul>
+  </nav>
 
   <main class="wv-page">
     <div class="wv-wrap">
@@ -855,6 +887,46 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+    }
+  </script>
+
+  <!-- Nav: hamburger toggle + Call Now tooltip + Contact submenu -->
+  <script>
+    const navToggleBtn = document.querySelector('.nav-toggle');
+    const navLinksEl = document.getElementById('nav-links');
+    if (navToggleBtn && navLinksEl) {
+      navToggleBtn.addEventListener('click', () => {
+        const open = navToggleBtn.classList.toggle('active');
+        navToggleBtn.setAttribute('aria-expanded', String(open));
+        navLinksEl.classList.toggle('active', open);
+      });
+    }
+
+    const callBtn = document.querySelector('.nav-call');
+    const callWrap = callBtn && callBtn.closest('.nav-call-wrap');
+    if (callBtn && callWrap) {
+      callBtn.addEventListener('click', (e) => {
+        if (window.matchMedia('(min-width: 769px)').matches) {
+          e.preventDefault();
+          const open = callWrap.classList.toggle('show-tip');
+          clearTimeout(callWrap._tipTimer);
+          if (open) {
+            callWrap._tipTimer = setTimeout(() => callWrap.classList.remove('show-tip'), 5000);
+          }
+        }
+      });
+      document.addEventListener('click', (e) => {
+        if (!callWrap.contains(e.target)) callWrap.classList.remove('show-tip');
+      });
+    }
+
+    const contactItem = document.querySelector('.nav-contact-item');
+    const contactToggle = contactItem && contactItem.querySelector('.nav-contact-toggle');
+    if (contactItem && contactToggle) {
+      contactToggle.addEventListener('click', () => {
+        const open = contactItem.classList.toggle('open');
+        contactToggle.setAttribute('aria-expanded', String(open));
+      });
     }
   </script>
 </body>
