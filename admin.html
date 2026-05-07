@@ -90,8 +90,8 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.3);
     }
 
-    .header-brand { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--white); letter-spacing: 3px; }
-    .header-brand span { color: var(--red); }
+    .header-brand { display: inline-flex; align-items: center; line-height: 0; }
+    .header-brand img { height: 38px; width: auto; display: block; }
     .header-right { display: flex; align-items: center; gap: 14px; }
     .header-right .date-label { font-size: 12px; color: rgba(255,255,255,0.5); letter-spacing: 1px; }
 
@@ -873,7 +873,7 @@
 <!-- ── App ── -->
 <div id="app">
   <header>
-    <div class="header-brand">Texas Forever <span>Charters</span></div>
+    <a href="index.html" class="header-brand" aria-label="Texas Forever Charters home"><img src="images/New_Tx4Ever_Logo.png" alt="Texas Forever Charters"></a>
     <div class="header-right">
       <span class="date-label" id="header-date"></span>
       <button class="btn-logout" onclick="logout()">Logout</button>
