@@ -303,6 +303,8 @@
     }
     .wv-success-anchor { font-size: 32px; }
 
+    @keyframes wvSpin { to { transform: rotate(360deg); } }
+
     @media (max-width: 700px) {
       .wv-page { padding: 16px 10px 60px; }
       .wv-wrap { padding: 26px 22px 24px; border-radius: 10px; }
@@ -328,6 +330,17 @@
         <!-- Section 1 — Charter info (read-only if pre-filled, editable otherwise) -->
         <div class="wv-section">
           <h2 class="wv-h2"><span class="wv-h2-num">1</span>Charter Details</h2>
+
+          <!-- Loading state shown while the API fetch is in flight (pre-fill mode only) -->
+          <div id="wvCharterLoading" style="display:none;padding:18px 20px;background:#F8F9FC;border:1px solid #E5E7EB;border-radius:8px;color:#6B7280;font-size:14px;text-align:center;">
+            <span style="display:inline-block;width:14px;height:14px;border:2px solid #1B2A6B;border-top-color:transparent;border-radius:50%;vertical-align:middle;margin-right:10px;animation:wvSpin 0.8s linear infinite;"></span>
+            Loading your charter details…
+          </div>
+
+          <!-- Error banner shown when the lookup fails or returns 404 -->
+          <div id="wvCharterError" style="display:none;padding:14px 18px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;color:#92400E;font-size:14px;line-height:1.6;margin-bottom:12px;">
+            ⚠ We couldn't find your booking details — please fill in the charter information below.
+          </div>
 
           <div id="wvCharterReadonly" class="wv-readonly-card" style="display:none;">
             <div class="wv-readonly-row">
@@ -610,27 +623,68 @@
     const sessionId = params.get('session_id');
     const isPrefillMode = !!sessionId;
 
-    // Toggle charter info display: prefilled card vs manual inputs
+    // Element handles + a small helper that uses setProperty('important') so any
+    // stray CSS rule can't override our show/hide decisions.
+    const el = {
+      loading: document.getElementById('wvCharterLoading'),
+      error:   document.getElementById('wvCharterError'),
+      ro:      document.getElementById('wvCharterReadonly'),
+      manual:  document.getElementById('wvCharterManual'),
+    };
+    function wvShow(node, mode) {
+      if (!node) return;
+      node.style.setProperty('display', mode || 'block', 'important');
+    }
+    function wvHide(node) {
+      if (!node) return;
+      node.style.setProperty('display', 'none', 'important');
+    }
+    function wvShowState(state) {
+      // states: 'loading' | 'prefilled' | 'manual'
+      console.log('[waiver] state →', state);
+      wvHide(el.loading);
+      wvHide(el.error);
+      wvHide(el.ro);
+      wvHide(el.manual);
+      if (state === 'loading')   wvShow(el.loading);
+      else if (state === 'prefilled') wvShow(el.ro);
+      else { /* manual */
+        wvShow(el.manual, 'grid');
+      }
+    }
+    function wvShowError() {
+      // Show the error banner above the manual inputs so the guest sees both
+      wvHide(el.loading);
+      wvHide(el.ro);
+      wvShow(el.error);
+      wvShow(el.manual, 'grid');
+    }
+
     if (isPrefillMode) {
-      document.getElementById('wvCharterReadonly').style.display = '';
-      document.getElementById('wvCharterManual').style.display = 'none';
-      // Fetch the booking to populate read-only fields
+      console.log('[waiver] pre-fill mode — session_id =', sessionId);
+      wvShowState('loading');
+
       fetch('/api/waiver?session_id=' + encodeURIComponent(sessionId))
-        .then(r => r.json())
-        .then(data => {
-          if (!data || !data.ok || !data.booking) {
-            // Fall back to manual entry if the lookup fails
-            document.getElementById('wvCharterReadonly').style.display = 'none';
-            document.getElementById('wvCharterManual').style.display = '';
+        .then(r => {
+          console.log('[waiver] API response status:', r.status, r.statusText);
+          return r.json().then(json => ({ status: r.status, ok: r.ok, json }));
+        })
+        .then(({ status, ok, json }) => {
+          console.log('[waiver] API response body:', json);
+          if (!ok || !json || !json.ok || !json.booking) {
+            console.warn('[waiver] lookup failed — falling back to manual entry. status:', status, 'body:', json);
+            wvShowError();
             return;
           }
-          const b = data.booking;
+          const b = json.booking;
           document.getElementById('wvOrganizerOut').textContent =
             b.organizer_name || b.charter_name || b.full_name || '—';
-          document.getElementById('wvDateOut').textContent = b.charter_date ? formatDate(b.charter_date) : '—';
+          document.getElementById('wvDateOut').textContent =
+            b.charter_date ? formatDate(b.charter_date) : '—';
           document.getElementById('wvTimeOut').textContent = b.charter_time || '—';
+
           // Prefer the server's pre-formatted vessel_display (always "<Name> — <Type>");
-          // fall back to a case-insensitive client format for older API versions.
+          // fall back to a case-insensitive client format if the server didn't send one.
           let vesselText = b.vessel_display || null;
           if (!vesselText) {
             const v = String(b.vessel || '').trim().toLowerCase();
@@ -639,15 +693,16 @@
             else                      vesselText = b.vessel || '—';
           }
           document.getElementById('wvVesselOut').textContent = vesselText;
+
+          wvShowState('prefilled');
         })
-        .catch(() => {
-          // Network error → fall back to manual
-          document.getElementById('wvCharterReadonly').style.display = 'none';
-          document.getElementById('wvCharterManual').style.display = '';
+        .catch(err => {
+          console.error('[waiver] fetch error:', err);
+          wvShowError();
         });
     } else {
-      document.getElementById('wvCharterReadonly').style.display = 'none';
-      document.getElementById('wvCharterManual').style.display = '';
+      console.log('[waiver] manual mode — no session_id in URL');
+      wvShowState('manual');
     }
 
     function formatDate(s) {
