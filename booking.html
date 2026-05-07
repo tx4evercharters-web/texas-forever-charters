@@ -1497,15 +1497,10 @@
           <p class="step-desc">What's the occasion? We tailor every charter to your vibe.</p>
         </div>
         <div class="exp-select-grid" id="experienceGrid">
-          <div class="exp-select-card" onclick="selectExperience('Sunset Cruise', this)">
+          <div class="exp-select-card" onclick="selectExperience('Lake Day', this)">
             <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <span class="exp-select-icon">🌅</span>
-            <div class="exp-select-name">Sunset Cruise</div>
-          </div>
-          <div class="exp-select-card" onclick="selectExperience('Boat Tour', this)">
-            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <span class="exp-select-icon">🗺️</span>
-            <div class="exp-select-name">Boat Tour</div>
+            <span class="exp-select-icon">☀️</span>
+            <div class="exp-select-name">Lake Day</div>
           </div>
           <div class="exp-select-card" onclick="selectExperience('Bachelorette Party', this)">
             <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -1517,35 +1512,30 @@
             <span class="exp-select-icon">🍺</span>
             <div class="exp-select-name">Bachelor Party</div>
           </div>
-          <div class="exp-select-card" onclick="selectExperience('Birthday Party', this)">
+          <div class="exp-select-card" onclick="selectExperience('Sunset Cruise', this)">
             <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <span class="exp-select-icon">🎂</span>
-            <div class="exp-select-name">Birthday Party</div>
-          </div>
-          <div class="exp-select-card" onclick="selectExperience('Private Party', this)">
-            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <span class="exp-select-icon">🥂</span>
-            <div class="exp-select-name">Private Party</div>
-          </div>
-          <div class="exp-select-card" onclick="selectExperience('Lake Day', this)">
-            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <span class="exp-select-icon">☀️</span>
-            <div class="exp-select-name">Lake Day</div>
-          </div>
-          <div class="exp-select-card" onclick="selectExperience('Proposal', this)">
-            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <span class="exp-select-icon">💍</span>
-            <div class="exp-select-name">Proposal</div>
-          </div>
-          <div class="exp-select-card" onclick="selectExperience('Graduation Party', this)">
-            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-            <span class="exp-select-icon">🎓</span>
-            <div class="exp-select-name">Graduation Party</div>
+            <span class="exp-select-icon">🌅</span>
+            <div class="exp-select-name">Sunset Cruise</div>
           </div>
           <div class="exp-select-card" onclick="selectExperience('Corporate Outing', this)">
             <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
             <span class="exp-select-icon">💼</span>
             <div class="exp-select-name">Corporate Outing</div>
+          </div>
+          <div class="exp-select-card" onclick="selectExperience('Birthday Party', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">🎂</span>
+            <div class="exp-select-name">Birthday Party</div>
+          </div>
+          <div class="exp-select-card" data-vessel="yacht" onclick="selectExperience('Proposal', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">💍</span>
+            <div class="exp-select-name">Proposal</div>
+          </div>
+          <div class="exp-select-card" data-vessel="pontoon" onclick="selectExperience('Boat Tour', this)">
+            <div class="exp-select-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <span class="exp-select-icon">🗺️</span>
+            <div class="exp-select-name">Boat Tour</div>
           </div>
         </div>
       </div>
@@ -2075,9 +2065,27 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       // Reset downstream if vessel changes
       booking.duration = null;
       booking.timeSlot = null;
+      // Hide vessel-specific experiences (Boat Tour = pontoon-only,
+      // Proposal = yacht-only) and clear the experience selection if the
+      // user had picked one that's no longer offered for this vessel.
+      filterExperiencesByVessel(v);
       // Refresh full-day blackouts for the selected vessel so the calendar
       // disables any dates that don't apply to this vessel.
       fetchVesselBlackouts(v);
+    }
+
+    function filterExperiencesByVessel(vessel) {
+      const cards = document.querySelectorAll('.exp-select-card[data-vessel]');
+      cards.forEach(card => {
+        const allowed = card.getAttribute('data-vessel') === vessel;
+        card.style.display = allowed ? '' : 'none';
+        if (!allowed && card.classList.contains('selected')) {
+          card.classList.remove('selected');
+          booking.experience = null;
+          booking.duration = null;
+          booking.timeSlot = null;
+        }
+      });
     }
 
     /* ── Availability state ── */
