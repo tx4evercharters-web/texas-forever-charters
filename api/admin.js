@@ -21,7 +21,7 @@ const {
   findBookingBySessionId,
   deleteBookingRow,
 } = require('../lib/storage');
-const { postToResend, sendConfirmationEmails } = require('../lib/send-emails');
+const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail } = require('../lib/send-emails');
 
 /* ── Direct Supabase PATCH for booking edits ── */
 function supabasePatch(session_id, updates) {
@@ -290,7 +290,17 @@ async function handleCancelBooking(req, res) {
       cancelled_at: new Date().toISOString(),
     });
     if (!updated) return res.status(404).json({ error: 'Booking not found' });
-    return res.status(200).json({ ok: true, booking: updated });
+
+    // Send the customer cancellation email AFTER the DB write succeeds.
+    // Email failures must not undo the cancel — the booking is genuinely cancelled.
+    let email_warning = null;
+    try {
+      await sendCancellationEmail(updated);
+    } catch (err) {
+      console.error('Cancellation email failed (booking still cancelled):', err.message);
+      email_warning = err.message;
+    }
+    return res.status(200).json({ ok: true, booking: updated, ...(email_warning ? { email_warning } : {}) });
   } catch (err) {
     console.error('Cancel booking error:', err.message);
     return res.status(500).json({ error: err.message });
@@ -340,12 +350,30 @@ async function handleRefundBooking(req, res) {
       cancelled_at:   booking.cancelled_at || new Date().toISOString(),
     });
 
+    // Determine "full" vs "partial" by what's left unrefunded after this event.
+    // Treat cents-rounding error tolerantly (1¢ slack).
+    const remainingAfter = Math.max(0, amountPaid - totalRefundedNow);
+    const isFullRefund = remainingAfter < 0.01;
+
+    // Stripe refund succeeded + DB updated. Email failure must NOT undo either —
+    // we already moved the customer's money, the email is best-effort.
+    let email_warning = null;
+    try {
+      await sendRefundEmail(updated || booking, amount, isFullRefund, remainingAfter);
+    } catch (err) {
+      console.error('Refund email failed (refund still processed):', err.message);
+      email_warning = err.message;
+    }
+
     return res.status(200).json({
       ok: true,
       booking: updated,
       refund_id: refund.id,
       refunded_now: amount,
       total_refunded: totalRefundedNow,
+      remaining_after: remainingAfter,
+      refund_kind: isFullRefund ? 'full' : 'partial',
+      ...(email_warning ? { email_warning } : {}),
     });
   } catch (err) {
     console.error('Refund booking error:', err.message);
