@@ -4,6 +4,7 @@ const {
   sendDueTodayEmail,
   sendOwnerAlertEmail,
   sendFinalNoticeEmail,
+  sendReviewRequestEmail,
 } = require('../lib/send-emails');
 
 /* ── Supabase REST helper (same shape as lib/storage.js) ── */
@@ -60,6 +61,12 @@ function daysBetweenYmd(fromYmd, toYmd) {
   const a = new Date(fromYmd + 'T12:00:00Z');
   const b = new Date(toYmd   + 'T12:00:00Z');
   return Math.round((b - a) / (24 * 60 * 60 * 1000));
+}
+
+function shiftYmd(ymd, deltaDays) {
+  const d = new Date(ymd + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
 }
 
 /* Map days-out → reminder key + sender. Order matters only for logging
@@ -176,6 +183,87 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  /* ── Post-charter pass: auto-conclude yesterday's upcoming charters and
+     send a review-request email exactly once per booking. ── */
+  const yesterday = shiftYmd(today, -1);
+  const post = {
+    yesterday,
+    candidates: 0,
+    concluded:  0,
+    review_sent: 0,
+    skipped_no_email: 0,
+    skipped_already_requested: 0,
+    skipped_cancelled: 0,
+    errors: [],
+    actions: [],
+  };
+
+  let postBookings = [];
+  try {
+    /* Pull yesterday's charters that are still upcoming/null OR already concluded.
+       Cancelled bookings are excluded by the status filter. */
+    postBookings = await supabase(
+      'GET',
+      '/bookings?select=*' +
+      '&date=eq.' + encodeURIComponent(yesterday) +
+      '&or=(status.is.null,status.eq.upcoming,status.eq.concluded)'
+    ) || [];
+  } catch (err) {
+    console.error('[cron-reminders] post-charter query failed:', err.message);
+    summary.post_charter = { error: err.message };
+    console.log('[cron-reminders] done. summary:', JSON.stringify(summary));
+    return res.status(200).json(summary);
+  }
+
+  post.candidates = postBookings.length;
+  console.log('[cron-reminders] post-charter candidates for', yesterday, ':', postBookings.length);
+
+  for (const b of postBookings) {
+    if (b.status === 'cancelled') { post.skipped_cancelled++; continue; }
+
+    /* 1. Auto-conclude if status is upcoming or null. */
+    const needsConclude = !b.status || b.status === 'upcoming';
+    if (needsConclude) {
+      try {
+        await supabase(
+          'PATCH',
+          '/bookings?session_id=eq.' + encodeURIComponent(b.session_id),
+          { status: 'concluded' },
+          { Prefer: 'return=minimal' }
+        );
+        post.concluded++;
+        console.log('[cron-reminders] CONCLUDED session:', b.session_id);
+      } catch (err) {
+        console.error('[cron-reminders] conclude failed for', b.session_id, ':', err.message);
+        post.errors.push({ session_id: b.session_id, step: 'conclude', error: err.message });
+        continue;
+      }
+    }
+
+    /* 2. Send review request if customer_email exists and we haven't sent one yet. */
+    if (!b.customer_email) { post.skipped_no_email++; continue; }
+    const sent = (b.reminders_sent && typeof b.reminders_sent === 'object') ? b.reminders_sent : {};
+    if (sent.review_requested) { post.skipped_already_requested++; continue; }
+
+    try {
+      await sendReviewRequestEmail(b);
+      const merged = { ...sent, review_requested: true };
+      await supabase(
+        'PATCH',
+        '/bookings?session_id=eq.' + encodeURIComponent(b.session_id),
+        { reminders_sent: merged },
+        { Prefer: 'return=minimal' }
+      );
+      post.review_sent++;
+      post.actions.push({ session_id: b.session_id, type: 'review_request', to: b.customer_email });
+      console.log('[cron-reminders] SENT review_request session:', b.session_id, 'to:', b.customer_email);
+    } catch (err) {
+      console.error('[cron-reminders] review send failed for', b.session_id, ':', err.message);
+      post.errors.push({ session_id: b.session_id, step: 'review', error: err.message });
+    }
+  }
+
+  summary.post_charter = post;
   console.log('[cron-reminders] done. summary:', JSON.stringify(summary));
   return res.status(200).json(summary);
 };

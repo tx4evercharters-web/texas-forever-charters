@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Share Your Feedback | Texas Forever Charters</title>
+  <meta name="description" content="Tell us how your Lake Travis charter went. Your private feedback helps Texas Forever Charters improve.">
+  <meta name="robots" content="noindex,nofollow">
+
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    .fb-page {
+      background: #F0F2F8;
+      min-height: 100vh;
+      padding: 80px 16px 80px;
+      font-family: 'Barlow', Arial, sans-serif;
+    }
+    .fb-wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border-radius: 14px;
+      padding: 44px 44px 36px;
+      box-shadow: 0 8px 32px rgba(15,26,69,0.08);
+    }
+    .fb-eyebrow {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #C8102E;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .fb-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 38px;
+      letter-spacing: 4px;
+      color: #1B2A6B;
+      text-align: center;
+      line-height: 1.05;
+      margin: 0 0 6px;
+    }
+    .fb-subtitle {
+      font-size: 14px;
+      color: #6B7280;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .fb-divider {
+      width: 48px; height: 3px; background: #C8102E;
+      margin: 18px auto 28px; border-radius: 2px;
+    }
+
+    .fb-section-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #4B5563;
+      margin-bottom: 10px;
+    }
+    .fb-section-label .req { color: #C8102E; margin-left: 3px; }
+
+    .fb-stars {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 12px 0 4px;
+    }
+    .fb-star {
+      cursor: pointer;
+      width: 48px;
+      height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 38px;
+      line-height: 1;
+      color: #D1D5DB;
+      transition: color 0.15s, transform 0.1s;
+      user-select: none;
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+    .fb-star:hover { transform: scale(1.08); }
+    .fb-star.active { color: #F59E0B; }
+    .fb-star:focus-visible {
+      outline: 2px solid #1B2A6B;
+      outline-offset: 4px;
+      border-radius: 4px;
+    }
+    .fb-stars-hint {
+      text-align: center;
+      font-size: 13px;
+      color: #6B7280;
+      margin-bottom: 24px;
+      min-height: 20px;
+    }
+
+    .fb-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 22px; }
+    .fb-textarea {
+      padding: 14px 16px;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: #1B2A6B;
+      background: #FFFFFF;
+      resize: vertical;
+      min-height: 140px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .fb-textarea:focus { border-color: #1B2A6B; }
+    .fb-textarea.bad { border-color: #C8102E; }
+
+    .fb-input {
+      padding: 12px 14px;
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: #1B2A6B;
+      background: #FFFFFF;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .fb-input:focus { border-color: #1B2A6B; }
+
+    .fb-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 480px) { .fb-row { grid-template-columns: 1fr; } }
+
+    .fb-submit {
+      width: 100%;
+      background: #C8102E;
+      color: #FFFFFF;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 6px;
+    }
+    .fb-submit:hover:not(:disabled) { background: #A00D25; }
+    .fb-submit:disabled { background: #9CA3AF; cursor: not-allowed; }
+
+    .fb-error {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      color: #991B1B;
+      padding: 12px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .fb-error.show { display: block; }
+
+    .fb-success {
+      text-align: center;
+      padding: 24px 8px 8px;
+    }
+    .fb-success-icon {
+      font-size: 56px;
+      color: #16A34A;
+      margin-bottom: 12px;
+    }
+    .fb-success-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 3px;
+      color: #1B2A6B;
+      margin-bottom: 12px;
+    }
+    .fb-success-text {
+      font-size: 15px;
+      color: #4B5563;
+      line-height: 1.7;
+      max-width: 460px;
+      margin: 0 auto;
+    }
+    .fb-call {
+      margin-top: 28px;
+      font-size: 13px;
+      color: #6B7280;
+    }
+    .fb-call a { color: #C8102E; text-decoration: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main class="fb-page">
+    <div class="fb-wrap">
+      <div id="fb-form-view">
+        <div class="fb-eyebrow">Texas Forever Charters</div>
+        <h1 class="fb-title">Share Your Feedback</h1>
+        <div class="fb-subtitle">Goes directly to us &mdash; not posted publicly.</div>
+        <div class="fb-divider"></div>
+
+        <div id="fb-error" class="fb-error" role="alert"></div>
+
+        <form id="fb-form" novalidate>
+          <div class="fb-field">
+            <label class="fb-section-label">Your Rating<span class="req">*</span></label>
+            <div class="fb-stars" id="fb-stars" role="radiogroup" aria-label="Rate your charter from 1 to 5 stars">
+              <button type="button" class="fb-star" data-value="1" role="radio" aria-checked="false" aria-label="1 star">&#9733;</button>
+              <button type="button" class="fb-star" data-value="2" role="radio" aria-checked="false" aria-label="2 stars">&#9733;</button>
+              <button type="button" class="fb-star" data-value="3" role="radio" aria-checked="false" aria-label="3 stars">&#9733;</button>
+              <button type="button" class="fb-star" data-value="4" role="radio" aria-checked="false" aria-label="4 stars">&#9733;</button>
+              <button type="button" class="fb-star" data-value="5" role="radio" aria-checked="false" aria-label="5 stars">&#9733;</button>
+            </div>
+            <div class="fb-stars-hint" id="fb-stars-hint">Tap a star to rate</div>
+          </div>
+
+          <div class="fb-field">
+            <label class="fb-section-label" for="fb-comment">Tell us about your experience<span class="req">*</span></label>
+            <textarea id="fb-comment" class="fb-textarea" placeholder="What stood out — good or bad? We want the full story."></textarea>
+          </div>
+
+          <div class="fb-row">
+            <div class="fb-field">
+              <label class="fb-section-label" for="fb-name">Name (optional)</label>
+              <input id="fb-name" class="fb-input" type="text" autocomplete="name">
+            </div>
+            <div class="fb-field">
+              <label class="fb-section-label" for="fb-email">Email (optional)</label>
+              <input id="fb-email" class="fb-input" type="email" autocomplete="email">
+            </div>
+          </div>
+
+          <button type="submit" class="fb-submit" id="fb-submit">Send Feedback</button>
+        </form>
+
+        <div class="fb-call">
+          Prefer to talk? Call or text
+          <a href="tel:+17373681669">(737) 368-1669</a>
+        </div>
+      </div>
+
+      <div id="fb-success-view" class="fb-success" style="display:none;">
+        <div class="fb-success-icon">&#10003;</div>
+        <div class="fb-success-title">Thank You!</div>
+        <div class="fb-success-text">
+          Thank you for your feedback! We appreciate you taking the time to share your experience.
+        </div>
+        <div class="fb-call">
+          Questions? Call or text
+          <a href="tel:+17373681669">(737) 368-1669</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('booking');
+
+      const starsEl    = document.getElementById('fb-stars');
+      const hintEl     = document.getElementById('fb-stars-hint');
+      const formEl     = document.getElementById('fb-form');
+      const errorEl    = document.getElementById('fb-error');
+      const submitEl   = document.getElementById('fb-submit');
+      const commentEl  = document.getElementById('fb-comment');
+      const nameEl     = document.getElementById('fb-name');
+      const emailEl    = document.getElementById('fb-email');
+      const formView   = document.getElementById('fb-form-view');
+      const successView = document.getElementById('fb-success-view');
+
+      let rating = 0;
+
+      const HINTS = {
+        0: 'Tap a star to rate',
+        1: 'Poor — sorry to hear that. Tell us more below.',
+        2: 'Below expectations — we want to know what went wrong.',
+        3: 'Okay — we’re listening.',
+        4: 'Great — what would make it perfect?',
+        5: 'Outstanding — thank you!',
+      };
+
+      function paint(active) {
+        const stars = starsEl.querySelectorAll('.fb-star');
+        stars.forEach(function (s) {
+          const v = parseInt(s.getAttribute('data-value'), 10);
+          if (v <= active) s.classList.add('active');
+          else s.classList.remove('active');
+          s.setAttribute('aria-checked', v === active ? 'true' : 'false');
+        });
+        hintEl.textContent = HINTS[active] || HINTS[0];
+      }
+
+      starsEl.addEventListener('click', function (e) {
+        const btn = e.target.closest('.fb-star');
+        if (!btn) return;
+        rating = parseInt(btn.getAttribute('data-value'), 10);
+        paint(rating);
+      });
+
+      starsEl.addEventListener('mouseover', function (e) {
+        const btn = e.target.closest('.fb-star');
+        if (!btn) return;
+        paint(parseInt(btn.getAttribute('data-value'), 10));
+      });
+      starsEl.addEventListener('mouseleave', function () {
+        paint(rating);
+      });
+
+      function showError(msg) {
+        errorEl.textContent = msg;
+        errorEl.classList.add('show');
+      }
+      function clearError() {
+        errorEl.textContent = '';
+        errorEl.classList.remove('show');
+      }
+
+      formEl.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        clearError();
+
+        const comment = commentEl.value.trim();
+        if (!rating) {
+          showError('Please choose a star rating.');
+          return;
+        }
+        if (!comment) {
+          showError('Please share a few words about your experience.');
+          commentEl.classList.add('bad');
+          commentEl.focus();
+          return;
+        }
+        commentEl.classList.remove('bad');
+
+        submitEl.disabled = true;
+        submitEl.textContent = 'Sending…';
+
+        try {
+          const res = await fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              rating,
+              comment,
+              session_id: sessionId,
+              name:  nameEl.value.trim() || undefined,
+              email: emailEl.value.trim() || undefined,
+            }),
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(function () { return {}; });
+            throw new Error(data.error || ('Server returned ' + res.status));
+          }
+          formView.style.display = 'none';
+          successView.style.display = 'block';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (err) {
+          submitEl.disabled = false;
+          submitEl.textContent = 'Send Feedback';
+          showError('Something went wrong: ' + err.message + '. Please call us at (737) 368-1669.');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
