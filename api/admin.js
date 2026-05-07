@@ -428,12 +428,30 @@ async function handleImportBookings(req, res) {
   if (rows.length === 0)    return res.status(400).json({ error: 'rows is empty' });
   if (rows.length > 1000)   return res.status(400).json({ error: 'Max 1000 rows per import' });
 
+  // Surface env-var state up front so a missing SUPABASE_URL is obvious in logs and response
+  const envSummary = {
+    has_supabase_url:        !!process.env.SUPABASE_URL,
+    has_supabase_secret_key: !!process.env.SUPABASE_SECRET_KEY,
+    supabase_url_host:       process.env.SUPABASE_URL ? (() => { try { return new URL(process.env.SUPABASE_URL).host; } catch { return 'INVALID'; } })() : null,
+    node_env:                process.env.NODE_ENV || null,
+    vercel_env:              process.env.VERCEL_ENV || null,
+  };
+  console.log('[import-bookings] starting:', { row_count: rows.length, ...envSummary });
+
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
+    return res.status(500).json({
+      error: 'Supabase env vars missing on this function — check Vercel project settings.',
+      env: envSummary,
+    });
+  }
+
   try {
     const result = await importHistoricalBookings(rows);
+    console.log('[import-bookings] complete:', { imported: result.imported, customers_created: result.customers_created, customers_matched: result.customers_matched, error_count: (result.errors || []).length });
     return res.status(200).json({ ok: true, ...result });
   } catch (err) {
-    console.error('Import bookings error:', err.message);
-    return res.status(500).json({ error: err.message });
+    console.error('[import-bookings] failed:', err.message, '\n', err.stack);
+    return res.status(500).json({ error: err.message, env: envSummary });
   }
 }
 
