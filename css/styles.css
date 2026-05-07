@@ -1680,8 +1680,8 @@ section {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 52px;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 44px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -1804,6 +1804,35 @@ section {
   font-size: 11px;
   color: var(--dim);
   letter-spacing: 1px;
+}
+
+/* Minimal legal links row for pages without the full footer
+   (booking, waiver, feedback, booking-confirmation). */
+.legal-footer {
+  background: #060A1A;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.legal-footer a {
+  font-family: 'Barlow', sans-serif;
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.legal-footer a:hover { color: var(--red); }
+
+.legal-footer .sep {
+  color: rgba(255,255,255,0.18);
+  font-size: 11px;
+  user-select: none;
 }
 
 /* ── Animations ── */
