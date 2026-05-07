@@ -2116,6 +2116,27 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     // typical charter (4 hrs) so we never under-block.
     const DEFAULT_BOOKED_DURATION_HRS = 4;
 
+    // Latest allowed start time (minutes since midnight) for each charter
+    // duration. The charter must end by the value implied here — short charters
+    // can finish by 7–8 PM, longer ones run up to 9 PM.
+    const LATEST_START_BY_DURATION = {
+      2: 17 * 60,        // 5:00 PM  (ends 7:00 PM)
+      3: 17 * 60,        // 5:00 PM  (ends 8:00 PM)
+      4: 16 * 60 + 30,   // 4:30 PM  (ends 8:30 PM)
+      5: 16 * 60,        // 4:00 PM  (ends 9:00 PM)
+      6: 15 * 60,        // 3:00 PM  (ends 9:00 PM)
+      7: 14 * 60,        // 2:00 PM  (ends 9:00 PM, interpolated for completeness)
+      8: 13 * 60,        // 1:00 PM  (ends 9:00 PM)
+    };
+
+    // Experience-specific duration constraints. Vessel is accepted for future
+    // per-vessel rules; today only experience drives the answer.
+    function getAllowedDurations(experience /*, vessel */) {
+      if (experience === 'Boat Tour' || experience === 'Sunset Cruise') return [2];
+      if (experience === 'Proposal') return [2, 3];
+      return [3, 4, 5, 6, 7, 8];
+    }
+
     function slotConflictsWithBookings(slotStart, slotDur, bookings) {
       if (slotStart == null || !slotDur) return false;
       const slotEnd = slotStart + slotDur * 60;
@@ -2179,18 +2200,30 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     }
 
     /* ── Step 3: Duration ── */
-    const SHORT_EXPS = ['Sunset Cruise', 'Boat Tour'];
-
     function buildDurationStep() {
-      const isShort = SHORT_EXPS.includes(booking.experience);
-      const min = isShort ? 2 : 3;
-      const desc = isShort
-        ? 'Sunset Cruises and Boat Tours: 2–8 hours available.'
-        : 'Parties and events: minimum 3 hours.';
+      const exp = booking.experience;
+      const allowed = getAllowedDurations(exp, booking.vessel);
+
+      let desc;
+      if (exp === 'Boat Tour' || exp === 'Sunset Cruise') {
+        desc = 'Boat Tours and Sunset Cruises are 2 hours.';
+      } else if (exp === 'Proposal') {
+        desc = 'Proposal charters: 2–3 hours.';
+      } else {
+        desc = 'Parties and events: 3–8 hours.';
+      }
       document.getElementById('durationDesc').textContent = desc;
+
+      // If the previously-picked duration is no longer allowed for this
+      // experience, clear it so the user actively re-selects.
+      if (booking.duration && !allowed.includes(booking.duration)) {
+        booking.duration = null;
+        booking.timeSlot = null;
+      }
+
       const grid = document.getElementById('durationGrid');
       grid.innerHTML = '';
-      for (let h = min; h <= 8; h++) {
+      for (const h of allowed) {
         const btn = document.createElement('div');
         btn.className = 'duration-btn' + (booking.duration === h ? ' selected' : '');
         btn.innerHTML = '<div class="duration-hrs">' + h + '</div><div class="duration-label">' + (h === 1 ? 'Hour' : 'Hours') + '</div>';
@@ -2311,22 +2344,45 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         : { time: b && b.time, duration_hours: b && b.duration_hours });
       const blockedSet = new Set(((availability && availability.blackout_slots) || []).map(normalizeTimeSlot));
 
-      if (isShort) {
-        wrap.appendChild(makeTimeSection('Morning', MORNING_SLOTS, bookedList, blockedSet, dur));
-        wrap.appendChild(makeTimeSection('Afternoon', AFTERNOON_SLOTS, bookedList, blockedSet, dur));
-      } else {
-        const all = MORNING_SLOTS.concat(AFTERNOON_SLOTS);
-        wrap.appendChild(makeTimeSection('All Available Start Times', all, bookedList, blockedSet, dur));
+      const sections = isShort
+        ? [
+            makeTimeSection('Morning',   MORNING_SLOTS,   bookedList, blockedSet, dur),
+            makeTimeSection('Afternoon', AFTERNOON_SLOTS, bookedList, blockedSet, dur),
+          ]
+        : [
+            makeTimeSection('All Available Start Times',
+              MORNING_SLOTS.concat(AFTERNOON_SLOTS), bookedList, blockedSet, dur),
+          ];
+
+      const valid = sections.filter(Boolean);
+      if (valid.length === 0) {
+        const msg = document.createElement('div');
+        msg.style.cssText = 'padding:18px 20px;background:rgba(200,16,46,0.10);border:1px solid rgba(200,16,46,0.35);border-radius:8px;color:#fff;font-size:14px;line-height:1.6;text-align:center;';
+        msg.innerHTML = 'No start times will fit a ' + dur + '-hour charter on this date — every available slot would run past closing. Please pick a shorter duration or another date.';
+        wrap.appendChild(msg);
+        return;
       }
+      for (const sec of valid) wrap.appendChild(sec);
     }
 
     function makeTimeSection(label, slots, bookedList, blockedSet, slotDurationHrs) {
+      // Drop any slot whose start time is later than what the duration allows
+      // — those would run past the operating-day end and are never bookable.
+      const latestStart = LATEST_START_BY_DURATION[slotDurationHrs];
+      const filtered = (latestStart == null)
+        ? slots.slice()
+        : slots.filter(s => {
+            const ms = parseTimeToMinutes(s);
+            return ms == null || ms <= latestStart;
+          });
+      if (filtered.length === 0) return null;
+
       const sec = document.createElement('div');
       sec.className = 'time-section';
       sec.innerHTML = '<div class="time-section-label">' + label + '</div>';
       const row = document.createElement('div');
       row.className = 'time-slots';
-      slots.forEach(slot => {
+      filtered.forEach(slot => {
         const norm = normalizeTimeSlot(slot);
         const slotStart = parseTimeToMinutes(slot);
         const isBooked = slotConflictsWithBookings(slotStart, slotDurationHrs, bookedList);
