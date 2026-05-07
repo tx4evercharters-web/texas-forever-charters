@@ -45,12 +45,17 @@ module.exports = async function handler(req, res) {
 
     // Booked slots: any booking on this date for this vessel that isn't cancelled.
     // Cancelled bookings free their slot up so the admin can rebook the time.
+    // Each entry includes duration so the client can compute overlap windows
+    // and a cleanup buffer instead of blocking only the exact start time.
     const booked_slots = bookings
       .filter(b => b.date === date)
       .filter(b => (b.vessel || '') === vessel)
       .filter(b => String(b.status || '').toLowerCase() !== 'cancelled')
-      .map(b => b.time_slot)
-      .filter(Boolean);
+      .filter(b => b.time_slot)
+      .map(b => ({
+        time:           b.time_slot,
+        duration_hours: b.duration != null ? Number(b.duration) : null,
+      }));
 
     // Blackout rows that apply to this date AND this vessel (or both).
     const matchingBlackouts = blackouts.filter(b =>
@@ -70,7 +75,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       date,
       vessel,
-      booked_slots:         Array.from(new Set(booked_slots)),
+      booked_slots,
       blackout_slots:       Array.from(new Set(blackout_slots)),
       is_fully_blacked_out,
     });

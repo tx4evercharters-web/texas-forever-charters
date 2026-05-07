@@ -2054,6 +2054,43 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       return m[1] + (m[2] ? ':' + m[2] : ':00') + ' ' + m[3];
     }
 
+    // Convert "9:00am" / "2:30 PM" / "12:00 AM" to minutes since midnight.
+    // Returns null if unparseable so callers can fall back gracefully.
+    function parseTimeToMinutes(t) {
+      if (!t) return null;
+      const s = String(t).replace(/\s+/g, '').toUpperCase();
+      const m = s.match(/^(\d{1,2})(?::(\d{2}))?(AM|PM)$/);
+      if (!m) return null;
+      let h = parseInt(m[1], 10);
+      const mins = m[2] ? parseInt(m[2], 10) : 0;
+      if (m[3] === 'AM') { if (h === 12) h = 0; }
+      else                { if (h !== 12) h += 12; }
+      return h * 60 + mins;
+    }
+
+    // 30-minute cleanup buffer between charters. A proposed slot is unavailable
+    // if its [start, end] window — once expanded by the buffer on both sides —
+    // overlaps any existing booking.
+    const BUFFER_MIN = 30;
+    // When an existing booking has no recorded duration, assume the longest
+    // typical charter (4 hrs) so we never under-block.
+    const DEFAULT_BOOKED_DURATION_HRS = 4;
+
+    function slotConflictsWithBookings(slotStart, slotDur, bookings) {
+      if (slotStart == null || !slotDur) return false;
+      const slotEnd = slotStart + slotDur * 60;
+      for (const b of (bookings || [])) {
+        const bs = parseTimeToMinutes(b.time);
+        if (bs == null) continue;
+        const bd = (b.duration_hours != null && Number(b.duration_hours) > 0)
+          ? Number(b.duration_hours) : DEFAULT_BOOKED_DURATION_HRS;
+        const be = bs + bd * 60;
+        // Overlap test with cleanup buffer expanded around the existing booking.
+        if (slotStart < be + BUFFER_MIN && slotEnd > bs - BUFFER_MIN) return true;
+      }
+      return false;
+    }
+
     async function fetchVesselBlackouts(vessel) {
       blackoutDates = new Set();
       if (!vessel) return;
@@ -2226,19 +2263,24 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         return;
       }
 
-      const bookedSet = new Set(((availability && availability.booked_slots)   || []).map(normalizeTimeSlot));
+      // booked_slots is now [{ time, duration_hours }, ...]. Tolerate the older
+      // string-only shape if a stale cache or older API ever returns it.
+      const rawBooked = (availability && availability.booked_slots) || [];
+      const bookedList = rawBooked.map(b => typeof b === 'string'
+        ? { time: b, duration_hours: null }
+        : { time: b && b.time, duration_hours: b && b.duration_hours });
       const blockedSet = new Set(((availability && availability.blackout_slots) || []).map(normalizeTimeSlot));
 
       if (isShort) {
-        wrap.appendChild(makeTimeSection('Morning', MORNING_SLOTS, bookedSet, blockedSet));
-        wrap.appendChild(makeTimeSection('Afternoon', AFTERNOON_SLOTS, bookedSet, blockedSet));
+        wrap.appendChild(makeTimeSection('Morning', MORNING_SLOTS, bookedList, blockedSet, dur));
+        wrap.appendChild(makeTimeSection('Afternoon', AFTERNOON_SLOTS, bookedList, blockedSet, dur));
       } else {
         const all = MORNING_SLOTS.concat(AFTERNOON_SLOTS);
-        wrap.appendChild(makeTimeSection('All Available Start Times', all, bookedSet, blockedSet));
+        wrap.appendChild(makeTimeSection('All Available Start Times', all, bookedList, blockedSet, dur));
       }
     }
 
-    function makeTimeSection(label, slots, bookedSet, blockedSet) {
+    function makeTimeSection(label, slots, bookedList, blockedSet, slotDurationHrs) {
       const sec = document.createElement('div');
       sec.className = 'time-section';
       sec.innerHTML = '<div class="time-section-label">' + label + '</div>';
@@ -2246,7 +2288,8 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       row.className = 'time-slots';
       slots.forEach(slot => {
         const norm = normalizeTimeSlot(slot);
-        const isBooked  = bookedSet  && bookedSet.has(norm);
+        const slotStart = parseTimeToMinutes(slot);
+        const isBooked = slotConflictsWithBookings(slotStart, slotDurationHrs, bookedList);
         const isBlocked = blockedSet && blockedSet.has(norm);
         const isUnavailable = isBooked || isBlocked;
 
