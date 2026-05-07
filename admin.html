@@ -3000,31 +3000,91 @@
     return rows;
   }
 
+  function normalizeHeader(h) {
+    return String(h || '')
+      .replace(/^﻿/, '')        // strip UTF-8 BOM
+      .replace(/ /g, ' ')       // non-breaking space → space
+      .replace(/\s+/g, ' ')          // collapse whitespace
+      .trim()
+      .toLowerCase();
+  }
+
   function importGuessMapping() {
-    const lc = importHeaders.map(h => (h || '').toLowerCase().trim());
-    const guess = {};
-    const matchers = {
-      date:           ['date','booking date','booking_date','start date','event date','availability','start','start time','start date/time'],
-      full_name:      ['name','full name','customer name','customer','client','contact name','contact'],
-      customer_email: ['email','customer email','e-mail','mail','contact email'],
-      phone:          ['phone','mobile','cell','phone number','contact phone'],
-      vessel:         ['vessel','boat','yacht/pontoon','vessel type','item','item name','product','tour'],
-      grand_total:    ['total','amount','total amount','grand total','price','revenue','total paid','paid','net total','order total'],
+    const lc = importHeaders.map(normalizeHeader);
+
+    // Tier 1: FareHarbor-exact matches — highest priority, exact (post-normalize) string equality.
+    // Maps normalized header → admin field key.
+    const fareharborExact = {
+      'item':                          'vessel',
+      'availability':                  'date',
+      'contact':                       'full_name',
+      'email':                         'customer_email',
+      'phone':                         'phone',
+      'total':                         'grand_total',
+      'total paid':                    'grand_total',
+      '# of pax':                      'party_size',
+      'pickup time':                   'time_slot',
+      'subscribed to email?':          'newsletter',
+      'subscribed to email':           'newsletter',
+      'subscribed to text messages?':  'sms_subscribed',
+      'subscribed to text messages':   'sms_subscribed',
+      // Common variants seen in other FareHarbor exports
+      'contact name':                  'full_name',
+      'booking date':                  'date',
+      'pax':                           'party_size',
+    };
+
+    // Tier 2: generic fallback candidates — used only if Tier 1 didn't already claim the field
+    // and no Tier 1 column was claimed for this header.
+    const fallback = {
+      date:           ['date','booking date','booking_date','start date','event date','start','start time','start date/time'],
+      full_name:      ['name','full name','customer name','customer','client'],
+      customer_email: ['customer email','e-mail','mail','contact email'],
+      phone:          ['mobile','cell','phone number','contact phone'],
+      vessel:         ['vessel','boat','yacht/pontoon','vessel type','item name','product'],
+      grand_total:    ['amount','total amount','grand total','price','revenue','paid','net total','order total'],
       source:         ['source','origin','channel','platform'],
       experience:     ['experience','event','event type','tour type','package'],
-      time_slot:      ['time','time slot','start time'],
+      time_slot:      ['time','time slot'],
       duration:       ['duration','hours','hrs'],
       party_size:     ['party size','guests','people','party','customer count','headcount','# of customers'],
       charter_name:   ['charter name','trip name','occasion','charter','booking name'],
       city:           ['city'],
       state:          ['state','st'],
-      newsletter:     ['subscribed to email?','subscribed to email','email subscribed','newsletter','newsletter subscribed','email opt-in','email opt in'],
-      sms_subscribed: ['subscribed to text messages?','subscribed to text messages','sms subscribed','text subscribed','sms opt-in','sms opt in'],
+      newsletter:     ['email subscribed','newsletter','newsletter subscribed','email opt-in','email opt in'],
+      sms_subscribed: ['sms subscribed','text subscribed','sms opt-in','sms opt in'],
     };
-    for (const [key, candidates] of Object.entries(matchers)) {
-      const idx = lc.findIndex(h => candidates.includes(h));
-      if (idx >= 0) guess[key] = idx;
+
+    const guess = {};
+    const claimedCols = new Set();
+
+    // Tier 1 pass: walk the actual header order so a column is only claimed once
+    lc.forEach((h, i) => {
+      const fieldKey = fareharborExact[h];
+      if (fieldKey && guess[fieldKey] === undefined && !claimedCols.has(i)) {
+        guess[fieldKey] = i;
+        claimedCols.add(i);
+      }
+    });
+
+    // Tier 2 pass: fallback matches for any field still unmapped
+    for (const [field, candidates] of Object.entries(fallback)) {
+      if (guess[field] !== undefined) continue;
+      const idx = lc.findIndex((h, i) => !claimedCols.has(i) && candidates.includes(h));
+      if (idx >= 0) {
+        guess[field] = idx;
+        claimedCols.add(idx);
+      }
     }
+
+    // Helpful debug trace — visible in DevTools console
+    try {
+      const trace = Object.entries(guess).map(([f, i]) => `${f} ← ${importHeaders[i]} (col ${i + 1})`);
+      console.log('[CSV import] Auto-mapped:\n  ' + trace.join('\n  '));
+      const unmapped = importHeaders.map((h, i) => claimedCols.has(i) ? null : `${h} (col ${i + 1})`).filter(Boolean);
+      if (unmapped.length) console.log('[CSV import] Unmapped CSV columns: ' + unmapped.join(', '));
+    } catch (_) {}
+
     return guess;
   }
 
