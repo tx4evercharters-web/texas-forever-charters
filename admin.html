@@ -1301,13 +1301,14 @@
       <!-- Step 1: Upload -->
       <div id="import-step-upload">
         <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">
-          Upload a CSV with historical bookings. The first row should contain column headers. After upload, you'll map each CSV column to a booking field.
+          Upload a CSV with historical bookings. The first row should contain column headers — column-to-field mapping is fully automatic for FareHarbor exports.
         </p>
         <input type="file" id="import-file" accept=".csv,text/csv" style="margin-bottom:8px;">
         <div id="import-file-info" style="font-size:12px;color:var(--gray-400);"></div>
+        <div id="import-upload-diagnostic" style="margin-top:14px;display:none;"></div>
         <div style="margin-top:18px;padding:12px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;font-size:12px;color:var(--gray-600);line-height:1.6;">
-          <strong>Required fields:</strong> booking date, customer name, customer email, vessel, total amount.<br>
-          <strong>Optional:</strong> phone, source. Imported rows are marked <code>source = historical_import</code>, paid in full, external platform — no confirmation emails are sent.
+          <strong>Required fields:</strong> booking date, customer name, vessel, total amount.<br>
+          <strong>Optional:</strong> email, phone, party size, time slot. Imported rows are marked <code>source = historical_import</code>, paid in full, external platform — no confirmation emails are sent.
         </div>
       </div>
 
@@ -2943,6 +2944,9 @@
   let importValid = [];  // boolean per row
   let importFileName = '';
   let importMapShowAll = false; // toggle for slim vs full mapping UI
+  let importIsFareharbor = false;
+  let importMapTrace = [];
+  let importUnmappedHeaders = [];
 
   function openImport() {
     importReset();
@@ -2954,6 +2958,7 @@
   function importReset() {
     importHeaders = []; importRows = []; importMap = {}; importMapped = []; importValid = [];
     importFileName = ''; importMapShowAll = false;
+    importIsFareharbor = false; importMapTrace = []; importUnmappedHeaders = [];
     document.getElementById('import-step-upload').style.display = '';
     document.getElementById('import-step-map').style.display = 'none';
     document.getElementById('import-step-preview').style.display = 'none';
@@ -3006,43 +3011,70 @@
 
   function normalizeHeader(h) {
     return String(h || '')
-      .replace(/^﻿/, '')        // strip UTF-8 BOM
-      .replace(/ /g, ' ')       // non-breaking space → space
-      .replace(/\s+/g, ' ')          // collapse whitespace
+      .replace(/^﻿/, '')
+      .replace(/[“”‘’]/g, '')
+      .replace(/ /g, ' ')
+      .replace(/s+/g, ' ')
       .trim()
       .toLowerCase();
   }
 
+  // Strict ASCII alphanumeric-only key — defeats BOM, smart quotes, NBSP, parens,
+  // hyphens, question marks, and any whitespace. Used for hard-coded matches that
+  // must work regardless of export quirks.
+  function alphaKey(h) {
+    return String(h || '')
+      .normalize('NFKD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '');
+  }
+
+  // Hard-coded FareHarbor (and common-variant) headers → admin field. Keys are
+  // alphanumeric-only so any source-export quirk still resolves to the right field.
+  const FAREHARBOR_HEADER_MAP = {
+    'item':                       'vessel',
+    'availability':               'date',
+    'contact':                    'full_name',
+    'contactname':                'full_name',
+    'email':                      'customer_email',
+    'phone':                      'phone',
+    'total':                      'grand_total',
+    'totalpaid':                  'grand_total',
+    'ofpax':                      'party_size',
+    'pax':                        'party_size',
+    'pickuptime':                 'time_slot',
+    'subscribedtoemail':          'newsletter',
+    'subscribedtotextmessages':   'sms_subscribed',
+    'bookingdate':                'date',
+    'charterdate':                'date',
+  };
+
+  // Markers that strongly suggest a FareHarbor export
+  const FAREHARBOR_SIGNATURE_KEYS = [
+    'bookingid', 'rebooking', 'onlinebookingreference',
+    'ofpax', 'pickuptime', 'subscribedtoemail', 'subscribedtotextmessages',
+  ];
+
   function importGuessMapping() {
-    const lc = importHeaders.map(normalizeHeader);
+    const guess = {};
+    const claimedCols = new Set();
+    const lc      = importHeaders.map(normalizeHeader);
+    const lcAlpha = importHeaders.map(alphaKey);
 
-    // Tier 1: FareHarbor-exact matches — highest priority, exact (post-normalize) string equality.
-    // Maps normalized header → admin field key.
-    const fareharborExact = {
-      'item':                          'vessel',
-      'availability':                  'date',
-      'contact':                       'full_name',
-      'email':                         'customer_email',
-      'phone':                         'phone',
-      'total':                         'grand_total',
-      'total paid':                    'grand_total',
-      '# of pax':                      'party_size',
-      'pickup time':                   'time_slot',
-      'subscribed to email?':          'newsletter',
-      'subscribed to email':           'newsletter',
-      'subscribed to text messages?':  'sms_subscribed',
-      'subscribed to text messages':   'sms_subscribed',
-      // Common variants seen in other FareHarbor exports
-      'contact name':                  'full_name',
-      'booking date':                  'date',
-      'pax':                           'party_size',
-    };
+    // Pass 1 — alphanumeric-only EXACT match against FareHarbor canonical names.
+    // Bulletproof against BOM / smart quotes / NBSP / punctuation differences.
+    lcAlpha.forEach((key, i) => {
+      const fieldKey = FAREHARBOR_HEADER_MAP[key];
+      if (fieldKey && guess[fieldKey] === undefined && !claimedCols.has(i)) {
+        guess[fieldKey] = i;
+        claimedCols.add(i);
+      }
+    });
 
-    // Tier 2: substring/fuzzy match. Field-priority order matters — more specific keywords
-    // claim columns first so general terms like "customer" don't snatch the email/phone column.
-    // Each entry is processed against UNCLAIMED headers in CSV column order.
+    // Pass 2 — substring/fuzzy match for any field still unmapped. Field priority
+    // matters: specific signals first so 'customer' doesn't snatch the email column.
     const fuzzyOrder = [
-      // Most specific signals first
       { field: 'customer_email',  keywords: ['email','e-mail','mail'] },
       { field: 'phone',           keywords: ['phone','mobile','cell'] },
       { field: 'newsletter',      keywords: ['subscribed to email','email subscribed','newsletter','email opt'] },
@@ -3052,10 +3084,7 @@
       { field: 'date',            keywords: ['booking date','charter date','event date','start date','availability','date'] },
       { field: 'vessel',          keywords: ['vessel','yacht','pontoon','boat','activity','item'] },
       { field: 'grand_total',     keywords: ['total paid','grand total','total amount','order total','net total','revenue','total','amount','paid','price'] },
-      // Name is intentionally last — broad keywords ('customer', 'name') would otherwise
-      // hijack columns like "Customer Email" or "Customer Phone".
       { field: 'full_name',       keywords: ['contact name','customer name','full name','contact','customer','client','name'] },
-      // Optional / less-critical fields
       { field: 'source',          keywords: ['source','origin','channel','platform'] },
       { field: 'experience',      keywords: ['experience','event type','tour type','package','event'] },
       { field: 'duration',        keywords: ['duration','hours','hrs'] },
@@ -3064,19 +3093,6 @@
       { field: 'state',           keywords: ['state'] },
     ];
 
-    const guess = {};
-    const claimedCols = new Set();
-
-    // Tier 1 pass: exact-name match using FareHarbor's actual headers — walks columns in order
-    lc.forEach((h, i) => {
-      const fieldKey = fareharborExact[h];
-      if (fieldKey && guess[fieldKey] === undefined && !claimedCols.has(i)) {
-        guess[fieldKey] = i;
-        claimedCols.add(i);
-      }
-    });
-
-    // Tier 2 pass: fuzzy substring match for any field still unmapped
     for (const { field, keywords } of fuzzyOrder) {
       if (guess[field] !== undefined) continue;
       const idx = lc.findIndex((h, i) => !claimedCols.has(i) && keywords.some(kw => h.includes(kw)));
@@ -3086,18 +3102,29 @@
       }
     }
 
-    // Helpful debug trace — visible in DevTools console
+    // FareHarbor signature: ≥3 unique FH-only headers means we're confident
+    importIsFareharbor = FAREHARBOR_SIGNATURE_KEYS.filter(k => lcAlpha.includes(k)).length >= 3;
+
+    // Persist a human-visible mapping trace for the upload-screen diagnostic
+    importMapTrace = Object.entries(guess).map(([f, i]) => ({
+      field: f,
+      label: (IMPORT_FIELDS.find(x => x.key === f) || {}).label || f,
+      header: importHeaders[i],
+      col: i + 1,
+    }));
+    importUnmappedHeaders = importHeaders.map((h, i) => claimedCols.has(i) ? null : { header: h, col: i + 1 }).filter(Boolean);
+
     try {
-      const trace = Object.entries(guess).map(([f, i]) => `${f} ← ${importHeaders[i]} (col ${i + 1})`);
-      console.log('[CSV import] Auto-mapped:\n  ' + trace.join('\n  '));
-      const unmapped = importHeaders.map((h, i) => claimedCols.has(i) ? null : `${h} (col ${i + 1})`).filter(Boolean);
-      if (unmapped.length) console.log('[CSV import] Unmapped CSV columns: ' + unmapped.join(', '));
+      console.log('[CSV import] Detected ' + importHeaders.length + ' columns:\n  ' + importHeaders.map((h, i) => (i+1) + '. ' + JSON.stringify(h)).join('\n  '));
+      console.log('[CSV import] Auto-mapped (' + Object.keys(guess).length + ' fields):\n  ' + importMapTrace.map(t => t.label + ' ← ' + t.header + ' (col ' + t.col + ')').join('\n  '));
+      if (importUnmappedHeaders.length) console.log('[CSV import] Unmapped: ' + importUnmappedHeaders.map(u => u.header + ' (col ' + u.col + ')').join(', '));
+      if (importIsFareharbor) console.log('[CSV import] FareHarbor signature detected.');
     } catch (_) {}
 
     return guess;
   }
 
-  function importBuildMapUI(opts) {
+    function importBuildMapUI(opts) {
     opts = opts || {};
     if (opts.onlyUnmappedRequired !== undefined) {
       importMapShowAll = !opts.onlyUnmappedRequired;
@@ -3234,16 +3261,25 @@
       return;
     }
 
-    // Auto-map success banner
+    // Auto-map success banner with the full mapping trace so the admin can verify at-a-glance
     const mappedCount = Object.keys(importMap).length;
-    const isFareharbor = importHeaders.some(h => normalizeHeader(h) === 'availability') &&
-                        importHeaders.some(h => normalizeHeader(h) === 'item') &&
-                        importHeaders.some(h => normalizeHeader(h) === '# of pax');
     const banner = document.getElementById('import-automap-banner');
     if (banner) {
+      const traceRows = importMapTrace
+        .slice()
+        .sort((a, b) => a.col - b.col)
+        .map(t => `<div style="display:flex;gap:10px;font-size:12px;line-height:1.7;"><span style="color:var(--gray-400);min-width:48px;">col ${t.col}</span><strong style="min-width:140px;">${esc(t.header)}</strong><span style="color:var(--gray-400);">→</span><span style="color:var(--navy);">${esc(t.label)}</span></div>`)
+        .join('');
+      const unmappedNote = importUnmappedHeaders.length
+        ? `<div style="margin-top:8px;font-size:11px;color:var(--gray-600);">${importUnmappedHeaders.length} unmapped CSV column${importUnmappedHeaders.length === 1 ? '' : 's'}: ${importUnmappedHeaders.map(u => esc(u.header)).join(', ')}</div>`
+        : '';
       banner.innerHTML = `
-        <div class="import-warning green">
-          ✓ Auto-mapped <strong>${mappedCount} of ${importHeaders.length}</strong> columns from your ${isFareharbor ? 'FareHarbor export' : 'CSV'}${importFileName ? ` (${esc(importFileName)})` : ''}.
+        <div class="import-warning green" style="padding:14px 18px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:8px;">
+            ✓ Auto-mapped <strong>${mappedCount} of ${importHeaders.length}</strong> columns from your ${importIsFareharbor ? 'FareHarbor export' : 'CSV'}${importFileName ? ` <span style="font-weight:400;color:var(--gray-600);">(${esc(importFileName)})</span>` : ''}.
+          </div>
+          ${traceRows}
+          ${unmappedNote}
         </div>
       `;
     }
@@ -3448,6 +3484,20 @@
         importRows    = all.slice(1);
         importMap     = importGuessMapping();
         importFileName = file.name;
+
+        // Always render the on-screen header diagnostic — gives a clear paper trail
+        // if the parser/auto-mapper ever picks the wrong row or misreads a header.
+        const diag = document.getElementById('import-upload-diagnostic');
+        if (diag) {
+          const headerList = importHeaders.map((h, i) => `<li style="margin:0;"><span style="color:var(--gray-400);">col ${i + 1}.</span> ${esc(h)}</li>`).join('');
+          diag.style.display = '';
+          diag.innerHTML = `
+            <details open style="font-size:12px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;padding:10px 14px;">
+              <summary style="cursor:pointer;font-weight:700;color:var(--navy);">📋 Detected ${importHeaders.length} CSV columns ${importIsFareharbor ? '— FareHarbor export' : ''}</summary>
+              <ol style="margin:8px 0 0 18px;padding:0;color:var(--gray-700);line-height:1.6;">${headerList}</ol>
+            </details>
+          `;
+        }
 
         // Decide where to land: straight to preview if all required fields auto-detected,
         // otherwise show only the missing required fields on a slim mapping screen.
