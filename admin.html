@@ -2908,7 +2908,7 @@
           <td>
             <div class="action-btns">
               <button class="btn-sm btn-navy" onclick="openEditModal('${esc(b.session_id)}')">✏ Edit</button>
-              ${!paidFull ? `
+              ${pay.label !== 'PAID IN FULL' ? `
                 <button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}',this)">✓ Mark Paid</button>
                 ${b.payment_method_id ? `<button class="btn-sm btn-navy" onclick="chargeCard('${esc(b.session_id)}',this)">💳 Charge Card</button>` : ''}
                 <button class="btn-sm" style="background:var(--amber);color:#fff;" onclick="sendPaymentLink('${esc(b.session_id)}',this)">📧 Send Link</button>
