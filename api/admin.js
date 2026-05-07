@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const https = require('https');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const { requireAuth, generateToken } = require('../lib/auth');
@@ -25,36 +24,12 @@ const {
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail } = require('../lib/send-emails');
 
-/* ── Direct Supabase PATCH for booking edits ── */
-function supabasePatch(session_id, updates) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify(updates);
-    const url = new URL(process.env.SUPABASE_URL);
-    const options = {
-      hostname: url.hostname,
-      path: `/rest/v1/bookings?session_id=eq.${encodeURIComponent(session_id)}`,
-      method: 'PATCH',
-      headers: {
-        'Content-Type':  'application/json',
-        'apikey':        process.env.SUPABASE_SECRET_KEY,
-        'Authorization': `Bearer ${process.env.SUPABASE_SECRET_KEY}`,
-        'Prefer':        'return=representation',
-        'Content-Length': Buffer.byteLength(body),
-      },
-    };
-    const req = https.request(options, (res) => {
-      let raw = '';
-      res.on('data', c => { raw += c; });
-      res.on('end', () => {
-        if (res.statusCode >= 400) return reject(new Error(`Supabase ${res.statusCode}: ${raw}`));
-        try { resolve(JSON.parse(raw)); } catch { resolve(raw); }
-      });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
+/* The previous inline supabasePatch helper has been removed — booking edits
+   now route through lib/storage.js patchBooking so they use the same
+   env-aware request() helper as the rest of the app. The old local copy
+   read process.env.SUPABASE_SECRET_KEY directly with no preflight, producing
+   the cryptic "Invalid value 'undefined' for header 'apikey'" Node error
+   whenever the env var was missing on a function instance. */
 
 /* ── Action handlers ── */
 
@@ -141,6 +116,25 @@ async function handleMarkPaid(req, res) {
 async function handleUpdateBooking(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
+  // Env preflight — same shape as handleImportBookings. If this function
+  // instance is missing Supabase config, fail fast with a structured 500
+  // that surfaces exactly which var is missing instead of a cryptic
+  // "Invalid value 'undefined' for header 'apikey'" from inside Node's
+  // https.request internals.
+  const envSummary = {
+    has_supabase_url:        !!process.env.SUPABASE_URL,
+    has_supabase_secret_key: !!process.env.SUPABASE_SECRET_KEY,
+    supabase_url_host:       process.env.SUPABASE_URL ? (() => { try { return new URL(process.env.SUPABASE_URL).host; } catch { return 'INVALID'; } })() : null,
+    vercel_env:              process.env.VERCEL_ENV || null,
+  };
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
+    console.error('[update-booking] Supabase env vars missing on this function:', envSummary);
+    return res.status(500).json({
+      error: 'Supabase env vars missing on this function — check Vercel project settings.',
+      env: envSummary,
+    });
+  }
+
   const { session_id, updates } = req.body || {};
   if (!session_id || !updates) return res.status(400).json({ error: 'Missing session_id or updates' });
 
@@ -174,10 +168,13 @@ async function handleUpdateBooking(req, res) {
   }
 
   try {
-    await supabasePatch(session_id, sanitized);
-    return res.status(200).json({ ok: true });
+    // Route through lib/storage.js patchBooking so this handler shares the
+    // env-aware request() helper used everywhere else.
+    const updated = await patchBooking(session_id, sanitized);
+    if (!updated) return res.status(404).json({ error: 'Booking not found' });
+    return res.status(200).json({ ok: true, booking: updated });
   } catch (err) {
-    console.error('Update booking error:', err.message);
+    console.error('[update-booking] failed:', err.message);
     return res.status(500).json({ error: err.message });
   }
 }
