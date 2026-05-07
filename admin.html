@@ -519,6 +519,24 @@
     .bk-menu-item.disabled, .bk-menu-item:disabled { color: var(--gray-400); cursor: not-allowed; }
     .bk-menu-item.disabled:hover, .bk-menu-item:disabled:hover { background: transparent; color: var(--gray-400); }
 
+    /* Waiver detail expand */
+    .wv-summary-row:hover { background: var(--gray-50); }
+    .wv-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px 24px;
+    }
+    .wv-detail-pair { display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+    .wv-detail-pair > span {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+    }
+    .wv-detail-pair > strong { font-size: 13px; color: var(--gray-700); }
+
     /* Calendar chip variants for lifecycle status */
     .cal-chip.cancelled { background: var(--red); opacity: 0.85; }
     .cal-chip.cancelled .cal-chip-name,
@@ -1805,31 +1823,81 @@
     if (!b) return;
     const waivers = b.waivers || [];
     const headerLine = `${esc(b.full_name || '—')} — ${esc(fmtDate(b.date))} — ${esc(vesselLabel(b.vessel))}`;
-    const rows = waivers.length ? waivers.map(w => {
+
+    // Each row is two <tr>s: a summary row + a hidden detail row that expands
+    // on click. Wrapping in <tbody class="wv-row"> would be cleaner but a flat
+    // pair plays nicer with the existing .table-wrap styles.
+    function detailGrid(w) {
+      const minorRow = w.is_minor
+        ? `<div class="wv-detail-pair"><span>Minor's Name</span><strong>${esc(((w.minor_first_name || '') + ' ' + (w.minor_last_name || '')).trim() || '—')}</strong></div>
+           <div class="wv-detail-pair"><span>Guardian</span><strong>${esc(w.guardian_name || '—')}</strong></div>
+           <div class="wv-detail-pair"><span>Guardian Relationship</span><strong>${esc(w.guardian_relationship || '—')}</strong></div>`
+        : '';
+      const mediaText = w.media_release_accepted === false
+        ? '<span style="color:var(--red);font-weight:700;">No — opted out</span>'
+        : '<span style="color:var(--green);font-weight:700;">Yes</span>';
+      return `
+        <div class="wv-detail-grid">
+          <div class="wv-detail-pair"><span>Email</span><strong>${esc(w.signer_email || '—')}</strong></div>
+          <div class="wv-detail-pair"><span>Phone</span><strong>${esc(w.signer_phone || '—')}</strong></div>
+          <div class="wv-detail-pair"><span>Emergency Contact</span><strong>${esc(w.emergency_contact_name || '—')}</strong></div>
+          <div class="wv-detail-pair"><span>Emergency Phone</span><strong>${esc(w.emergency_contact_phone || '—')}</strong></div>
+          <div class="wv-detail-pair"><span>Emergency Relationship</span><strong>${esc(w.emergency_contact_relationship || '—')}</strong></div>
+          <div class="wv-detail-pair"><span>Media Release</span>${mediaText}</div>
+          <div class="wv-detail-pair"><span>Signing for a Minor</span><strong>${w.is_minor ? 'Yes' : 'No'}</strong></div>
+          ${minorRow}
+        </div>
+      `;
+    }
+
+    const rowsHtml = waivers.length ? waivers.map((w, i) => {
       const fullName = (w.signer_first_name || '') + ' ' + (w.signer_last_name || '');
       const minorBadge = w.is_minor ? ' <span class="badge badge-amber">Minor</span>' : '';
       const mediaBadge = w.media_release_accepted === false ? ' <span class="badge badge-red">No media</span>' : '';
       const dob = w.date_of_birth ? fmtDate(String(w.date_of_birth).slice(0, 10)) : '—';
       const signed = w.signed_at ? new Date(w.signed_at).toLocaleString('en-US') : '—';
-      return `<tr>
-        <td><strong>${esc(fullName.trim() || '—')}</strong>${minorBadge}${mediaBadge}</td>
-        <td>${esc(dob)}</td>
-        <td>${esc(w.age != null ? w.age + '' : '—')}</td>
-        <td>${esc(signed)}</td>
-        <td><span style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--gray-600)">${esc(w.ip_address || '—')}</span></td>
-      </tr>`;
+      const rowId = 'wv-row-' + i;
+      return `
+        <tr class="wv-summary-row" data-target="${rowId}" style="cursor:pointer">
+          <td style="width:18px;text-align:center;color:var(--gray-400);font-size:11px;">▸</td>
+          <td><strong>${esc(fullName.trim() || '—')}</strong>${minorBadge}${mediaBadge}</td>
+          <td style="white-space:nowrap">${esc(dob)}</td>
+          <td>${esc(w.age != null ? w.age + '' : '—')}</td>
+          <td style="white-space:nowrap">${esc(signed)}</td>
+        </tr>
+        <tr class="wv-detail-row" id="${rowId}" style="display:none;">
+          <td></td>
+          <td colspan="4" style="background:var(--gray-50);padding:14px 16px;">
+            ${detailGrid(w)}
+          </td>
+        </tr>
+      `;
     }).join('') : '<tr><td colspan="5" class="empty-state">No waivers yet.</td></tr>';
 
     document.getElementById('waivers-modal-title').textContent = waivers.length + ' Signed Waiver' + (waivers.length === 1 ? '' : 's');
     document.getElementById('waivers-modal-sub').textContent = headerLine.replace(/—/g, '·');
     document.getElementById('waivers-modal-body').innerHTML = `
+      <div style="font-size:11px;color:var(--gray-400);margin-bottom:8px;letter-spacing:0.5px;">Click a row to expand full signer details.</div>
       <div class="table-wrap">
         <table style="font-size:13px;">
-          <thead><tr><th>Signer</th><th>DOB</th><th>Age</th><th>Signed At</th><th>IP</th></tr></thead>
-          <tbody>${rows}</tbody>
+          <thead><tr><th></th><th>Signer</th><th>DOB</th><th>Age</th><th>Signed At</th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
         </table>
       </div>
     `;
+
+    // Wire row expand/collapse — toggle the matched detail row's display + flip
+    // the chevron character on the summary row.
+    document.querySelectorAll('#waivers-modal-body .wv-summary-row').forEach(tr => {
+      tr.addEventListener('click', () => {
+        const detail = document.getElementById(tr.dataset.target);
+        if (!detail) return;
+        const open = detail.style.display !== 'none';
+        detail.style.display = open ? 'none' : '';
+        tr.firstElementChild.textContent = open ? '▸' : '▾';
+      });
+    });
+
     document.getElementById('waivers-overlay').classList.add('open');
   }
   function closeWaiversModal(e) { if (e && e.target !== document.getElementById('waivers-overlay')) return; document.getElementById('waivers-overlay').classList.remove('open'); }
