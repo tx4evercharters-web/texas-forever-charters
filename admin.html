@@ -619,6 +619,51 @@
     .cust-tag-suggest:hover { border-color: var(--navy); color: var(--navy); }
     .cust-detail-empty { padding: 14px; text-align: center; color: var(--gray-400); font-size: 12px; background: var(--white); border-radius: 6px; }
 
+    /* Tag picker — replaces the old freetext input + always-visible chips */
+    .cust-tag-picker { position: relative; display: inline-block; margin-top: 8px; }
+    .cust-tag-picker-btn {
+      background: var(--white);
+      border: 1px dashed var(--gray-200);
+      border-radius: 100px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-600);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cust-tag-picker-btn:hover { border-color: var(--navy); color: var(--navy); }
+    .cust-tag-picker-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 4px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      padding: 6px;
+      min-width: 160px;
+      z-index: 50;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .cust-tag-picker-menu.open { display: flex; }
+    .cust-tag-picker-menu .cust-tag-suggest {
+      width: 100%;
+      text-align: left;
+      padding: 6px 10px;
+      border: none;
+      background: transparent;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--gray-700);
+    }
+    .cust-tag-picker-menu .cust-tag-suggest:hover { background: var(--gray-100); color: var(--navy); }
+    .cust-notes-box textarea { transition: border-color 0.15s; }
+
     @media (max-width: 800px) {
       .cust-filter-bar { grid-template-columns: 1fr; }
       .cust-detail { grid-template-columns: 1fr; }
@@ -925,6 +970,7 @@
         <div class="section-header">
           <div class="section-title">Customers</div>
           <div style="display:flex;align-items:center;gap:12px;">
+            <button class="btn-sm btn-red" onclick="openCustAdd()">+ Add Customer</button>
             <button class="btn-sm btn-gray" onclick="openImport()">📥 Import Historical Bookings</button>
             <div class="period-filter">
               <button class="period-btn" onclick="setCustPeriod('week',this)">Week</button>
@@ -1284,6 +1330,68 @@
       <div class="edit-modal-footer">
         <button class="btn-sm btn-gray" onclick="closeEditPaymentBtn()">Cancel</button>
         <button class="btn-sm btn-navy" id="ep-save-btn" onclick="epSave()">Save Payment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit customer modal -->
+<div class="modal-overlay" id="cust-edit-overlay" onclick="closeCustEdit(event)">
+  <div class="modal" style="max-width:620px;">
+    <div class="modal-header">
+      <div class="modal-title" id="cust-edit-title">+ Add Customer</div>
+      <button class="modal-close" onclick="closeCustEditBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cust-edit-id">
+
+      <div class="edit-form-grid">
+        <div class="edit-form-group full">
+          <label class="edit-label">Full Name <span style="color:var(--red)">*</span></label>
+          <input class="edit-input" id="cust-edit-name" type="text" placeholder="Jane Doe">
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">Email</label>
+          <input class="edit-input" id="cust-edit-email" type="email" placeholder="jane@example.com">
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">Phone</label>
+          <input class="edit-input" id="cust-edit-phone" type="tel" placeholder="(737) 555-1234">
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">City</label>
+          <input class="edit-input" id="cust-edit-city" type="text">
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">State</label>
+          <input class="edit-input" id="cust-edit-state" type="text" maxlength="2" placeholder="TX">
+        </div>
+      </div>
+
+      <div class="edit-form-group full" style="margin-top:14px;">
+        <label class="edit-label">Tags</label>
+        <div id="cust-edit-tags" style="display:flex;flex-wrap:wrap;gap:6px;padding:6px 0;"></div>
+      </div>
+
+      <div class="edit-form-group full" style="margin-top:14px;">
+        <label class="edit-label">Notes</label>
+        <textarea class="edit-input" id="cust-edit-notes" rows="3" style="resize:vertical;"></textarea>
+      </div>
+
+      <div style="display:flex;gap:24px;margin-top:14px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="cust-edit-newsletter"> 📧 Newsletter Subscribed
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="cust-edit-sms"> 📱 SMS Subscribed
+        </label>
+      </div>
+
+      <div id="cust-edit-warning" style="margin-top:14px;display:none;"></div>
+
+      <div class="edit-modal-footer">
+        <button class="btn-sm btn-gray" onclick="closeCustEditBtn()">Cancel</button>
+        <button class="btn-sm btn-navy" id="cust-edit-save-btn" onclick="custEditSave()">Save Customer</button>
       </div>
     </div>
   </div>
@@ -2737,6 +2845,9 @@
       });
     });
 
+    // Wire notes auto-save for any expanded row
+    tbody.querySelectorAll('textarea[data-cust]').forEach(custWireNotesAutoSave);
+
     // Header sort indicators
     document.querySelectorAll('#cust-table th.cust-sort').forEach(th => {
       th.classList.remove('active', 'asc', 'desc');
@@ -2806,12 +2917,24 @@
       ${smsSubscribed ? '<span class="badge badge-teal">📱 SMS Subscribed</span>' : ''}
     `;
 
+    const idEsc = esc(c.id);
+    const tagPickerOpts = suggestions.length
+      ? `<div class="cust-tag-picker" id="cust-tag-picker-${idEsc}">
+           <button class="cust-tag-picker-btn" onclick="custToggleTagPicker('${idEsc}')">+ Add Tag</button>
+           <div class="cust-tag-picker-menu" id="cust-tag-picker-menu-${idEsc}">
+             ${suggestions.map(t => `<button class="cust-tag-suggest" onclick="custAddTag('${idEsc}','${esc(t)}')">${esc(t)}</button>`).join('')}
+           </div>
+         </div>`
+      : '';
+
     return `
-      <div class="cust-detail" data-cust="${esc(c.id)}" onclick="event.stopPropagation()">
+      <div class="cust-detail" data-cust="${idEsc}" onclick="event.stopPropagation()">
         <div>
           <div class="cust-actions">
             <a class="btn-sm btn-navy" href="${mailto}" style="text-decoration:none;display:inline-block;">📧 Send Email</a>
-            <button class="btn-sm btn-red" onclick="custAddBookingFor('${esc(c.id)}')">+ Add Booking</button>
+            <button class="btn-sm btn-red" onclick="custAddBookingFor('${idEsc}')">+ Add Booking</button>
+            <button class="btn-sm btn-gray" onclick="openCustEdit('${idEsc}')">✎ Edit Customer</button>
+            <button class="btn-sm" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);" onclick="custConfirmDelete('${idEsc}')">🗑 Delete Customer</button>
             ${sourceBadge}
             ${subBadges}
           </div>
@@ -2821,19 +2944,12 @@
         <div class="cust-side">
           <div>
             <h4>Tags</h4>
-            <div id="cust-tags-${esc(c.id)}">${tagChips || '<span style="color:var(--gray-400);font-size:12px">No tags.</span>'}</div>
-            <div class="cust-tag-input">
-              <input type="text" id="cust-new-tag-${esc(c.id)}" placeholder="Add tag (e.g. vip)" onkeydown="if(event.key==='Enter'){custAddTagFromInput('${esc(c.id)}');event.preventDefault();}">
-              <button class="btn-sm btn-navy" onclick="custAddTagFromInput('${esc(c.id)}')">+</button>
-            </div>
-            ${suggestions.length ? `<div class="cust-tag-suggestions">${suggestions.map(t => `<button class="cust-tag-suggest" onclick="custAddTag('${esc(c.id)}','${esc(t)}')">+ ${esc(t)}</button>`).join('')}</div>` : ''}
+            <div id="cust-tags-${idEsc}">${tagChips || '<span style="color:var(--gray-400);font-size:12px">No tags.</span>'}</div>
+            ${tagPickerOpts}
           </div>
           <div class="cust-notes-box">
-            <h4>Notes</h4>
-            <textarea id="cust-notes-${esc(c.id)}" placeholder="Internal notes about this customer…">${esc(c.notes || '')}</textarea>
-            <div style="display:flex;justify-content:flex-end;margin-top:6px;">
-              <button class="btn-sm btn-navy" onclick="custSaveNotes('${esc(c.id)}')">Save Notes</button>
-            </div>
+            <h4>Notes <span class="cust-notes-status" id="cust-notes-status-${idEsc}" style="font-size:10px;font-weight:400;color:var(--gray-400);margin-left:8px;letter-spacing:0;text-transform:none;"></span></h4>
+            <textarea id="cust-notes-${idEsc}" placeholder="Internal notes about this customer…" data-cust="${idEsc}">${esc(c.notes || '')}</textarea>
           </div>
         </div>
       </div>
@@ -2915,6 +3031,189 @@
     document.getElementById('ab-city').value      = c.city || '';
     document.getElementById('ab-state').value     = c.state || '';
     if (c.derived_source) document.getElementById('ab-source').value = c.derived_source;
+  }
+
+  /* ── Add / Edit Customer modal ── */
+  let custEditTagsState = []; // current tag set inside the modal
+
+  function openCustAdd() { openCustEditModal(null); }
+
+  function openCustEdit(id) {
+    const c = allCustomers.find(x => String(x.id) === String(id));
+    if (!c) return;
+    openCustEditModal(c);
+  }
+
+  function openCustEditModal(c) {
+    const isEdit = !!c;
+    document.getElementById('cust-edit-title').textContent  = isEdit ? '✎ Edit Customer' : '+ Add Customer';
+    document.getElementById('cust-edit-save-btn').textContent = isEdit ? 'Save Changes' : 'Add Customer';
+    document.getElementById('cust-edit-id').value           = isEdit ? c.id : '';
+    document.getElementById('cust-edit-name').value         = isEdit ? (c.full_name || '') : '';
+    document.getElementById('cust-edit-email').value        = isEdit ? (c.email || '') : '';
+    document.getElementById('cust-edit-phone').value        = isEdit ? (c.phone || '') : '';
+    document.getElementById('cust-edit-city').value         = isEdit ? (c.city  || '') : '';
+    document.getElementById('cust-edit-state').value        = isEdit ? (c.state || '') : '';
+    document.getElementById('cust-edit-notes').value        = isEdit ? (c.notes || '') : '';
+    document.getElementById('cust-edit-newsletter').checked = isEdit ? !!c.newsletter_subscribed : false;
+    document.getElementById('cust-edit-sms').checked        = isEdit ? !!c.sms_subscribed        : false;
+    document.getElementById('cust-edit-warning').style.display = 'none';
+    document.getElementById('cust-edit-warning').innerHTML = '';
+    custEditTagsState = isEdit && Array.isArray(c.tags) ? [...c.tags] : [];
+    custEditRenderTags();
+    document.getElementById('cust-edit-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('cust-edit-name').focus(), 50);
+  }
+
+  function closeCustEdit(e) { if (e && e.target !== document.getElementById('cust-edit-overlay')) return; closeCustEditBtn(); }
+  function closeCustEditBtn() { document.getElementById('cust-edit-overlay').classList.remove('open'); }
+
+  function custEditRenderTags() {
+    const el = document.getElementById('cust-edit-tags');
+    const active = new Set(custEditTagsState);
+    el.innerHTML = COMMON_TAGS.map(t => {
+      const on = active.has(t);
+      return `<button type="button" class="cust-multi-chip ${on ? 'active' : ''}" data-tag="${esc(t)}">${esc(t)}</button>`;
+    }).join('');
+    el.querySelectorAll('.cust-multi-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const t = btn.dataset.tag;
+        if (custEditTagsState.includes(t)) custEditTagsState = custEditTagsState.filter(x => x !== t);
+        else custEditTagsState.push(t);
+        custEditRenderTags();
+      });
+    });
+  }
+
+  async function custEditSave() {
+    const id = document.getElementById('cust-edit-id').value;
+    const isEdit = !!id;
+    const name  = document.getElementById('cust-edit-name').value.trim();
+    if (!name) { showError('Full name is required.'); return; }
+    const payload = {
+      full_name:             name,
+      email:                 document.getElementById('cust-edit-email').value.trim() || null,
+      phone:                 document.getElementById('cust-edit-phone').value.trim() || null,
+      city:                  document.getElementById('cust-edit-city').value.trim() || null,
+      state:                 document.getElementById('cust-edit-state').value.trim() || null,
+      notes:                 document.getElementById('cust-edit-notes').value || null,
+      tags:                  custEditTagsState,
+      newsletter_subscribed: document.getElementById('cust-edit-newsletter').checked,
+      sms_subscribed:        document.getElementById('cust-edit-sms').checked,
+    };
+    const btn = document.getElementById('cust-edit-save-btn');
+    btn.disabled = true; btn.textContent = isEdit ? 'Saving…' : 'Adding…';
+
+    try {
+      let result;
+      if (isEdit) {
+        result = await api('/api/admin?action=update-customer', { method: 'POST', body: JSON.stringify({ id, ...payload }) });
+        if (!result || !result.ok) { showError(result?.error || 'Failed to update customer.'); btn.disabled = false; btn.textContent = 'Save Changes'; return; }
+        // Patch local cache
+        const c = allCustomers.find(x => String(x.id) === String(id));
+        if (c) Object.assign(c, payload);
+      } else {
+        result = await api('/api/admin?action=create-customer', { method: 'POST', body: JSON.stringify({ customer: payload }) });
+        if (!result) { showError('Failed to create customer.'); btn.disabled = false; btn.textContent = 'Add Customer'; return; }
+        if (result.duplicate) {
+          const existing = result.existing;
+          const warn = document.getElementById('cust-edit-warning');
+          warn.style.display = '';
+          warn.innerHTML = `
+            <div class="import-warning amber">
+              ⚠ A customer with email <strong>${esc(existing.email)}</strong> already exists${existing.full_name ? ` (${esc(existing.full_name)})` : ''}.
+              <button class="btn-sm btn-navy" style="margin-left:10px;" onclick="custEditOpenExisting('${esc(existing.id)}')">View their profile</button>
+            </div>
+          `;
+          btn.disabled = false; btn.textContent = 'Add Customer';
+          return;
+        }
+        if (!result.ok) { showError(result.error || 'Failed to create customer.'); btn.disabled = false; btn.textContent = 'Add Customer'; return; }
+        // Add the new customer to the local cache
+        if (result.customer) {
+          allCustomers.push({ ...result.customer, derived_total_bookings: 0, derived_lifetime: 0, bookings: [] });
+        }
+      }
+
+      closeCustEditBtn();
+      buildCustFilters();
+      renderCustomers();
+    } catch (err) {
+      showError(err.message || 'Save failed.');
+      btn.disabled = false; btn.textContent = isEdit ? 'Save Changes' : 'Add Customer';
+    }
+  }
+
+  async function custEditOpenExisting(id) {
+    closeCustEditBtn();
+    if (!custLoaded) await loadCustomers();
+    custExpandedId = id;
+    renderCustomers();
+    // Scroll the row into view
+    setTimeout(() => {
+      const row = document.querySelector(`#cust-table tr.cust-row[data-id="${id}"]`);
+      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+
+  /* ── Inline tag picker dropdown ── */
+  function custToggleTagPicker(id) {
+    const menu = document.getElementById('cust-tag-picker-menu-' + id);
+    if (!menu) return;
+    // Close any other open menus
+    document.querySelectorAll('.cust-tag-picker-menu.open').forEach(m => { if (m !== menu) m.classList.remove('open'); });
+    menu.classList.toggle('open');
+  }
+
+  /* ── Notes auto-save (on blur) ── */
+  function custWireNotesAutoSave(textarea) {
+    if (!textarea || textarea.dataset.wired === '1') return;
+    textarea.dataset.wired = '1';
+    const id = textarea.dataset.cust;
+    const statusEl = document.getElementById('cust-notes-status-' + id);
+    let lastSavedValue = textarea.value;
+    let saveTimer = null;
+
+    const doSave = async () => {
+      if (textarea.value === lastSavedValue) return;
+      const notes = textarea.value;
+      if (statusEl) { statusEl.textContent = 'Saving…'; statusEl.style.color = 'var(--gray-400)'; }
+      const result = await api('/api/admin?action=update-customer', { method: 'POST', body: JSON.stringify({ id, notes }) });
+      if (result && result.ok) {
+        lastSavedValue = notes;
+        const c = allCustomers.find(x => String(x.id) === String(id));
+        if (c) c.notes = notes;
+        if (statusEl) { statusEl.textContent = '✓ Saved'; statusEl.style.color = 'var(--green)'; setTimeout(() => { if (statusEl.textContent === '✓ Saved') statusEl.textContent = ''; }, 2000); }
+      } else {
+        if (statusEl) { statusEl.textContent = 'Save failed'; statusEl.style.color = 'var(--red)'; }
+      }
+    };
+
+    textarea.addEventListener('blur', doSave);
+    // Also debounce-save while typing so users get autosave even if they don't blur
+    textarea.addEventListener('input', () => {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(doSave, 1500);
+    });
+  }
+
+  /* ── Delete customer ── */
+  async function custConfirmDelete(id) {
+    const c = allCustomers.find(x => String(x.id) === String(id));
+    if (!c) return;
+    const name = c.full_name || c.email || 'this customer';
+    if (!confirm(`Are you sure you want to delete ${name}? This will not delete their bookings.`)) return;
+    const result = await api('/api/admin?action=delete-customer', { method: 'POST', body: JSON.stringify({ id }) });
+    if (result && result.ok) {
+      // Remove from local cache and refresh
+      const idx = allCustomers.findIndex(x => String(x.id) === String(id));
+      if (idx >= 0) allCustomers.splice(idx, 1);
+      if (String(custExpandedId) === String(id)) custExpandedId = null;
+      buildCustFilters();
+      renderCustomers();
+    } else {
+      showError(result?.error || 'Failed to delete customer.');
+    }
   }
 
   /* ── Bulk CSV import ── */
@@ -3463,7 +3762,12 @@
     if (e.target.closest('#calendar-grid')) return;
     closeCalCtx();
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCalCtx(); });
+  // Close tag-picker dropdown when clicking outside any picker
+  document.addEventListener('click', e => {
+    if (e.target.closest('.cust-tag-picker')) return;
+    document.querySelectorAll('.cust-tag-picker-menu.open').forEach(m => m.classList.remove('open'));
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCalCtx(); document.querySelectorAll('.cust-tag-picker-menu.open').forEach(m => m.classList.remove('open')); } });
 
   // Customers tab: search + sort headers + tag remove delegation
   const custSearchEl = document.getElementById('cust-search');

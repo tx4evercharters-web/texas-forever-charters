@@ -14,6 +14,8 @@ const {
   updateBookingPayment,
   listCustomers,
   updateCustomer,
+  createCustomer,
+  deleteCustomer,
   importHistoricalBookings,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails } = require('../lib/send-emails');
@@ -388,6 +390,37 @@ async function handleUpdateCustomer(req, res) {
   }
 }
 
+async function handleCreateCustomer(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { customer } = req.body || {};
+  if (!customer || !(customer.full_name || '').trim()) {
+    return res.status(400).json({ error: 'full_name is required' });
+  }
+  try {
+    const result = await createCustomer(customer);
+    if (result.duplicate) {
+      return res.status(200).json({ ok: false, duplicate: true, existing: result.existing });
+    }
+    return res.status(200).json({ ok: true, customer: result.customer });
+  } catch (err) {
+    console.error('Create customer error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleDeleteCustomer(req, res) {
+  if (req.method !== 'POST' && req.method !== 'DELETE') return res.status(405).end();
+  const id = (req.body && req.body.id) || req.query.id;
+  if (!id) return res.status(400).json({ error: 'Missing customer id' });
+  try {
+    await deleteCustomer(id);
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error('Delete customer error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 async function handleImportBookings(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const { rows } = req.body || {};
@@ -438,6 +471,8 @@ const ROUTES = {
   'update-payment':    handleUpdatePayment,
   'customers':         handleListCustomers,
   'update-customer':   handleUpdateCustomer,
+  'create-customer':   handleCreateCustomer,
+  'delete-customer':   handleDeleteCustomer,
   'import-bookings':   handleImportBookings,
 };
 
