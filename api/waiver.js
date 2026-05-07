@@ -3,6 +3,7 @@ const {
   countWaiversByIpInLastHour,
   findBookingBySessionId,
 } = require('../lib/storage');
+const { sendWaiverConfirmationEmail } = require('../lib/send-emails');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
@@ -118,6 +119,15 @@ async function handlePost(req, res) {
       ip_address:                     ip,
       user_agent:                     req.headers['user-agent'] || null,
     });
+    // Fire-and-forget the confirmation email so the API response isn't gated
+    // on Resend latency. Skipped silently inside the helper if signer_email
+    // is missing. Errors are logged but never bubble up to the client.
+    if (waiver && waiver.signer_email) {
+      sendWaiverConfirmationEmail(waiver).catch(err => {
+        console.error('[waiver] confirmation email failed for', waiver.signer_email, '—', err.message);
+      });
+    }
+
     return res.status(200).json({ ok: true, waiver_id: waiver && waiver.id });
   } catch (err) {
     console.error('Waiver insert error:', err.message);
