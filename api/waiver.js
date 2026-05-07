@@ -26,16 +26,27 @@ function requiredString(v) {
   return typeof v === 'string' && v.trim().length > 0;
 }
 
-// Public-facing booking lookup — returns ONLY the four read-only fields the
-// waiver page needs to pre-fill (charter_date, charter_time, vessel,
-// organizer_name). Anything else (email, phone, payment, totals) is stripped
-// before responding, so a leaked session_id can't expose PII or money data.
+// Public-facing booking lookup — returns ONLY the read-only fields the waiver
+// page needs to pre-fill. Works equally for Stripe-issued session_ids
+// (cs_test_…, cs_live_…) and admin-issued ones (manual_<ts>_<rand>) because
+// PostgREST does an exact match on the session_id column either way.
+// Anything else (email, phone, payment, totals) is stripped from the response,
+// so a leaked session_id can't expose PII or money data.
 async function handleGetInfo(req, res) {
   const session_id = req.query && req.query.session_id;
   if (!session_id) return res.status(400).json({ error: 'session_id required' });
+  console.log('[waiver/get] looking up booking session_id=' + JSON.stringify(session_id));
   try {
     const b = await findBookingBySessionId(session_id);
-    if (!b) return res.status(404).json({ error: 'Booking not found' });
+    if (!b) {
+      console.log('[waiver/get] no booking found for session_id=' + JSON.stringify(session_id));
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+    console.log('[waiver/get] match: id=' + b.id + ' date=' + b.date + ' vessel=' + b.vessel + ' full_name=' + JSON.stringify(b.full_name));
+
+    // Spec: SELECT charter_name, vessel, date, time_slot, full_name FROM bookings
+    // — return each field explicitly so the client can render whichever it
+    // prefers, plus the combined organizer_name as a convenience.
     return res.status(200).json({
       ok: true,
       booking: {
@@ -43,11 +54,13 @@ async function handleGetInfo(req, res) {
         charter_date:   b.date || null,
         charter_time:   b.time_slot || null,
         vessel:         b.vessel || null,
+        full_name:      b.full_name || null,
+        charter_name:   b.charter_name || null,
         organizer_name: b.full_name || b.charter_name || null,
       },
     });
   } catch (err) {
-    console.error('waiver lookup error:', err.message);
+    console.error('[waiver/get] lookup error for session_id=' + JSON.stringify(session_id) + ':', err.message);
     return res.status(500).json({ error: err.message });
   }
 }
