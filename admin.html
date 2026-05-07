@@ -1293,7 +1293,7 @@
 <div class="modal-overlay" id="import-overlay" onclick="closeImport(event)">
   <div class="modal" style="max-width:920px;">
     <div class="modal-header">
-      <div class="modal-title">📥 Import Historical Bookings <span style="font-size:11px;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:100px;letter-spacing:1px;margin-left:6px;font-family:'Barlow',sans-serif;">v5</span></div>
+      <div class="modal-title">📥 Import Historical Bookings <span style="font-size:11px;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:100px;letter-spacing:1px;margin-left:6px;font-family:'Barlow',sans-serif;">v6</span></div>
       <button class="modal-close" onclick="closeImportBtn()">✕</button>
     </div>
     <div class="modal-body">
@@ -2947,6 +2947,7 @@
   let importIsFareharbor = false;
   let importMapTrace = [];
   let importUnmappedHeaders = [];
+  let importSkippedTitleRows = 0;
 
   function openImport() {
     importReset();
@@ -2958,7 +2959,7 @@
   function importReset() {
     importHeaders = []; importRows = []; importMap = {}; importMapped = []; importValid = [];
     importFileName = ''; importMapShowAll = false;
-    importIsFareharbor = false; importMapTrace = []; importUnmappedHeaders = [];
+    importIsFareharbor = false; importMapTrace = []; importUnmappedHeaders = []; importSkippedTitleRows = 0;
     document.getElementById('import-step-upload').style.display = '';
     document.getElementById('import-step-map').style.display = 'none';
     document.getElementById('import-step-preview').style.display = 'none';
@@ -2978,6 +2979,37 @@
     document.getElementById('import-step-map').style.display     = step === 'map' ? '' : 'none';
     document.getElementById('import-step-preview').style.display = step === 'preview' ? '' : 'none';
     document.getElementById('import-step-result').style.display  = 'none';
+  }
+
+  // Heuristic: does this row look like the actual header row, or is it a leading
+  // title/metadata row like "Bookings" or "Date Range: ..." that some platforms
+  // (FareHarbor, etc.) prepend to their CSV exports?
+  function looksLikeHeaderRow(row) {
+    if (!Array.isArray(row) || !row.length) return false;
+    const nonEmpty = row.map(c => String(c || '').trim()).filter(Boolean);
+    if (nonEmpty.length < 5) return false;
+    // At least one cell should hint at a column name we know how to handle
+    const HEADER_KEYWORDS = [
+      'email','phone','date','name','item','availability','contact',
+      'total','booking','pax','pickup','subscribed','customer','vessel',
+      'time','party','guests','amount','source',
+    ];
+    const recognized = nonEmpty.filter(cell => {
+      const lc = cell.toLowerCase();
+      return HEADER_KEYWORDS.some(kw => lc.includes(kw));
+    });
+    return recognized.length >= 2;
+  }
+
+  // Walk the first few rows of a parsed CSV and return { headerIdx, skipped }
+  // — the index of the row that looks like a real header row, plus how many
+  // title/metadata rows were skipped to get there.
+  function locateHeaderRow(rows) {
+    const limit = Math.min(rows.length, 8);
+    for (let i = 0; i < limit; i++) {
+      if (looksLikeHeaderRow(rows[i])) return { headerIdx: i, skipped: i };
+    }
+    return { headerIdx: 0, skipped: 0 }; // fallback — assume row 0
   }
 
   /* RFC 4180-ish CSV parser (handles quoted fields with commas, escaped quotes, CRLF) */
@@ -3480,10 +3512,20 @@
         const text = await file.text();
         const all = parseCSV(text);
         if (all.length < 2) { info.textContent = 'CSV must have a header row plus at least one data row.'; info.style.color = 'var(--red)'; return; }
-        importHeaders = all[0];
-        importRows    = all.slice(1);
+        // Detect and skip leading title/metadata rows (e.g. FareHarbor's "Bookings" line)
+        const { headerIdx, skipped } = locateHeaderRow(all);
+        importSkippedTitleRows = skipped;
+        importHeaders = all[headerIdx];
+        importRows    = all.slice(headerIdx + 1);
         importMap     = importGuessMapping();
         importFileName = file.name;
+        if (skipped > 0) {
+          try {
+            console.log('[CSV import v6] Skipped ' + skipped + ' title row(s) before the real header row:');
+            for (let i = 0; i < skipped; i++) console.log('  row ' + (i + 1) + ': ' + JSON.stringify(all[i]));
+            console.log('  → header row found at row ' + (headerIdx + 1));
+          } catch (_) {}
+        }
 
         // Always render the on-screen header diagnostic — gives a clear paper trail
         // if the parser/auto-mapper ever picks the wrong row or misreads a header.
@@ -3505,10 +3547,16 @@
             return `<li style="margin:0;font-family:ui-monospace,Menlo,Consolas,monospace;"><span style="color:var(--gray-400);">col ${i + 1}.</span> "${esc(h)}" <span style="color:var(--gray-400);font-size:10px;">(${lengths})</span></li>`;
           }).join('');
 
+          const skipNote = importSkippedTitleRows > 0
+            ? `<div style="margin-bottom:10px;padding:8px 12px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:6px;color:#92400E;font-size:11px;">
+                 ⚠ Skipped ${importSkippedTitleRows} title/metadata row${importSkippedTitleRows === 1 ? '' : 's'} at the top of the file before reaching the real header row.
+               </div>`
+            : '';
           diag.style.display = '';
           diag.innerHTML = `
             <details open style="font-size:12px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;padding:10px 14px;">
-              <summary style="cursor:pointer;font-weight:700;color:var(--navy);">📋 Detected ${importHeaders.length} CSV columns ${importIsFareharbor ? '— FareHarbor signature ✓' : ''}</summary>
+              <summary style="cursor:pointer;font-weight:700;color:var(--navy);">📋 Detected ${importHeaders.length} CSV columns ${importIsFareharbor ? '— FareHarbor signature ✓' : ''}${importSkippedTitleRows > 0 ? ` (skipped ${importSkippedTitleRows} title row${importSkippedTitleRows === 1 ? '' : 's'})` : ''}</summary>
+              ${skipNote}
               <div style="margin-top:10px;padding:8px;background:var(--white);border:1px solid var(--gray-200);border-radius:4px;">
                 <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray-600);margin-bottom:6px;">First header — character codepoints</div>
                 <div style="font-family:ui-monospace,Menlo,Consolas,monospace;line-height:2.6;word-break:break-all;">${charDump}</div>
