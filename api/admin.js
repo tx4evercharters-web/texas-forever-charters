@@ -17,6 +17,9 @@ const {
   createCustomer,
   deleteCustomer,
   importHistoricalBookings,
+  patchBooking,
+  findBookingBySessionId,
+  deleteBookingRow,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails } = require('../lib/send-emails');
 
@@ -138,6 +141,8 @@ async function handleUpdateBooking(req, res) {
     // Payment
     'amount_total', 'paid_in_full', 'remaining_balance',
     'payment_type', 'payment_method_external',
+    // Lifecycle
+    'status', 'cancelled_at', 'refund_amount', 'refunded_at',
   ];
   const sanitized = {};
   for (const key of allowedFields) {
@@ -257,6 +262,106 @@ async function handleSendPaymentLink(req, res) {
     return res.status(200).json({ ok: true, url: paymentLink.url });
   } catch (err) {
     console.error('Payment link error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleMarkConcluded(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { session_id } = req.body || {};
+  if (!session_id) return res.status(400).json({ error: 'Missing session_id' });
+  try {
+    const updated = await patchBooking(session_id, { status: 'concluded' });
+    if (!updated) return res.status(404).json({ error: 'Booking not found' });
+    return res.status(200).json({ ok: true, booking: updated });
+  } catch (err) {
+    console.error('Mark concluded error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleCancelBooking(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { session_id } = req.body || {};
+  if (!session_id) return res.status(400).json({ error: 'Missing session_id' });
+  try {
+    const updated = await patchBooking(session_id, {
+      status:       'cancelled',
+      cancelled_at: new Date().toISOString(),
+    });
+    if (!updated) return res.status(404).json({ error: 'Booking not found' });
+    return res.status(200).json({ ok: true, booking: updated });
+  } catch (err) {
+    console.error('Cancel booking error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleRefundBooking(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { session_id, refund_amount } = req.body || {};
+  if (!session_id) return res.status(400).json({ error: 'Missing session_id' });
+
+  const amount = parseFloat(refund_amount);
+  if (!isFinite(amount) || amount <= 0) {
+    return res.status(400).json({ error: 'refund_amount must be a positive number' });
+  }
+
+  try {
+    const booking = await findBookingBySessionId(session_id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    const paymentIntentId = booking.payment_intent_id;
+    if (!paymentIntentId) {
+      return res.status(400).json({ error: 'No Stripe payment_intent_id on this booking — use Cancel Booking instead.' });
+    }
+
+    const amountPaid = (booking.amount_total || 0) / 100;
+    const alreadyRefunded = parseFloat(booking.refund_amount || 0);
+    const refundable = Math.max(0, amountPaid - alreadyRefunded);
+    if (amount > refundable + 0.001) {
+      return res.status(400).json({ error: `Refund $${amount.toFixed(2)} exceeds refundable balance $${refundable.toFixed(2)}` });
+    }
+
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      amount:         Math.round(amount * 100),
+    });
+
+    if (refund.status !== 'succeeded' && refund.status !== 'pending') {
+      return res.status(502).json({ error: `Stripe refund returned status ${refund.status}` });
+    }
+
+    const totalRefundedNow = parseFloat((alreadyRefunded + amount).toFixed(2));
+    const updated = await patchBooking(session_id, {
+      refund_amount:  totalRefundedNow,
+      refunded_at:    new Date().toISOString(),
+      status:         'cancelled',
+      cancelled_at:   booking.cancelled_at || new Date().toISOString(),
+    });
+
+    return res.status(200).json({
+      ok: true,
+      booking: updated,
+      refund_id: refund.id,
+      refunded_now: amount,
+      total_refunded: totalRefundedNow,
+    });
+  } catch (err) {
+    console.error('Refund booking error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleDeleteBooking(req, res) {
+  if (req.method !== 'POST' && req.method !== 'DELETE') return res.status(405).end();
+  const session_id = (req.body && req.body.session_id) || req.query.session_id;
+  if (!session_id) return res.status(400).json({ error: 'Missing session_id' });
+  try {
+    await deleteBookingRow(session_id);
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    console.error('Delete booking error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 }
@@ -492,6 +597,10 @@ const ROUTES = {
   'create-customer':   handleCreateCustomer,
   'delete-customer':   handleDeleteCustomer,
   'import-bookings':   handleImportBookings,
+  'mark-concluded':    handleMarkConcluded,
+  'cancel-booking':    handleCancelBooking,
+  'refund-booking':    handleRefundBooking,
+  'delete-booking':    handleDeleteBooking,
 };
 
 module.exports = async function handler(req, res) {

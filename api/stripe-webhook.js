@@ -108,6 +108,7 @@ module.exports = async function handler(req, res) {
       state: state,
       stripe_customer_id: stripeCustomerId,
       payment_method_id:  paymentMethodId,
+      payment_intent_id:  paymentIntentId,
       paid_in_full:     meta.payment_type !== 'deposit',
       remaining_balance: remaining,
       admin_fee:         adminFee,
