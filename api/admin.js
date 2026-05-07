@@ -8,6 +8,7 @@ const {
   getBlackouts,
   addBlackout,
   removeBlackout,
+  removeBlackoutById,
   searchCustomers,
   addManualBooking,
   updateBookingPayment,
@@ -89,18 +90,36 @@ async function handleListBlackouts(req, res) {
 
 async function handleAddBlackout(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  const { date } = req.body || {};
+  const { date, vessel, time_slot } = req.body || {};
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.status(400).json({ error: 'date required in YYYY-MM-DD format' });
   }
-  return res.status(200).json(await addBlackout(date));
+  const v = vessel || 'both';
+  if (!['yacht', 'pontoon', 'both'].includes(v)) {
+    return res.status(400).json({ error: 'vessel must be yacht, pontoon, or both' });
+  }
+  try {
+    return res.status(200).json(await addBlackout({ date, vessel: v, time_slot: time_slot || 'all' }));
+  } catch (err) {
+    console.error('Add blackout error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
 }
 
 async function handleRemoveBlackout(req, res) {
   if (req.method !== 'DELETE') return res.status(405).end();
+  // Prefer id (lets us remove a single per-vessel/per-slot row); fall back to
+  // date-only for legacy callers (removes every blackout on that date).
+  const id   = req.query.id;
   const date = req.query.date;
-  if (!date) return res.status(400).json({ error: 'date required as ?date=YYYY-MM-DD' });
-  return res.status(200).json(await removeBlackout(date));
+  try {
+    if (id)        return res.status(200).json(await removeBlackoutById(id));
+    if (date)      return res.status(200).json(await removeBlackout(date));
+    return res.status(400).json({ error: 'id or date required' });
+  } catch (err) {
+    console.error('Remove blackout error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
 }
 
 async function handleMarkPaid(req, res) {

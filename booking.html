@@ -557,6 +557,17 @@
       cursor: not-allowed;
     }
 
+    .cal-cell.blackout {
+      background-image: repeating-linear-gradient(
+        45deg,
+        rgba(200,16,46,0.20) 0,
+        rgba(200,16,46,0.20) 4px,
+        transparent 4px,
+        transparent 8px
+      );
+      color: rgba(255,255,255,0.30);
+    }
+
     .cal-cell.empty { cursor: default; }
 
     .cal-cell.holiday::after {
@@ -645,6 +656,13 @@
       border-color: var(--red);
       background: rgba(200,16,46,0.1);
     }
+
+    .time-btn.disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      text-decoration: line-through;
+    }
+    .time-btn.disabled:hover { border-color: inherit; }
 
     /* ── Party Details (Step 6) ── */
     .form-grid {
@@ -2016,6 +2034,61 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       // Reset downstream if vessel changes
       booking.duration = null;
       booking.timeSlot = null;
+      // Refresh full-day blackouts for the selected vessel so the calendar
+      // disables any dates that don't apply to this vessel.
+      fetchVesselBlackouts(v);
+    }
+
+    /* ── Availability state ── */
+    // Set of YYYY-MM-DD dates that are fully blacked out for the selected vessel.
+    let blackoutDates = new Set();
+    // Per-day availability cache: { [YYYY-MM-DD]: { booked_slots, blackout_slots, is_fully_blacked_out } }
+    const availabilityCache = {};
+
+    function normalizeTimeSlot(t) {
+      if (!t) return '';
+      // Collapse "9:00am" / "9:00 AM" / "9:00AM" / "9:00 am" all to "9:00 AM"
+      const s = String(t).replace(/\s+/g, '').toUpperCase();
+      const m = s.match(/^(\d{1,2})(?::(\d{2}))?(AM|PM)$/);
+      if (!m) return s;
+      return m[1] + (m[2] ? ':' + m[2] : ':00') + ' ' + m[3];
+    }
+
+    async function fetchVesselBlackouts(vessel) {
+      blackoutDates = new Set();
+      if (!vessel) return;
+      try {
+        const r = await fetch('/api/availability?vessel=' + encodeURIComponent(vessel));
+        const j = await r.json();
+        if (j && Array.isArray(j.blackout_dates)) {
+          blackoutDates = new Set(j.blackout_dates);
+        }
+      } catch (err) {
+        console.warn('[availability] vessel-blackout fetch failed:', err);
+      }
+      if (typeof renderCalendar === 'function') renderCalendar();
+    }
+
+    async function fetchDayAvailability(dateStr, vessel) {
+      const key = dateStr + '|' + vessel;
+      if (availabilityCache[key]) return availabilityCache[key];
+      try {
+        const r = await fetch('/api/availability?date=' + encodeURIComponent(dateStr) + '&vessel=' + encodeURIComponent(vessel));
+        const j = await r.json();
+        if (!j || j.error) return null;
+        availabilityCache[key] = j;
+        return j;
+      } catch (err) {
+        console.warn('[availability] day fetch failed:', err);
+        return null;
+      }
+    }
+
+    function ymd(d) {
+      const yy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return yy + '-' + mm + '-' + dd;
     }
 
     /* ── Step 2: Experience ── */
@@ -2089,15 +2162,18 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         const isToday = date.getTime() === today.getTime();
         const isSelected = booking.date && date.getTime() === booking.date.getTime();
         const holiday = isHoliday(date);
+        const isBlackedOut = blackoutDates.has(ymd(date));
 
         cell.className = 'cal-cell' +
-          (isPast ? ' disabled' : '') +
+          ((isPast || isBlackedOut) ? ' disabled' : '') +
+          (isBlackedOut ? ' blackout' : '') +
           (isToday ? ' today' : '') +
           (isSelected ? ' selected' : '') +
           (holiday ? ' holiday' : '');
         cell.textContent = d;
+        if (isBlackedOut) cell.title = 'Unavailable for ' + (booking.vessel || 'this vessel');
 
-        if (!isPast) {
+        if (!isPast && !isBlackedOut) {
           cell.onclick = () => selectDate(date);
         }
         cells.appendChild(cell);
@@ -2116,42 +2192,79 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         '</span>';
       const hNote = document.getElementById('holidayNote');
       hNote.style.display = isHoliday(date) ? 'flex' : 'none';
+      // Pre-warm the per-day availability cache so the time-slot step renders
+      // booked/blacked-out slots correctly the moment the user advances.
+      if (booking.vessel) fetchDayAvailability(ymd(date), booking.vessel);
     }
 
     /* ── Step 5: Time Slots ── */
     const MORNING_SLOTS = ['9:00am','9:30am','10:00am','10:30am','11:00am'];
     const AFTERNOON_SLOTS = ['2:30pm','3:00pm','4:00pm','5:00pm'];
 
-    function buildTimeSlots() {
+    async function buildTimeSlots() {
       const wrap = document.getElementById('timeSlotsWrap');
-      wrap.innerHTML = '';
+      wrap.innerHTML = '<div style="padding:14px;color:rgba(255,255,255,0.55);font-size:13px;">Loading availability…</div>';
       const dur = booking.duration || 2;
       const isShort = dur <= 3;
 
+      // Pull (or reuse cached) availability for the selected date+vessel so we
+      // can mark booked + blacked-out slots disabled.
+      let availability = null;
+      if (booking.date && booking.vessel) {
+        availability = await fetchDayAvailability(ymd(booking.date), booking.vessel);
+      }
+
+      wrap.innerHTML = '';
+
+      // If the entire day is blacked out for this vessel, surface a friendly
+      // message and don't render any selectable slots.
+      if (availability && availability.is_fully_blacked_out) {
+        const msg = document.createElement('div');
+        msg.style.cssText = 'padding:18px 20px;background:rgba(200,16,46,0.10);border:1px solid rgba(200,16,46,0.35);border-radius:8px;color:#fff;font-size:14px;line-height:1.6;text-align:center;';
+        msg.innerHTML = 'This date is unavailable for the ' + (booking.vessel === 'yacht' ? 'yacht' : 'pontoon') + '. Please pick another date or call <a href="tel:+17373681669" style="color:#fff;text-decoration:underline;">(737) 368-1669</a>.';
+        wrap.appendChild(msg);
+        return;
+      }
+
+      const bookedSet = new Set(((availability && availability.booked_slots)   || []).map(normalizeTimeSlot));
+      const blockedSet = new Set(((availability && availability.blackout_slots) || []).map(normalizeTimeSlot));
+
       if (isShort) {
-        wrap.appendChild(makeTimeSection('Morning', MORNING_SLOTS));
-        wrap.appendChild(makeTimeSection('Afternoon', AFTERNOON_SLOTS));
+        wrap.appendChild(makeTimeSection('Morning', MORNING_SLOTS, bookedSet, blockedSet));
+        wrap.appendChild(makeTimeSection('Afternoon', AFTERNOON_SLOTS, bookedSet, blockedSet));
       } else {
         const all = MORNING_SLOTS.concat(AFTERNOON_SLOTS);
-        wrap.appendChild(makeTimeSection('All Available Start Times', all));
+        wrap.appendChild(makeTimeSection('All Available Start Times', all, bookedSet, blockedSet));
       }
     }
 
-    function makeTimeSection(label, slots) {
+    function makeTimeSection(label, slots, bookedSet, blockedSet) {
       const sec = document.createElement('div');
       sec.className = 'time-section';
       sec.innerHTML = '<div class="time-section-label">' + label + '</div>';
       const row = document.createElement('div');
       row.className = 'time-slots';
       slots.forEach(slot => {
+        const norm = normalizeTimeSlot(slot);
+        const isBooked  = bookedSet  && bookedSet.has(norm);
+        const isBlocked = blockedSet && blockedSet.has(norm);
+        const isUnavailable = isBooked || isBlocked;
+
         const btn = document.createElement('div');
-        btn.className = 'time-btn' + (booking.timeSlot === slot ? ' selected' : '');
-        btn.textContent = slot;
-        btn.onclick = () => {
-          booking.timeSlot = slot;
-          document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-        };
+        let cls = 'time-btn';
+        if (booking.timeSlot === slot) cls += ' selected';
+        if (isUnavailable) cls += ' disabled';
+        btn.className = cls;
+        btn.textContent = slot + (isBooked ? ' · Booked' : isBlocked ? ' · Unavailable' : '');
+        if (isUnavailable) {
+          btn.title = isBooked ? 'Already booked on this vessel' : 'Unavailable for this vessel on this date';
+        } else {
+          btn.onclick = () => {
+            booking.timeSlot = slot;
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+          };
+        }
         row.appendChild(btn);
       });
       sec.appendChild(row);
