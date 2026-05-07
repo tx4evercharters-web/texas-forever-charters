@@ -344,6 +344,12 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
+    /* Keep Lake Day pinned as the first card regardless of vessel-specific
+       reordering below. */
+    .exp-select-grid > .exp-select-card:first-child { order: -2; }
+    /* Boat Tour is pontoon-only; when it's visible (i.e., pontoon picked)
+       it should sit right after Lake Day instead of at the end of the grid. */
+    .exp-select-grid > .exp-select-card[data-vessel="pontoon"] { order: -1; }
 
     .exp-select-card {
       background: var(--navy-dark);
