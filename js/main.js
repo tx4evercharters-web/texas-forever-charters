@@ -262,6 +262,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ── Desktop "Call Now" tooltip ──
+  // On phones the tel: link works fine, but on desktop browsers it pops the
+  // OS app picker — annoying when the user just wants to see the number.
+  // Suppress the navigation on wide viewports and toggle a tooltip instead.
+  const callBtn = document.querySelector('.nav-call');
+  const callWrap = callBtn && callBtn.closest('.nav-call-wrap');
+  if (callBtn && callWrap) {
+    callBtn.addEventListener('click', (e) => {
+      if (window.matchMedia('(min-width: 769px)').matches) {
+        e.preventDefault();
+        const open = callWrap.classList.toggle('show-tip');
+        clearTimeout(callWrap._tipTimer);
+        if (open) {
+          callWrap._tipTimer = setTimeout(() => callWrap.classList.remove('show-tip'), 5000);
+        }
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (!callWrap.contains(e.target)) callWrap.classList.remove('show-tip');
+    });
+  }
+
+  // ── Mobile hamburger Contact submenu ──
+  const contactItem = document.querySelector('.nav-contact-item');
+  const contactToggle = contactItem && contactItem.querySelector('.nav-contact-toggle');
+  if (contactItem && contactToggle) {
+    contactToggle.addEventListener('click', () => {
+      const open = contactItem.classList.toggle('open');
+      contactToggle.setAttribute('aria-expanded', String(open));
+    });
+  }
+
   // ── Trust Bar Ticker ──
   const trustBar = document.querySelector('.trust-bar');
   if (trustBar) {

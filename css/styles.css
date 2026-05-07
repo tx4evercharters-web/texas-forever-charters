@@ -121,6 +121,11 @@ nav.scrolled .nav-logo img {
   flex: 0 0 auto;
 }
 
+.nav-call-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .nav-call {
   display: flex;
   flex-direction: column;
@@ -138,11 +143,43 @@ nav.scrolled .nav-logo img {
   text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
 
 .nav-call:hover {
   background: rgba(255,255,255,0.12);
+}
+
+/* Desktop tooltip showing the dial-able number — JS toggles .show-tip on
+   the wrap. Hidden on mobile, where .nav-call itself is hidden and the
+   hamburger menu's Contact submenu replaces it. */
+.nav-call-tip {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+  background: var(--navy);
+  color: var(--white);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 600;
+}
+
+.nav-call-wrap.show-tip .nav-call-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
 }
 
 .nav-links {
@@ -351,6 +388,10 @@ nav.scrolled .nav-logo img {
     display: none;
   }
 
+  .nav-call-tip {
+    display: none;
+  }
+
   .nav-links {
     position: absolute;
     top: 100%;
@@ -393,6 +434,73 @@ nav.scrolled .nav-logo img {
     font-size: 12px;
     letter-spacing: 1.5px;
   }
+
+  /* Contact item — only visible inside the mobile hamburger menu. The
+     toggle row matches the existing nav links; tapping it expands the
+     submenu with Call + Email options. */
+  .nav-contact-item .nav-contact-toggle {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: 12px 0;
+    text-align: right;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--white);
+    cursor: pointer;
+  }
+  .nav-contact-item .nav-contact-toggle::after {
+    content: ' ▾';
+    font-size: 11px;
+    margin-left: 4px;
+  }
+  .nav-contact-item.open .nav-contact-toggle::after {
+    content: ' ▴';
+  }
+  .nav-contact-item .nav-contact-sub {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 0 6px;
+  }
+  .nav-contact-item.open .nav-contact-sub {
+    display: flex;
+  }
+  .nav-contact-item .nav-contact-sub a {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    color: var(--white);
+    text-decoration: none;
+    font-family: 'Barlow Condensed', sans-serif;
+    text-align: right;
+  }
+  .nav-contact-item .nav-contact-sub a:hover {
+    background: rgba(255,255,255,0.12);
+    color: var(--white);
+  }
+  .nav-contact-item .nav-contact-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .nav-contact-item .nav-contact-value {
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    opacity: 0.85;
+    word-break: break-all;
+  }
+
 .hero-actions {
     flex-direction: row;
     justify-content: center;
@@ -421,6 +529,13 @@ nav.scrolled .nav-logo img {
     text-align: center;
   }
 
+}
+
+/* The Contact item lives inside .nav-links so it ships with the existing
+   markup, but it's only meaningful in the mobile hamburger menu — hide
+   it on desktop. */
+@media (min-width: 769px) {
+  .nav-contact-item { display: none; }
 }
 
 .hero-actions {
