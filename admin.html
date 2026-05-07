@@ -489,6 +489,45 @@
     .period-btn:hover { border-color: var(--navy); color: var(--navy); }
     .period-btn.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
 
+    /* ── Analytics period bar ── */
+    .analytics-period-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .analytics-period-bar select { padding: 5px 10px; border-radius: 5px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border: 1px solid var(--gray-200); background: var(--gray-50); color: var(--gray-700); cursor: pointer; }
+    .analytics-period-bar select:focus { outline: none; border-color: var(--navy); }
+    .custom-range-panel { display: none; align-items: center; gap: 8px; padding: 10px 14px; margin-bottom: 14px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; flex-wrap: wrap; }
+    .custom-range-panel.open { display: flex; }
+    .custom-range-panel label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gray-600); }
+    .custom-range-panel input[type=date] { padding: 4px 8px; border: 1px solid var(--gray-200); border-radius: 5px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; color: var(--gray-700); }
+    .period-display-banner { padding: 8px 14px; margin-bottom: 16px; background: var(--navy-bg, rgba(27,42,107,0.05)); border-left: 3px solid var(--navy); border-radius: 4px; font-size: 12px; color: var(--navy); font-weight: 600; letter-spacing: 0.5px; }
+
+    /* ── Collapsible analytics section ── */
+    .ax-section { background: var(--white); border: 1px solid var(--gray-200); border-radius: 10px; margin-bottom: 18px; overflow: hidden; }
+    .ax-section-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; cursor: pointer; user-select: none; transition: background 0.15s; }
+    .ax-section-header:hover { background: var(--gray-50); }
+    .ax-section-title { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--navy); letter-spacing: 2px; }
+    .ax-section-chevron { color: var(--gray-400); font-size: 12px; transition: transform 0.2s; }
+    .ax-section.collapsed .ax-section-chevron { transform: rotate(-90deg); }
+    .ax-section-body { padding: 0 18px 18px; }
+    .ax-section.collapsed .ax-section-body { display: none; }
+
+    /* ── Top experiences bars ── */
+    .top-exp-list { display: flex; flex-direction: column; gap: 8px; }
+    .top-exp-row { display: grid; grid-template-columns: 160px 1fr 110px; align-items: center; gap: 12px; }
+    .top-exp-name { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+    .top-exp-bar-wrap { background: var(--gray-100); border-radius: 4px; height: 22px; overflow: hidden; position: relative; }
+    .top-exp-bar { height: 100%; background: linear-gradient(90deg, var(--navy), #3a4d99); border-radius: 4px; }
+    .top-exp-stat { font-size: 12px; color: var(--gray-600); text-align: right; font-variant-numeric: tabular-nums; }
+    .top-exp-stat strong { color: var(--navy); font-weight: 700; }
+
+    /* ── Top customers table ── */
+    .top-cust-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .top-cust-table th { background: var(--gray-50); padding: 8px 12px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); }
+    .top-cust-table td { padding: 10px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+    .top-cust-table tr:last-child td { border-bottom: none; }
+    .top-cust-table .tc-rank { color: var(--gray-400); font-weight: 700; width: 32px; }
+    .top-cust-table .tc-name { color: var(--navy); font-weight: 700; }
+    .top-cust-table .tc-email { font-size: 11px; color: var(--gray-500); }
+    .top-cust-table .tc-money { color: var(--navy); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+
     /* ── Buttons ── */
     .btn-sm { padding: 6px 14px; border-radius: 5px; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; border: none; transition: opacity 0.15s; }
     .btn-sm:hover { opacity: 0.85; }
@@ -956,29 +995,68 @@
     <!-- ══ ANALYTICS TAB ══ -->
     <div class="tab-panel" id="tab-analytics">
 
-      <!-- Period filter -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <!-- Period filter row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:12px;">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--navy);letter-spacing:2px;">Analytics</div>
-        <div class="period-filter">
-          <button class="period-btn active" onclick="setPeriod('week',this)">Week</button>
-          <button class="period-btn" onclick="setPeriod('month',this)">Month</button>
-          <button class="period-btn" onclick="setPeriod('year',this)">Year</button>
-          <button class="period-btn" onclick="setPeriod('all',this)">All Time</button>
+        <div class="analytics-period-bar" id="analytics-period-bar">
+          <button class="period-btn" data-preset="week"  onclick="setAnalyticsPreset('week',  this)">This Week</button>
+          <button class="period-btn active" data-preset="month" onclick="setAnalyticsPreset('month', this)">This Month</button>
+          <button class="period-btn" data-preset="year"  onclick="setAnalyticsPreset('year',  this)">This Year</button>
+          <button class="period-btn" data-preset="all"   onclick="setAnalyticsPreset('all',   this)">All Time</button>
+          <select id="ax-year-select" onchange="setAnalyticsYear(this.value)">
+            <option value="">Year ▾</option>
+          </select>
+          <button class="period-btn" id="ax-custom-toggle" onclick="toggleCustomRange()">Custom Range</button>
         </div>
       </div>
 
-      <!-- Charter volume -->
-      <div class="section" style="margin-bottom:20px;">
-        <div class="section-header">
-          <div class="section-title">Charter Volume</div>
+      <!-- Custom range panel -->
+      <div class="custom-range-panel" id="ax-custom-panel">
+        <label>From</label>
+        <input type="date" id="ax-custom-from">
+        <label>To</label>
+        <input type="date" id="ax-custom-to">
+        <button class="period-btn active" onclick="applyCustomRange()">Apply</button>
+      </div>
+
+      <!-- Filter banner: shows year / custom-range label -->
+      <div class="period-display-banner" id="ax-display-banner" style="display:none;"></div>
+
+      <!-- Revenue (collapsible) -->
+      <div class="ax-section" id="ax-sec-revenue">
+        <div class="ax-section-header" onclick="toggleAxSection('ax-sec-revenue')">
+          <div class="ax-section-title">💰 Revenue</div>
+          <div class="ax-section-chevron">▾</div>
         </div>
-        <div class="volume-grid" id="volume-grid">
-          <div class="volume-item"><div class="volume-label">Total Charters</div><div class="volume-value" id="vol-total">—</div></div>
-          <div class="volume-item"><div class="volume-label">YACHT Charters</div><div class="volume-value" id="vol-yacht">—</div></div>
-          <div class="volume-item"><div class="volume-label">24FT BENTLEY Charters</div><div class="volume-value" id="vol-pontoon">—</div></div>
-          <div class="volume-item"><div class="volume-label">Avg Party Size</div><div class="volume-value" id="vol-party">—</div></div>
-          <div class="volume-item"><div class="volume-label">Avg Duration</div><div class="volume-value" id="vol-duration">—</div><div class="volume-sub">hours</div></div>
-          <div class="volume-item"><div class="volume-label">Returning Customers</div><div class="volume-value" id="vol-returning">—</div></div>
+        <div class="ax-section-body">
+          <div class="stats-grid" style="margin-bottom:0;">
+            <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value" id="rev-total">—</div><div class="stat-sub">paid amount</div></div>
+            <div class="stat-card"><div class="stat-label">Charter Subtotal</div><div class="stat-value" id="rev-charter">—</div></div>
+            <div class="stat-card"><div class="stat-label">Add-On Revenue</div><div class="stat-value" id="rev-addons">—</div></div>
+            <div class="stat-card"><div class="stat-label">Tax Collected</div><div class="stat-value" id="rev-tax">—</div></div>
+            <div class="stat-card"><div class="stat-label">Admin Fees</div><div class="stat-value" id="rev-admin">—</div></div>
+            <div class="stat-card"><div class="stat-label">Refunds Issued</div><div class="stat-value" id="rev-refunds">—</div></div>
+            <div class="stat-card"><div class="stat-label">Net Revenue</div><div class="stat-value" id="rev-net">—</div><div class="stat-sub">total − refunds</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charter (collapsible) -->
+      <div class="ax-section" id="ax-sec-charter">
+        <div class="ax-section-header" onclick="toggleAxSection('ax-sec-charter')">
+          <div class="ax-section-title">🛥️ Charter</div>
+          <div class="ax-section-chevron">▾</div>
+        </div>
+        <div class="ax-section-body">
+          <div class="stats-grid" style="margin-bottom:0;">
+            <div class="stat-card"><div class="stat-label">Total Charters</div><div class="stat-value" id="ch-total">—</div></div>
+            <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-value" id="ch-completed">—</div><div class="stat-sub">concluded</div></div>
+            <div class="stat-card"><div class="stat-label">Cancelled</div><div class="stat-value" id="ch-cancelled">—</div></div>
+            <div class="stat-card"><div class="stat-label">Cancel Rate</div><div class="stat-value" id="ch-cancel-rate">—</div></div>
+            <div class="stat-card"><div class="stat-label">Avg Party Size</div><div class="stat-value" id="ch-avg-party">—</div></div>
+            <div class="stat-card"><div class="stat-label">Avg Duration</div><div class="stat-value" id="ch-avg-duration">—</div><div class="stat-sub">hours</div></div>
+            <div class="stat-card"><div class="stat-label">Avg Booking Value</div><div class="stat-value" id="ch-avg-value">—</div></div>
+          </div>
         </div>
       </div>
 
@@ -1008,6 +1086,45 @@
             <div><div class="vessel-stat-label">Revenue</div><div class="vessel-stat-value" id="pontoon-rev">—</div></div>
             <div><div class="vessel-stat-label">Add-Ons</div><div class="vessel-stat-value" id="pontoon-addons">—</div></div>
             <div><div class="vessel-stat-label">Charters</div><div class="vessel-stat-value" id="pontoon-count">—</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top experiences -->
+      <div class="ax-section" id="ax-sec-exp">
+        <div class="ax-section-header" onclick="toggleAxSection('ax-sec-exp')">
+          <div class="ax-section-title">⭐ Top Experiences</div>
+          <div class="ax-section-chevron">▾</div>
+        </div>
+        <div class="ax-section-body">
+          <div class="top-exp-list" id="top-exp-list">
+            <div class="empty-state" style="padding:20px;">No bookings in this period.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer metrics -->
+      <div class="ax-section" id="ax-sec-customers">
+        <div class="ax-section-header" onclick="toggleAxSection('ax-sec-customers')">
+          <div class="ax-section-title">👥 Customer Metrics</div>
+          <div class="ax-section-chevron">▾</div>
+        </div>
+        <div class="ax-section-body">
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-label">Total Customers</div><div class="stat-value" id="cm-total">—</div><div class="stat-sub">all time</div></div>
+            <div class="stat-card"><div class="stat-label">New (Period)</div><div class="stat-value" id="cm-new">—</div><div class="stat-sub" id="cm-new-sub">—</div></div>
+            <div class="stat-card"><div class="stat-label">Returning</div><div class="stat-value" id="cm-returning">—</div><div class="stat-sub">2+ bookings</div></div>
+            <div class="stat-card"><div class="stat-label">VIP</div><div class="stat-value" id="cm-vip">—</div><div class="stat-sub">4+ or $5K+</div></div>
+            <div class="stat-card"><div class="stat-label">Newsletter Subs</div><div class="stat-value" id="cm-newsletter">—</div></div>
+            <div class="stat-card"><div class="stat-label">SMS Subs</div><div class="stat-value" id="cm-sms">—</div></div>
+            <div class="stat-card"><div class="stat-label">Lapsed (6+ mo)</div><div class="stat-value" id="cm-lapsed">—</div><div class="stat-sub">re-engagement</div></div>
+          </div>
+          <div style="margin-top:8px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);margin-bottom:8px;">Top 5 by Lifetime Spend</div>
+            <table class="top-cust-table" id="top-cust-table">
+              <thead><tr><th></th><th>Name</th><th>Email</th><th>Bookings</th><th style="text-align:right;">Lifetime</th></tr></thead>
+              <tbody id="top-cust-tbody"><tr><td colspan="5" class="empty-state" style="padding:20px;">Loading customers…</td></tr></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1702,10 +1819,13 @@
 
 <script>
   const TOKEN_KEY = 'tfc_admin_token';
-  let allBookings = [];
+  let allBookings = [];           // upcoming only — used by Bookings table
+  let allBookingsAll = [];        // upcoming + past — used by Analytics
   let allBlackouts = [];
   let calYear, calMonth;
-  let currentPeriod = 'week';
+  // Analytics filter state. type='preset' picks one of week/month/year/all;
+  // type='year' uses the year field; type='custom' uses customStart/customEnd.
+  let analyticsFilter = { type: 'preset', preset: 'month', year: null, customStart: null, customEnd: null };
 
   /* ── Helpers ── */
   function getToken() { return localStorage.getItem(TOKEN_KEY); }
@@ -2138,28 +2258,183 @@
     return new Set(Object.keys(counts).filter(e => counts[e] > 1));
   }
 
-  /* ── Period filter ── */
-  function setPeriod(period, btn) {
-    currentPeriod = period;
-    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+  /* ── Analytics period filter ── */
+  function setAnalyticsPreset(preset, btn) {
+    analyticsFilter = { type: 'preset', preset, year: null, customStart: null, customEnd: null };
+    // Visual: clear other presets, mark this one, clear year dropdown,
+    // collapse custom range panel.
+    document.querySelectorAll('#analytics-period-bar .period-btn[data-preset]').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    document.getElementById('ax-year-select').value = '';
+    document.getElementById('ax-custom-panel').classList.remove('open');
+    document.getElementById('ax-custom-toggle').classList.remove('active');
     renderAnalytics();
   }
 
-  function filterByPeriod(bookings, period) {
+  function setAnalyticsYear(yearStr) {
+    if (!yearStr) return;
+    const year = parseInt(yearStr, 10);
+    if (!year) return;
+    analyticsFilter = { type: 'year', preset: null, year, customStart: null, customEnd: null };
+    document.querySelectorAll('#analytics-period-bar .period-btn[data-preset]').forEach(b => b.classList.remove('active'));
+    document.getElementById('ax-custom-panel').classList.remove('open');
+    document.getElementById('ax-custom-toggle').classList.remove('active');
+    renderAnalytics();
+  }
+
+  function toggleCustomRange() {
+    const panel = document.getElementById('ax-custom-panel');
+    const toggle = document.getElementById('ax-custom-toggle');
+    const opened = panel.classList.toggle('open');
+    toggle.classList.toggle('active', opened);
+  }
+
+  function applyCustomRange() {
+    const fromStr = document.getElementById('ax-custom-from').value;
+    const toStr   = document.getElementById('ax-custom-to').value;
+    if (!fromStr || !toStr) { showError('Pick both From and To dates.'); return; }
+    if (fromStr > toStr)    { showError('From must be before To.');       return; }
+    analyticsFilter = { type: 'custom', preset: null, year: null, customStart: fromStr, customEnd: toStr };
+    document.querySelectorAll('#analytics-period-bar .period-btn[data-preset]').forEach(b => b.classList.remove('active'));
+    document.getElementById('ax-year-select').value = '';
+    renderAnalytics();
+  }
+
+  // Pull a comparable date out of a booking. Prefer charter date, fall back
+  // to booked_at so historical imports without a charter date still place.
+  // Bare YYYY-MM-DD strings are parsed as LOCAL midnight (not UTC) so a
+  // booking on Jan 1 in CST doesn't get bucketed into the prior year.
+  function bookingDate(b) {
+    const s = b.date || b.booked_at;
+    if (!s) return null;
+    const datePart = String(s).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      return new Date(datePart + 'T00:00:00');
+    }
+    const d = new Date(s);
+    return isNaN(d) ? null : d;
+  }
+
+  function filterBookingsByAnalytics(bookings) {
+    const f = analyticsFilter;
+    if (f.type === 'preset' && f.preset === 'all') return bookings.slice();
+
     const now = new Date();
-    return bookings.filter(b => {
-      const d = new Date((b.booked_at || b.date || '') );
-      if (period === 'week') {
-        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-        return d >= weekAgo;
-      } else if (period === 'month') {
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      } else if (period === 'year') {
-        return d.getFullYear() === now.getFullYear();
-      }
-      return true;
+    if (f.type === 'preset') {
+      return bookings.filter(b => {
+        const d = bookingDate(b);
+        if (!d) return false;
+        if (f.preset === 'week') {
+          // ISO-ish: include the last 7 days.
+          return (now - d) <= 7 * 24 * 60 * 60 * 1000 && d <= now;
+        }
+        if (f.preset === 'month') {
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        }
+        if (f.preset === 'year') {
+          return d.getFullYear() === now.getFullYear();
+        }
+        return true;
+      });
+    }
+
+    if (f.type === 'year') {
+      return bookings.filter(b => {
+        const d = bookingDate(b);
+        return d && d.getFullYear() === f.year;
+      });
+    }
+
+    if (f.type === 'custom') {
+      // Inclusive on both ends. Strings are YYYY-MM-DD.
+      const start = new Date(f.customStart + 'T00:00:00');
+      const end   = new Date(f.customEnd   + 'T23:59:59');
+      return bookings.filter(b => {
+        const d = bookingDate(b);
+        return d && d >= start && d <= end;
+      });
+    }
+    return bookings.slice();
+  }
+
+  function fmtBannerDate(yyyyMmDd) {
+    const d = new Date(yyyyMmDd + 'T00:00:00');
+    if (isNaN(d)) return yyyyMmDd;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function refreshAnalyticsBanner() {
+    const banner = document.getElementById('ax-display-banner');
+    const f = analyticsFilter;
+    if (f.type === 'year' && f.year) {
+      banner.style.display = '';
+      banner.textContent = 'Showing: ' + f.year + ' (full calendar year)';
+    } else if (f.type === 'custom') {
+      banner.style.display = '';
+      banner.textContent = 'Showing: ' + fmtBannerDate(f.customStart) + ' — ' + fmtBannerDate(f.customEnd);
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  function rebuildYearDropdown() {
+    const sel = document.getElementById('ax-year-select');
+    if (!sel) return;
+    const years = new Set();
+    (allBookingsAll || []).forEach(b => {
+      const d = bookingDate(b);
+      if (d) years.add(d.getFullYear());
     });
+    const sorted = [...years].sort((a, b) => b - a);
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Year ▾</option>' + sorted.map(y => `<option value="${y}">${y}</option>`).join('');
+    if (current && sorted.includes(parseInt(current, 10))) sel.value = current;
+  }
+
+  function toggleAxSection(id) {
+    const sec = document.getElementById(id);
+    if (sec) sec.classList.toggle('collapsed');
+  }
+
+  function periodSubLabel() {
+    const f = analyticsFilter;
+    if (f.type === 'preset') {
+      return f.preset === 'week' ? 'past 7 days'
+           : f.preset === 'month' ? 'this month'
+           : f.preset === 'year' ? 'this year'
+           : 'all time';
+    }
+    if (f.type === 'year')   return f.year + '';
+    if (f.type === 'custom') return fmtBannerDate(f.customStart) + ' — ' + fmtBannerDate(f.customEnd);
+    return '—';
+  }
+
+  // Test whether a customer's first_booking_date falls inside the active
+  // analytics window. Used by the New (period) tile in Customer Metrics.
+  function customerInAnalyticsPeriod(c) {
+    const dateStr = c.derived_first_date || c.first_booking_date;
+    if (!dateStr) return false;
+    // Same local-midnight parse as bookingDate to avoid year/month TZ slips.
+    const datePart = String(dateStr).slice(0, 10);
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(datePart)
+      ? new Date(datePart + 'T00:00:00')
+      : new Date(dateStr);
+    if (isNaN(d)) return false;
+    const f = analyticsFilter;
+    if (f.type === 'preset' && f.preset === 'all') return true;
+    const now = new Date();
+    if (f.type === 'preset') {
+      if (f.preset === 'week')  return (now - d) <= 7 * 24 * 60 * 60 * 1000 && d <= now;
+      if (f.preset === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      if (f.preset === 'year')  return d.getFullYear() === now.getFullYear();
+    }
+    if (f.type === 'year')   return d.getFullYear() === f.year;
+    if (f.type === 'custom') {
+      const start = new Date(f.customStart + 'T00:00:00');
+      const end   = new Date(f.customEnd   + 'T23:59:59');
+      return d >= start && d <= end;
+    }
+    return false;
   }
 
   /* ── Tabs ── */
@@ -2231,13 +2506,23 @@
   /* ── Load data ── */
   async function loadData() {
     document.getElementById('bookings-wrap').innerHTML = '<div class="loading">Loading bookings...</div>';
-    const [bookingData, blackouts] = await Promise.all([
+    // Fetch bookings, blackouts, AND customers in parallel — analytics needs
+    // both bookings + customers, so loading customers up front lets the
+    // Analytics tab render instantly when opened instead of waiting on a
+    // second round-trip.
+    const [bookingData, blackouts, customerData] = await Promise.all([
       api('/api/admin?action=bookings'),
       api('/api/admin?action=blackouts'),
+      api('/api/admin?action=customers'),
     ]);
     if (!bookingData) return;
     allBookings = bookingData.upcoming || [];
+    allBookingsAll = bookingData.all || (bookingData.upcoming || []).concat(bookingData.past || []);
     allBlackouts = blackouts || [];
+    if (customerData && Array.isArray(customerData.customers)) {
+      allCustomers = customerData.customers;
+      custLoaded = true;
+    }
     renderStats(allBookings);
     renderOverdue(allBookings);
     renderBookings(allBookings);
@@ -2299,45 +2584,149 @@
 
   /* ── Analytics ── */
   function renderAnalytics() {
-    const filtered = filterByPeriod(allBookings, currentPeriod);
-    const returningEmails = getReturningEmails(allBookings);
+    rebuildYearDropdown();
+    refreshAnalyticsBanner();
 
-    // Volume
-    const yacht = filtered.filter(b => b.vessel === 'yacht');
-    const pontoon = filtered.filter(b => b.vessel !== 'yacht');
-    const avgParty = filtered.length ? (filtered.reduce((s,b) => s + parseInt(b.party_size||0), 0) / filtered.length).toFixed(1) : '—';
-    const avgDur = filtered.length ? (filtered.reduce((s,b) => s + parseInt(b.duration||0), 0) / filtered.length).toFixed(1) : '—';
-    const returningCount = filtered.filter(b => returningEmails.has((b.customer_email||'').toLowerCase())).length;
+    const bookings = filterBookingsByAnalytics(allBookingsAll || []);
+    const yacht   = bookings.filter(b => b.vessel === 'yacht');
+    const pontoon = bookings.filter(b => b.vessel === 'pontoon');
 
-    document.getElementById('vol-total').textContent = filtered.length;
-    document.getElementById('vol-yacht').textContent = yacht.length;
-    document.getElementById('vol-pontoon').textContent = pontoon.length;
-    document.getElementById('vol-party').textContent = avgParty;
-    document.getElementById('vol-duration').textContent = avgDur;
-    document.getElementById('vol-returning').textContent = returningCount;
+    // Helper: dollars paid on a booking. Stripe stores cents in amount_total.
+    const bookingPaid = b => b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
 
-    // Vessel revenue
+    // ── Revenue ──
+    let totalRev = 0, charterSubtotal = 0, addonRev = 0, taxRev = 0, adminFees = 0, refunds = 0;
+    bookings.forEach(b => {
+      totalRev        += bookingPaid(b);
+      charterSubtotal += parseFloat(b.charter_subtotal || 0);
+      addonRev        += parseFloat(b.add_on_total      || 0);
+      taxRev          += parseFloat(b.tax_amount        || 0);
+      adminFees       += parseFloat(b.admin_fee         || 0);
+      refunds         += parseFloat(b.refund_amount     || 0);
+    });
+    const netRev = totalRev - refunds;
+    document.getElementById('rev-total').textContent   = fmtMoney(totalRev);
+    document.getElementById('rev-charter').textContent = fmtMoney(charterSubtotal);
+    document.getElementById('rev-addons').textContent  = fmtMoney(addonRev);
+    document.getElementById('rev-tax').textContent     = fmtMoney(taxRev);
+    document.getElementById('rev-admin').textContent   = fmtMoney(adminFees);
+    document.getElementById('rev-refunds').textContent = fmtMoney(refunds);
+    document.getElementById('rev-net').textContent     = fmtMoney(netRev);
+
+    // ── Charter ──
+    const completed = bookings.filter(b => String(b.status || '').toLowerCase() === 'concluded').length;
+    const cancelled = bookings.filter(b => String(b.status || '').toLowerCase() === 'cancelled').length;
+    const cancelRate = bookings.length ? ((cancelled / bookings.length) * 100).toFixed(1) + '%' : '—';
+    const avgParty = bookings.length ? (bookings.reduce((s, b) => s + parseInt(b.party_size || 0), 0) / bookings.length).toFixed(1) : '—';
+    const avgDur   = bookings.length ? (bookings.reduce((s, b) => s + parseInt(b.duration   || 0), 0) / bookings.length).toFixed(1) : '—';
+    const avgValue = bookings.length ? totalRev / bookings.length : 0;
+    document.getElementById('ch-total').textContent       = bookings.length;
+    document.getElementById('ch-completed').textContent   = completed;
+    document.getElementById('ch-cancelled').textContent   = cancelled;
+    document.getElementById('ch-cancel-rate').textContent = cancelRate;
+    document.getElementById('ch-avg-party').textContent   = avgParty;
+    document.getElementById('ch-avg-duration').textContent = avgDur;
+    document.getElementById('ch-avg-value').textContent   = bookings.length ? fmtMoney(avgValue) : '—';
+
+    // ── Vessel split ──
     function vesselStats(arr) {
       let rev = 0, ao = 0;
-      arr.forEach(b => {
-        rev += b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
-        ao += parseFloat(b.add_on_total || 0);
-      });
+      arr.forEach(b => { rev += bookingPaid(b); ao += parseFloat(b.add_on_total || 0); });
       return { rev, ao, count: arr.length };
     }
-
     const ys = vesselStats(yacht);
     const ps = vesselStats(pontoon);
-    document.getElementById('yacht-rev').textContent = fmtMoney(ys.rev);
-    document.getElementById('yacht-addons').textContent = fmtMoney(ys.ao);
-    document.getElementById('yacht-count').textContent = ys.count;
-    document.getElementById('pontoon-rev').textContent = fmtMoney(ps.rev);
-    document.getElementById('pontoon-addons').textContent = fmtMoney(ps.ao);
-    document.getElementById('pontoon-count').textContent = ps.count;
+    document.getElementById('yacht-rev').textContent     = fmtMoney(ys.rev);
+    document.getElementById('yacht-addons').textContent  = fmtMoney(ys.ao);
+    document.getElementById('yacht-count').textContent   = ys.count;
+    document.getElementById('pontoon-rev').textContent     = fmtMoney(ps.rev);
+    document.getElementById('pontoon-addons').textContent  = fmtMoney(ps.ao);
+    document.getElementById('pontoon-count').textContent   = ps.count;
 
-    // Origins
+    // ── Top experiences (by revenue + bookings count) ──
+    const expMap = {};
+    bookings.forEach(b => {
+      const key = (b.experience || 'Other').trim() || 'Other';
+      const e = expMap[key] || (expMap[key] = { name: key, count: 0, rev: 0 });
+      e.count += 1;
+      e.rev   += bookingPaid(b);
+    });
+    const expRows = Object.values(expMap).sort((a, b) => b.rev - a.rev);
+    const topExpEl = document.getElementById('top-exp-list');
+    if (!expRows.length) {
+      topExpEl.innerHTML = '<div class="empty-state" style="padding:20px;">No bookings in this period.</div>';
+    } else {
+      const maxRev = expRows[0].rev || 1;
+      topExpEl.innerHTML = expRows.map(e => `
+        <div class="top-exp-row">
+          <div class="top-exp-name">${esc(e.name)}</div>
+          <div class="top-exp-bar-wrap"><div class="top-exp-bar" style="width:${Math.max(2, Math.round(e.rev / maxRev * 100))}%"></div></div>
+          <div class="top-exp-stat"><strong>${fmtMoney(e.rev)}</strong> · ${e.count} ${e.count === 1 ? 'booking' : 'bookings'}</div>
+        </div>
+      `).join('');
+    }
+
+    // ── Customer metrics ──
+    const customers = allCustomers || [];
+    const totalCust = customers.length;
+    const newCust   = customers.filter(customerInAnalyticsPeriod).length;
+    const returningCust = customers.filter(c => (c.derived_total_bookings || c.total_bookings || 0) >= 2).length;
+    const vipCust = customers.filter(c => {
+      const cnt = c.derived_total_bookings || c.total_bookings || 0;
+      const lv  = c.derived_lifetime || c.lifetime_value || c.total_spent || 0;
+      return cnt >= 4 || parseFloat(lv) >= 5000;
+    }).length;
+    const newsletterCt = customers.filter(c => c.derived_newsletter || c.newsletter_subscribed).length;
+    const smsCt        = customers.filter(c => c.sms_subscribed).length;
+    const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+    const lapsedCt = customers.filter(c => {
+      const last = c.derived_last_date || c.last_booking_date;
+      if (!last) return false;
+      const d = new Date(last);
+      return !isNaN(d) && d < sixMonthsAgo;
+    }).length;
+
+    document.getElementById('cm-total').textContent      = totalCust;
+    document.getElementById('cm-new').textContent        = newCust;
+    document.getElementById('cm-new-sub').textContent    = periodSubLabel();
+    document.getElementById('cm-returning').textContent  = returningCust;
+    document.getElementById('cm-vip').textContent        = vipCust;
+    document.getElementById('cm-newsletter').textContent = newsletterCt;
+    document.getElementById('cm-sms').textContent        = smsCt;
+    document.getElementById('cm-lapsed').textContent     = lapsedCt;
+
+    // Top 5 customers by lifetime spend
+    const topCustTbody = document.getElementById('top-cust-tbody');
+    if (!customers.length) {
+      topCustTbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="padding:20px;">No customers yet.</td></tr>';
+    } else {
+      const top5 = customers
+        .map(c => ({
+          c,
+          lv: parseFloat(c.derived_lifetime || c.lifetime_value || c.total_spent || 0),
+          ct: c.derived_total_bookings || c.total_bookings || 0,
+        }))
+        .filter(x => x.lv > 0)
+        .sort((a, b) => b.lv - a.lv)
+        .slice(0, 5);
+      if (!top5.length) {
+        topCustTbody.innerHTML = '<tr><td colspan="5" class="empty-state" style="padding:20px;">No paid bookings yet.</td></tr>';
+      } else {
+        topCustTbody.innerHTML = top5.map((x, i) => `
+          <tr>
+            <td class="tc-rank">${i + 1}</td>
+            <td><div class="tc-name">${esc(x.c.full_name || '—')}</div></td>
+            <td><div class="tc-email">${esc(x.c.email || '—')}</div></td>
+            <td>${x.ct}</td>
+            <td class="tc-money">${fmtMoney(x.lv)}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    // ── Customer origins ──
     const originCounts = {};
-    filtered.forEach(b => {
+    bookings.forEach(b => {
       if (b.city && b.state) {
         const key = b.city + ', ' + b.state;
         originCounts[key] = (originCounts[key] || 0) + 1;
@@ -2345,7 +2734,7 @@
         originCounts[b.state] = (originCounts[b.state] || 0) + 1;
       }
     });
-    const originEntries = Object.entries(originCounts).sort((a,b) => b[1]-a[1]);
+    const originEntries = Object.entries(originCounts).sort((a, b) => b[1] - a[1]);
     const maxOrigin = originEntries.length ? originEntries[0][1] : 1;
     const originEl = document.getElementById('origins-list');
     if (originEntries.length === 0) {
