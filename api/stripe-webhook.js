@@ -15,17 +15,25 @@ function getRawBody(req) {
 }
 
 module.exports = async function handler(req, res) {
+  console.log('[stripe-webhook] hit',
+    'method:', req.method,
+    '| has_sig:', !!req.headers['stripe-signature'],
+    '| RESEND_API_KEY set?', !!process.env.RESEND_API_KEY,
+    '| SUPABASE_URL set?', !!process.env.SUPABASE_URL,
+    '| STRIPE_WEBHOOK_SECRET set?', !!process.env.STRIPE_WEBHOOK_SECRET);
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const sig = req.headers['stripe-signature'];
   if (!sig) {
+    console.error('[stripe-webhook] missing Stripe signature header');
     return res.status(400).json({ error: 'Missing Stripe signature' });
   }
 
   if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    console.error('STRIPE_WEBHOOK_SECRET not configured');
+    console.error('[stripe-webhook] STRIPE_WEBHOOK_SECRET not configured');
     return res.status(500).json({ error: 'Webhook not configured' });
   }
 
@@ -34,19 +42,26 @@ module.exports = async function handler(req, res) {
     const rawBody = await getRawBody(req);
     event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    console.error('[stripe-webhook] signature verification failed:', err.message);
     return res.status(400).json({ error: 'Webhook signature verification failed' });
   }
 
+  console.log('[stripe-webhook] event verified', 'id:', event.id, 'type:', event.type);
+
   if (event.type !== 'checkout.session.completed') {
-    // Acknowledge unhandled event types without processing
     return res.status(200).json({ received: true });
   }
 
   const session = event.data.object;
+  console.log('[stripe-webhook] checkout.session.completed',
+    'session:',        session.id,
+    '| payment_status:', session.payment_status,
+    '| customer_email:', session.customer_email,
+    '| amount_total:',   session.amount_total,
+    '| has_metadata:',   !!session.metadata && Object.keys(session.metadata).length > 0);
 
-  // Only send emails when payment is confirmed
   if (session.payment_status !== 'paid') {
+    console.log('[stripe-webhook] session not paid yet, acknowledging without processing', session.id);
     return res.status(200).json({ received: true });
   }
 
@@ -156,9 +171,9 @@ module.exports = async function handler(req, res) {
       promo_discount:    promoDiscount,
       booked_at:        new Date().toISOString(),
     });
-    console.log('Booking saved to storage for session:', session.id);
+    console.log('[stripe-webhook] booking saved to Supabase', session.id);
   } catch (err) {
-    console.error('Failed to save booking to storage:', err.message);
+    console.error('[stripe-webhook] FAILED to save booking', session.id, '|', err.message, '\n', err.stack);
   }
 
   const emailData = {
@@ -186,12 +201,17 @@ module.exports = async function handler(req, res) {
     newsletter:       meta.newsletter,
   };
 
+  console.log('[stripe-webhook] dispatching confirmation emails', session.id);
   try {
-    await sendConfirmationEmails(emailData);
-    console.log('Confirmation emails sent for session:', session.id);
+    const result = await sendConfirmationEmails(emailData);
+    console.log('[stripe-webhook] email dispatch complete', session.id,
+      '| customer:', result.customerError ? 'FAILED (' + result.customerError.message + ')' : 'ok',
+      '| business:', result.businessError ? 'FAILED (' + result.businessError.message + ')' : 'ok');
   } catch (err) {
-    // Log but don't return 500 — Stripe would retry indefinitely on non-2xx
-    console.error('Failed to send confirmation emails:', err.message);
+    /* sendConfirmationEmails throws only if BOTH customer and business
+       sends failed. Stripe has already charged — return 200 anyway so it
+       doesn't enter the retry loop, but the error is loud in logs. */
+    console.error('[stripe-webhook] BOTH confirmation emails failed', session.id, '|', err.message, '\n', err.stack);
   }
 
   return res.status(200).json({ received: true });
