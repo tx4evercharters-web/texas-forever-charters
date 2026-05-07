@@ -1466,6 +1466,94 @@ section {
   color: var(--dim);
 }
 
+/* ── 14b. Social ── */
+.social-section {
+  background: var(--navy);
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.social-inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.social-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 5vw, 56px);
+  letter-spacing: 4px;
+  color: var(--white);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.social-divider {
+  width: 56px;
+  height: 3px;
+  background: var(--red);
+  margin: 18px auto 22px;
+  border-radius: 2px;
+}
+
+.social-subhead {
+  font-family: 'Barlow', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.78);
+  line-height: 1.7;
+  max-width: 580px;
+  margin: 0 auto 32px;
+}
+
+.social-hashtag {
+  color: var(--red);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.social-buttons {
+  display: inline-flex;
+  gap: 18px;
+  margin-bottom: 26px;
+}
+
+.social-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: var(--white);
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.social-btn:hover,
+.social-btn:focus-visible {
+  background: var(--red);
+  border-color: var(--red);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.social-btn svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.social-tagline {
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  font-style: italic;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
 /* ── 15. Newsletter Popup ── */
 .nl-popup-overlay {
   display: none;
@@ -1680,6 +1768,40 @@ section {
 
 .footer-contact a:hover {
   color: var(--white);
+}
+
+.footer-social {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.footer-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.footer-social a:hover,
+.footer-social a:focus-visible {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+  outline: none;
+}
+
+.footer-social svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .footer-bottom {
