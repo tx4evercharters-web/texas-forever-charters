@@ -397,12 +397,12 @@ nav.scrolled .nav-logo img {
     top: 100%;
     left: auto;
     right: 0;
-    width: 180px;
+    width: 220px;
     display: none;
     flex-direction: column;
     align-items: stretch;
-    gap: 16px;
-    padding: 12px 20px 20px;
+    gap: 8px;
+    padding: 12px 20px;
     background: #0A1030 !important;
     backdrop-filter: blur(16px);
     border-radius: 0 0 12px 12px;
@@ -420,11 +420,8 @@ nav.scrolled .nav-logo img {
 
   .nav-links a {
     width: 100%;
-    padding: 12px 0;
-  }
-
-  .nav-links a {
-    text-align: right;
+    padding: 10px 0;
+    text-align: left;
   }
 
   .nav-links a.nav-book {
@@ -436,14 +433,17 @@ nav.scrolled .nav-logo img {
   }
 
   /* Contact item — only visible inside the mobile hamburger menu. The
-     toggle row matches the existing nav links; tapping it expands the
-     submenu with Call + Email options. */
+     toggle row is styled to be visually identical to a regular nav link
+     (same font, size, padding, alignment, no chevron) and expands an
+     inline submenu underneath when tapped. */
   .nav-contact-item .nav-contact-toggle {
+    display: block;
     width: 100%;
     background: transparent;
     border: 0;
-    padding: 12px 0;
-    text-align: right;
+    margin: 0;
+    padding: 10px 0;
+    text-align: left;
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 13px;
     font-weight: 700;
@@ -451,54 +451,47 @@ nav.scrolled .nav-logo img {
     text-transform: uppercase;
     color: var(--white);
     cursor: pointer;
+    transition: color 0.2s;
   }
-  .nav-contact-item .nav-contact-toggle::after {
-    content: ' ▾';
-    font-size: 11px;
-    margin-left: 4px;
-  }
-  .nav-contact-item.open .nav-contact-toggle::after {
-    content: ' ▴';
+  .nav-contact-item .nav-contact-toggle:hover {
+    color: var(--red);
   }
   .nav-contact-item .nav-contact-sub {
     display: none;
     flex-direction: column;
-    gap: 6px;
-    padding: 4px 0 6px;
+    gap: 4px;
+    padding: 2px 0 4px 16px;
   }
   .nav-contact-item.open .nav-contact-sub {
     display: flex;
   }
   .nav-contact-item .nav-contact-sub a {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
+    display: block;
     width: 100%;
-    padding: 10px 12px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 6px;
+    padding: 6px 0;
     color: var(--white);
     text-decoration: none;
     font-family: 'Barlow Condensed', sans-serif;
-    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-align: left;
+    line-height: 1.4;
+    word-break: break-word;
   }
   .nav-contact-item .nav-contact-sub a:hover {
-    background: rgba(255,255,255,0.12);
-    color: var(--white);
+    color: var(--red);
   }
   .nav-contact-item .nav-contact-label {
-    font-size: 13px;
+    display: inline;
     font-weight: 700;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     text-transform: uppercase;
   }
   .nav-contact-item .nav-contact-value {
-    font-size: 12px;
-    letter-spacing: 0.3px;
+    display: inline;
+    margin-left: 4px;
     opacity: 0.85;
-    word-break: break-all;
   }
 
 .hero-actions {
