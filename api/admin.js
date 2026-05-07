@@ -21,7 +21,7 @@ const {
   findBookingBySessionId,
   deleteBookingRow,
 } = require('../lib/storage');
-const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail } = require('../lib/send-emails');
+const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail } = require('../lib/send-emails');
 
 /* ── Direct Supabase PATCH for booking edits ── */
 function supabasePatch(session_id, updates) {
@@ -143,6 +143,8 @@ async function handleUpdateBooking(req, res) {
     'payment_type', 'payment_method_external',
     // Lifecycle
     'status', 'cancelled_at', 'refund_amount', 'refunded_at',
+    // Damage hold
+    'damage_hold_status', 'damage_charge_amount',
   ];
   const sanitized = {};
   for (const key of allowedFields) {
@@ -377,6 +379,105 @@ async function handleRefundBooking(req, res) {
     });
   } catch (err) {
     console.error('Refund booking error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleReleaseDamageHold(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { session_id } = req.body || {};
+  if (!session_id) return res.status(400).json({ error: 'Missing session_id' });
+
+  try {
+    const booking = await findBookingBySessionId(session_id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (!booking.damage_hold_intent_id) return res.status(400).json({ error: 'No damage hold on this booking.' });
+    if (booking.damage_hold_status === 'released') return res.status(400).json({ error: 'Damage hold is already released.' });
+    if (booking.damage_hold_status === 'captured') return res.status(400).json({ error: 'Damage hold has already been captured — cannot release.' });
+
+    // Cancel the manual-capture PaymentIntent so the customer's card is freed up
+    await stripe.paymentIntents.cancel(booking.damage_hold_intent_id);
+
+    const updated = await patchBooking(session_id, {
+      damage_hold_status:      'released',
+      damage_hold_released_at: new Date().toISOString(),
+    });
+    return res.status(200).json({ ok: true, booking: updated });
+  } catch (err) {
+    console.error('Release damage hold error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleCaptureDamageCharge(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { session_id, amount } = req.body || {};
+  if (!session_id) return res.status(400).json({ error: 'Missing session_id' });
+  const dollars = parseFloat(amount);
+  if (!isFinite(dollars) || dollars <= 0) return res.status(400).json({ error: 'amount must be a positive number' });
+
+  try {
+    const booking = await findBookingBySessionId(session_id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (!booking.damage_hold_intent_id) return res.status(400).json({ error: 'No damage hold on this booking.' });
+    if (booking.damage_hold_status === 'released') return res.status(400).json({ error: 'Damage hold has already been released — cannot capture.' });
+    if (booking.damage_hold_status === 'captured') return res.status(400).json({ error: 'Damage hold has already been captured.' });
+
+    const HOLD_CENTS  = 25000;       // $250 — the full hold amount
+    const totalCents  = Math.round(dollars * 100);
+    const captureCents = Math.min(totalCents, HOLD_CENTS);
+    const overflowCents = Math.max(0, totalCents - HOLD_CENTS);
+
+    // Step 1: capture the hold (up to $250).
+    await stripe.paymentIntents.capture(booking.damage_hold_intent_id, { amount_to_capture: captureCents });
+
+    // Step 2: if the damage exceeded $250, charge the difference on the saved card.
+    let overflowChargeId = null;
+    if (overflowCents > 0) {
+      if (!booking.payment_method_id || !booking.stripe_customer_id) {
+        return res.status(400).json({ error: `Captured the $250 hold but no saved payment method for the overflow charge of $${(overflowCents / 100).toFixed(2)}. Charge manually.` });
+      }
+      const overflowPI = await stripe.paymentIntents.create({
+        amount:         overflowCents,
+        currency:       'usd',
+        customer:       booking.stripe_customer_id,
+        payment_method: booking.payment_method_id,
+        confirm:        true,
+        off_session:    true,
+        description:    `Damage charge overflow — ${booking.charter_name || 'charter'} on ${booking.date || ''}`,
+        metadata: {
+          purpose:            'damage_overflow',
+          booking_session_id: session_id,
+        },
+      });
+      overflowChargeId = overflowPI.id;
+    }
+
+    const updated = await patchBooking(session_id, {
+      damage_hold_status:      'captured',
+      damage_charge_amount:    Number(dollars.toFixed(2)),
+      damage_captured_at:      new Date().toISOString(),
+    });
+
+    // Customer email — failure must not undo the captured charge
+    let email_warning = null;
+    try {
+      await sendDamageChargeEmail(updated || booking, dollars);
+    } catch (err) {
+      console.error('Damage charge email failed (charge still processed):', err.message);
+      email_warning = err.message;
+    }
+
+    return res.status(200).json({
+      ok: true,
+      booking: updated,
+      captured_dollars: Math.min(dollars, 250),
+      overflow_dollars: Math.max(0, dollars - 250),
+      overflow_charge_id: overflowChargeId,
+      ...(email_warning ? { email_warning } : {}),
+    });
+  } catch (err) {
+    console.error('Capture damage charge error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 }
@@ -625,10 +726,12 @@ const ROUTES = {
   'create-customer':   handleCreateCustomer,
   'delete-customer':   handleDeleteCustomer,
   'import-bookings':   handleImportBookings,
-  'mark-concluded':    handleMarkConcluded,
-  'cancel-booking':    handleCancelBooking,
-  'refund-booking':    handleRefundBooking,
-  'delete-booking':    handleDeleteBooking,
+  'mark-concluded':       handleMarkConcluded,
+  'cancel-booking':       handleCancelBooking,
+  'refund-booking':       handleRefundBooking,
+  'delete-booking':       handleDeleteBooking,
+  'release-damage-hold':  handleReleaseDamageHold,
+  'capture-damage-charge':handleCaptureDamageCharge,
 };
 
 module.exports = async function handler(req, res) {

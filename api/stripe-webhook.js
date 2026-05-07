@@ -65,6 +65,42 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // Authorize the $250 damage deposit hold against the saved payment method.
+  // This is the earliest moment we have the customer + payment_method, so it
+  // happens here rather than in create-checkout where neither exists yet.
+  let damageHoldIntentId = null;
+  let damageHoldStatus = 'pending';
+  if (paymentMethodId && stripeCustomerId) {
+    try {
+      const damageHold = await stripe.paymentIntents.create({
+        amount:         25000, // $250.00
+        currency:       'usd',
+        customer:       stripeCustomerId,
+        payment_method: paymentMethodId,
+        capture_method: 'manual',
+        confirm:        true,
+        off_session:    true,
+        description:    `Damage deposit hold — ${meta.charter_name || 'charter'} on ${meta.date || ''}`,
+        metadata: {
+          purpose:            'damage_hold',
+          booking_session_id: session.id,
+        },
+      });
+      damageHoldIntentId = damageHold.id;
+      // Stripe returns "requires_capture" once the hold is authorized successfully.
+      // If we get something else (requires_action, processing), surface that status
+      // so the admin UI can flag it for follow-up rather than treat it as healthy.
+      damageHoldStatus = damageHold.status === 'requires_capture' ? 'pending' : damageHold.status;
+      console.log('[damage-hold] authorized:', damageHold.id, 'status:', damageHold.status);
+    } catch (err) {
+      console.error('[damage-hold] failed to authorize $250 hold:', err.message);
+      // Booking save must not fail because of a damage-hold authorization problem.
+      // Leave damage_hold_intent_id null; admin can chase it up manually.
+    }
+  } else {
+    console.warn('[damage-hold] skipping — missing paymentMethodId or stripeCustomerId');
+  }
+
   const billingAddress = session.customer_details?.address || {};
   const city = billingAddress.city || null;
   const state = billingAddress.state || null;
@@ -109,6 +145,8 @@ module.exports = async function handler(req, res) {
       stripe_customer_id: stripeCustomerId,
       payment_method_id:  paymentMethodId,
       payment_intent_id:  paymentIntentId,
+      damage_hold_intent_id: damageHoldIntentId,
+      damage_hold_status:    damageHoldStatus,
       paid_in_full:     meta.payment_type !== 'deposit',
       remaining_balance: remaining,
       admin_fee:         adminFee,

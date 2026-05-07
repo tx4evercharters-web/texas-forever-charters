@@ -1382,6 +1382,35 @@
   </div>
 </div>
 
+<!-- Damage charge capture modal -->
+<div class="modal-overlay" id="damage-charge-overlay" onclick="closeDamageChargeModal(event)">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title">⚠ Capture Damage Charge</div>
+      <button class="modal-close" onclick="closeDamageChargeModalBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="dc-session-id">
+      <div style="font-size:13px;color:var(--gray-600);margin-bottom:14px;">
+        Charging <strong id="dc-name"></strong> · <span id="dc-date"></span><br>
+        Default: <strong>$250.00</strong> (the held amount). Increase if damages exceed $250 — the difference will be charged on the saved card automatically.
+      </div>
+      <div class="edit-form-group full">
+        <label class="edit-label">Damage Charge Amount ($)</label>
+        <input class="edit-input" id="dc-amount" type="number" min="0.01" step="0.01" value="250.00" oninput="bkOnDamageAmountInput()">
+      </div>
+      <div id="dc-overflow" class="import-warning amber" style="display:none;margin-top:10px;font-size:12px;"></div>
+      <div style="font-size:11px;color:var(--gray-400);margin-top:10px;">
+        The customer will receive an email notification of this charge.
+      </div>
+      <div class="edit-modal-footer">
+        <button class="btn-sm btn-gray" onclick="closeDamageChargeModalBtn()">Cancel</button>
+        <button class="btn-sm btn-red" onclick="bkCaptureDamageConfirm()">Capture Charge</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Partial refund modal -->
 <div class="modal-overlay" id="refund-overlay" onclick="closeRefundModal(event)">
   <div class="modal" style="max-width:440px;">
@@ -1610,11 +1639,25 @@
     return '';
   }
 
+  function bkDamageBadge(b) {
+    if (!b || !b.damage_hold_intent_id) return '';
+    const s = (b.damage_hold_status || 'pending').toLowerCase();
+    if (s === 'released') return '<span class="badge" style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)" title="$250 hold released — no charge">✅ Released</span>';
+    if (s === 'captured') {
+      const amt = parseFloat(b.damage_charge_amount || 0);
+      return `<span class="badge badge-red" title="Damage charge captured">⚠ Captured ${fmtMoney(amt)}</span>`;
+    }
+    // Anything else (pending, requires_action, processing, etc.) shows as Hold Active
+    return '<span class="badge" style="background:var(--gray-100);color:var(--gray-600);border:1px solid var(--gray-200)" title="$250 damage deposit hold active">🔒 Hold Active</span>';
+  }
+
   function bkActionMenu(b) {
     const id = esc(b.session_id);
     const s = bkStatus(b);
     const hasIntent = !!b.payment_intent_id;
     const refundable = bkRefundable(b);
+    const damageStatus = (b.damage_hold_status || 'pending').toLowerCase();
+    const hasActiveHold = !!b.damage_hold_intent_id && damageStatus !== 'released' && damageStatus !== 'captured';
     const items = [];
     if (s !== 'concluded') items.push(`<button class="bk-menu-item" onclick="bkMarkConcluded('${id}')">✓ Mark Concluded</button>`);
     if (s !== 'cancelled') items.push(`<button class="bk-menu-item" onclick="bkCancel('${id}')">⊘ Cancel Booking</button>`);
@@ -1623,6 +1666,10 @@
       items.push(`<button class="bk-menu-item" onclick="bkPartialRefund('${id}')">↪ Partial Refund…</button>`);
     } else if (!hasIntent) {
       items.push(`<button class="bk-menu-item disabled" title="No Stripe payment_intent on this booking" disabled>↩ Refund (no Stripe payment)</button>`);
+    }
+    if (hasActiveHold) {
+      items.push(`<button class="bk-menu-item" onclick="bkReleaseDamageHold('${id}')">🔓 Release Damage Hold</button>`);
+      items.push(`<button class="bk-menu-item danger" onclick="bkCaptureDamageOpen('${id}')">⚠ Capture Damage Charge…</button>`);
     }
     items.push(`<button class="bk-menu-item danger" onclick="bkDelete('${id}')">🗑 Delete Booking</button>`);
     return `
@@ -1722,6 +1769,52 @@
     if (!confirm('Permanently delete this booking? This cannot be undone.')) return;
     await bkPostAndRefresh('delete-booking', { session_id: id }, 'Delete booking');
   }
+
+  /* ── Damage hold actions ── */
+  async function bkReleaseDamageHold(id) {
+    bkCloseMenus();
+    const b = bkFindBooking(id); if (!b) return;
+    if (!confirm(`Release the $250 damage hold for ${b.full_name || b.customer_email || 'customer'}? No charge will be made.`)) return;
+    await bkPostAndRefresh('release-damage-hold', { session_id: id }, 'Release damage hold');
+  }
+
+  function bkCaptureDamageOpen(id) {
+    bkCloseMenus();
+    const b = bkFindBooking(id); if (!b) return;
+    document.getElementById('dc-session-id').value = id;
+    document.getElementById('dc-name').textContent = b.full_name || b.customer_email || 'customer';
+    document.getElementById('dc-date').textContent = fmtDate(b.date);
+    document.getElementById('dc-amount').value = '250.00';
+    document.getElementById('dc-overflow').style.display = 'none';
+    document.getElementById('damage-charge-overlay').classList.add('open');
+    setTimeout(() => document.getElementById('dc-amount').focus(), 50);
+  }
+
+  function bkOnDamageAmountInput() {
+    const amount = parseFloat(document.getElementById('dc-amount').value) || 0;
+    const overflowEl = document.getElementById('dc-overflow');
+    if (amount > 250) {
+      overflowEl.style.display = '';
+      overflowEl.textContent = `$${(amount - 250).toFixed(2)} above the $250 hold will be charged separately on the saved card.`;
+    } else {
+      overflowEl.style.display = 'none';
+    }
+  }
+
+  async function bkCaptureDamageConfirm() {
+    const id     = document.getElementById('dc-session-id').value;
+    const amount = parseFloat(document.getElementById('dc-amount').value);
+    const b = bkFindBooking(id); if (!b) return;
+    if (!isFinite(amount) || amount <= 0) { showError('Enter a positive damage charge amount.'); return; }
+    const name = b.full_name || b.customer_email || 'customer';
+    const overflowNote = amount > 250 ? ` ($250 captured from the hold + $${(amount - 250).toFixed(2)} new charge)` : '';
+    if (!confirm(`Charge ${name} $${amount.toFixed(2)} for damages?${overflowNote} An email notification will be sent. This cannot be undone.`)) return;
+    document.getElementById('damage-charge-overlay').classList.remove('open');
+    await bkPostAndRefresh('capture-damage-charge', { session_id: id, amount }, 'Capture damage charge');
+  }
+
+  function closeDamageChargeModal(e) { if (e && e.target !== document.getElementById('damage-charge-overlay')) return; document.getElementById('damage-charge-overlay').classList.remove('open'); }
+  function closeDamageChargeModalBtn() { document.getElementById('damage-charge-overlay').classList.remove('open'); }
 
   function showError(msg) {
     const bar = document.getElementById('error-bar');
@@ -2049,7 +2142,7 @@
           <td class="addon-list">${esc(addOnText(b.add_ons))}</td>
           <td style="white-space:nowrap;font-weight:700">${fmtMoney(b.grand_total || (b.amount_total ? b.amount_total/100 : 0))}</td>
           <td style="white-space:nowrap;color:${parseFloat(b.remaining_balance)>0?'var(--amber)':'var(--green)'}">${fmtMoney(b.remaining_balance)}</td>
-          <td style="white-space:nowrap">${badge}${statusBadge ? '<div style="margin-top:4px">'+statusBadge+'</div>' : ''}</td>
+          <td style="white-space:nowrap">${badge}${statusBadge ? '<div style="margin-top:4px">'+statusBadge+'</div>' : ''}${(() => { const d = bkDamageBadge(b); return d ? '<div style="margin-top:4px">'+d+'</div>' : ''; })()}</td>
           <td>
             <div class="action-btns">
               <button class="btn-sm btn-navy" onclick="openEditModal('${esc(b.session_id)}')">✏ Edit</button>
@@ -3108,6 +3201,7 @@
           const payment = paidFull ? '<span class="badge badge-green">Paid</span>'
                                    : (parseFloat(b.remaining_balance) > 0 ? '<span class="badge badge-amber">Deposit</span>' : '<span class="badge badge-red">Unpaid</span>');
           const lifecycle = bkStatusBadge(b);
+          const damage = bkDamageBadge(b);
           const total = b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
           const dim = bkStatus(b) === 'cancelled' ? ' style="opacity:0.7"' : '';
           return `<tr${dim}>
@@ -3115,7 +3209,7 @@
             <td>${esc(vesselLabel(b.vessel))}</td>
             <td>${esc(b.experience || '—')}</td>
             <td>${fmtMoney(total)}</td>
-            <td style="white-space:nowrap">${payment}${lifecycle ? ' ' + lifecycle : ''}</td>
+            <td style="white-space:nowrap">${payment}${lifecycle ? ' ' + lifecycle : ''}${damage ? ' ' + damage : ''}</td>
             <td style="text-align:right">${bkActionMenu(b)}</td>
           </tr>`;
         }).join('')}</tbody>
