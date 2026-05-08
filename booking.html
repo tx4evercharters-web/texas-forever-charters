@@ -1282,6 +1282,38 @@
       color: rgba(255,255,255,0.5);
     }
 
+    /* Gratuity callout (Step 8) — amber on dark navy. Mirrors the
+       .terms-callout pattern from terms.html so the visual language
+       is consistent between the booking flow and the legal page.
+       Goal: impossible to miss without looking like a warning. */
+    .gratuity-callout {
+      background: #FFFBEB;
+      border-left: 4px solid #D97706;
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 18px 0 0;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    }
+    .gratuity-callout-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #92400E;
+      margin-bottom: 8px;
+    }
+    .gratuity-callout-body {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      color: #92400E;
+    }
+    .gratuity-callout-body strong {
+      color: #78350F;
+      font-weight: 700;
+    }
+
     .pay-btn-amount {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 26px;
@@ -2035,6 +2067,16 @@
           <div class="promo-msg" id="promoMsg"></div>
         </div>
 
+        <!-- Gratuity callout — surfaces the 20% cash/Zelle/Venmo
+             requirement before the customer ticks the agreement
+             checkbox so it's not a post-purchase surprise. -->
+        <div class="gratuity-callout">
+          <div class="gratuity-callout-title">⚠ Important — 20% Gratuity Required</div>
+          <div class="gratuity-callout-body">
+            A minimum <strong>20% gratuity</strong> is required and paid directly to your captain on the day of your charter. Accepted: <strong>cash, Zelle, or Venmo</strong>. This is <strong>not collected through this website</strong> and is in addition to your charter total above.
+          </div>
+        </div>
+
         <!-- Terms -->
         <div class="terms-box" style="margin-top:20px">
           <div class="terms-box-title">Policies &amp; Terms — Quick Summary</div>
@@ -2045,7 +2087,7 @@
             <strong>$250 Damage Deposit:</strong> A $250 hold is placed on your card at checkout. No funds are withdrawn unless damage occurs. Released within 48 hours of charter completion.
           </div>
           <div class="terms-text">
-            <strong>Gratuity:</strong> Minimum 20% gratuity required, paid directly to captain (cash or Venmo) on the day of the charter.
+            <strong>Gratuity:</strong> Minimum 20% gratuity required, paid directly to captain (cash, Zelle, or Venmo) on the day of the charter.
           </div>
           <div class="terms-text">
             <strong>Cancellation:</strong> Booking fee is non-refundable. 14+ days before: full balance refund. 7–13 days: 50% refund. &lt;7 days: no refund.
@@ -2060,7 +2102,7 @@
             <label class="form-check" id="termsCheckWrap">
               <input type="checkbox" id="termsCheck" oninput="onTermsCheckChange()">
               <div class="form-check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-              <span class="form-check-label">I have read and agree to the <a href="/terms.html" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;font-weight:700;">Charter Agreement &amp; Terms of Service ↗</a> and acknowledge the cancellation policy, damage deposit terms, and that all guests must sign the liability waiver before boarding.</span>
+              <span class="form-check-label">I have read and agree to the <a href="/terms.html" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;font-weight:700;">Charter Agreement &amp; Terms of Service ↗</a> and acknowledge the cancellation policy, damage deposit terms, <strong>the required 20% gratuity paid directly to the captain (cash, Zelle, or Venmo)</strong>, and that all guests must sign the liability waiver before boarding.</span>
             </label>
           </div>
         </div>
