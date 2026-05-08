@@ -18,6 +18,7 @@ function closeContactModal() {
 }
 
 // ── Boat Gallery ──
+const GALLERY_VESSEL_MAP = { carver: 'yacht', bentley: 'pontoon' };
 const galleryData = {
   carver: {
     title: '1996 Carver Aft Cabin — Photo Gallery',
@@ -44,10 +45,12 @@ const galleryData = {
 
 let currentLightboxImages = [];
 let currentLightboxIndex = 0;
+let currentGalleryBoat = null;
 
 function openGallery(id) {
   const data = galleryData[id];
   if (!data) return;
+  currentGalleryBoat = id;
   document.getElementById('galleryTitle').textContent = data.title;
   const grid = document.getElementById('galleryGrid');
   grid.innerHTML = '';
@@ -86,6 +89,12 @@ function lightboxNav(dir) {
   const img = document.getElementById('lightboxImg');
   img.src = currentLightboxImages[currentLightboxIndex].src;
   img.alt = currentLightboxImages[currentLightboxIndex].alt;
+}
+
+function bookCurrentBoat() {
+  const vessel = GALLERY_VESSEL_MAP[currentGalleryBoat];
+  if (!vessel) return;
+  window.location.href = 'booking.html?vessel=' + vessel;
 }
 
 document.addEventListener('keydown', e => {

@@ -2430,6 +2430,42 @@ section {
   background: rgba(255, 255, 255, 0.22);
 }
 
+/* Persistent Book Now CTA — full-width red bar pinned to viewport bottom,
+   visible across both the photo grid and the lightbox. Sits above both
+   layers (.gallery-modal z:9000, .gallery-lightbox z:9100). */
+.gallery-book-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9200;
+  display: none;
+  width: 100%;
+  background: var(--red);
+  color: var(--white);
+  border: none;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 20px 24px;
+  min-height: 64px;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  transition: background 0.2s;
+}
+.gallery-modal.active .gallery-book-cta { display: block; }
+.gallery-book-cta:hover,
+.gallery-book-cta:focus-visible {
+  background: var(--red-dark);
+  outline: none;
+}
+/* Pad the grid view so the last photo row clears the fixed bar */
+.gallery-modal.active .gallery-modal-inner {
+  padding-bottom: 100px;
+}
+
 @media (max-width: 600px) {
   .gallery-grid-modal {
     grid-template-columns: repeat(2, 1fr);
@@ -2440,4 +2476,13 @@ section {
   }
   .lightbox-prev { left: 8px; }
   .lightbox-next { right: 8px; }
+  .gallery-book-cta {
+    font-size: 22px;
+    padding: 18px 20px;
+    letter-spacing: 2.5px;
+    min-height: 60px;
+  }
+  .gallery-modal.active .gallery-modal-inner {
+    padding-bottom: 90px;
+  }
 }
