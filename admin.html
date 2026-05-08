@@ -1933,8 +1933,15 @@
   }
 
   function bkDamageBadge(b) {
-    if (!b || !b.damage_hold_intent_id) return '';
-    const s = (b.damage_hold_status || 'pending').toLowerCase();
+    if (!b) return '';
+    const s = (b.damage_hold_status || '').toLowerCase();
+    /* Failed-hold check goes BEFORE the intent_id null guard — a failed
+       authorization has no intent_id by definition, but we still want
+       the operator to see the badge so they can chase it. */
+    if (s === 'failed') {
+      return '<span class="badge" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);font-weight:800" title="Damage hold authorization FAILED — needs operator follow-up">❌ Hold Failed</span>';
+    }
+    if (!b.damage_hold_intent_id) return '';
     if (s === 'released') return '<span class="badge" style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)" title="$250 hold released — no charge">✅ Released</span>';
     if (s === 'captured') {
       const amt = parseFloat(b.damage_charge_amount || 0);

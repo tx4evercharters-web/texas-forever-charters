@@ -1,5 +1,5 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { sendConfirmationEmails } = require('../lib/send-emails');
+const { sendConfirmationEmails, sendDamageHoldFailedAlert } = require('../lib/send-emails');
 const { saveBooking, patchBooking } = require('../lib/storage');
 
 // Vercel must not parse the body — Stripe signature verification needs the raw bytes.
@@ -12,6 +12,45 @@ function getRawBody(req) {
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
+}
+
+/* lib/storage.js formats Supabase REST errors as
+   "Supabase POST /path → STATUS: body". A 5xx status (or any error that
+   doesn't have a status — i.e. network/DNS/timeout) is treated as transient
+   and retried. A 4xx status is permanent (bad data) — fail immediately so
+   we don't waste retries on something that will never succeed. */
+function isTransientSupabaseError(err) {
+  if (!err) return false;
+  const msg = err.message || String(err);
+  const match = msg.match(/→ (\d{3}):/);
+  if (!match) return true;
+  return parseInt(match[1], 10) >= 500;
+}
+
+const SAVE_RETRY_DELAYS_MS = [500, 1500, 4500];
+
+async function saveBookingWithRetry(bookingRow, sessionId) {
+  let lastErr;
+  for (let attempt = 1; attempt <= SAVE_RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      await saveBooking(bookingRow);
+      if (attempt > 1) {
+        console.log('[stripe-webhook] saveBooking succeeded for', sessionId, 'on attempt', attempt);
+      }
+      return;
+    } catch (err) {
+      lastErr = err;
+      const transient = isTransientSupabaseError(err);
+      console.error('[stripe-webhook] saveBooking attempt', attempt, 'of',
+        SAVE_RETRY_DELAYS_MS.length, 'failed for', sessionId,
+        '| transient:', transient, '| err:', err.message);
+      if (!transient) throw err;
+      if (attempt < SAVE_RETRY_DELAYS_MS.length) {
+        await new Promise(r => setTimeout(r, SAVE_RETRY_DELAYS_MS[attempt - 1]));
+      }
+    }
+  }
+  throw lastErr;
 }
 
 module.exports = async function handler(req, res) {
@@ -85,6 +124,7 @@ module.exports = async function handler(req, res) {
   // happens here rather than in create-checkout where neither exists yet.
   let damageHoldIntentId = null;
   let damageHoldStatus = 'pending';
+  let damageHoldError = null; // captured for the owner alert when the hold fails
   if (paymentMethodId && stripeCustomerId) {
     try {
       const damageHold = await stripe.paymentIntents.create({
@@ -108,9 +148,13 @@ module.exports = async function handler(req, res) {
       damageHoldStatus = damageHold.status === 'requires_capture' ? 'pending' : damageHold.status;
       console.log('[damage-hold] authorized:', damageHold.id, 'status:', damageHold.status);
     } catch (err) {
-      console.error('[damage-hold] failed to authorize $250 hold:', err.message);
       // Booking save must not fail because of a damage-hold authorization problem.
-      // Leave damage_hold_intent_id null; admin can chase it up manually.
+      // Mark the row 'failed' (not 'pending') so admin can distinguish, and
+      // capture the error so we can email the owner after the booking row is
+      // safely persisted.
+      damageHoldStatus = 'failed';
+      damageHoldError  = err.message || String(err);
+      console.error('[damage-hold] failed to authorize $250 hold:', damageHoldError);
     }
   } else {
     console.warn('[damage-hold] skipping — missing paymentMethodId or stripeCustomerId');
@@ -134,46 +178,76 @@ module.exports = async function handler(req, res) {
   const charterSubtotal = parseFloat(meta.charter_subtotal || 0);
   const promoDiscount = parseFloat(meta.promo_discount || 0);
 
+  /* Build the booking row once so we can pass it to retry, alert, and
+     log it intact on permanent failure. */
+  const bookingRow = {
+    session_id:       session.id,
+    customer_email:   session.customer_email,
+    amount_total:     session.amount_total,
+    charter_name:     meta.charter_name,
+    vessel:           meta.vessel,
+    experience:       meta.experience,
+    date:             meta.date,
+    time_slot:        meta.time_slot,
+    duration:         meta.duration,
+    full_name:        meta.full_name,
+    party_size:       meta.party_size,
+    phone:            meta.phone,
+    payment_type:     meta.payment_type,
+    grand_total:      meta.grand_total,
+    deposit_amount:   meta.deposit_amount,
+    add_ons:          meta.add_ons,
+    special_requests: meta.special_requests,
+    promo_applied:    meta.promo_applied,
+    newsletter:       meta.newsletter,
+    city:  city,
+    state: state,
+    stripe_customer_id: stripeCustomerId,
+    payment_method_id:  paymentMethodId,
+    payment_intent_id:  paymentIntentId,
+    damage_hold_intent_id: damageHoldIntentId,
+    damage_hold_status:    damageHoldStatus,
+    paid_in_full:     meta.payment_type !== 'deposit',
+    remaining_balance: remaining,
+    admin_fee:         adminFee,
+    tax_amount:        taxAmount,
+    processing_fee:    processingFee,
+    charter_subtotal:  charterSubtotal,
+    promo_discount:    promoDiscount,
+    booked_at:        new Date().toISOString(),
+  };
+
+  /* Save with up-to-3 retries on transient errors. If the save permanently
+     fails, return non-2xx so Stripe will retry the webhook per its standard
+     schedule (3 attempts over 3 days). DO NOT send confirmation emails on
+     permanent save failure — a confirmed customer with no booking row is
+     worse than a delayed confirmation. */
   try {
-    await saveBooking({
-      session_id:       session.id,
-      customer_email:   session.customer_email,
-      amount_total:     session.amount_total,
-      charter_name:     meta.charter_name,
-      vessel:           meta.vessel,
-      experience:       meta.experience,
-      date:             meta.date,
-      time_slot:        meta.time_slot,
-      duration:         meta.duration,
-      full_name:        meta.full_name,
-      party_size:       meta.party_size,
-      phone:            meta.phone,
-      payment_type:     meta.payment_type,
-      grand_total:      meta.grand_total,
-      deposit_amount:   meta.deposit_amount,
-      add_ons:          meta.add_ons,
-      special_requests: meta.special_requests,
-      promo_applied:    meta.promo_applied,
-      newsletter:       meta.newsletter,
-      city:  city,
-      state: state,
-      stripe_customer_id: stripeCustomerId,
-      payment_method_id:  paymentMethodId,
-      payment_intent_id:  paymentIntentId,
-      damage_hold_intent_id: damageHoldIntentId,
-      damage_hold_status:    damageHoldStatus,
-      paid_in_full:     meta.payment_type !== 'deposit',
-      remaining_balance: remaining,
-      admin_fee:         adminFee,
-      tax_amount:        taxAmount,
-      processing_fee:    processingFee,
-      charter_subtotal:  charterSubtotal,
-      promo_discount:    promoDiscount,
-      booked_at:        new Date().toISOString(),
-    });
+    await saveBookingWithRetry(bookingRow, session.id);
     console.log('[stripe-webhook] booking saved to Supabase', session.id);
   } catch (err) {
-    console.error('[stripe-webhook] FAILED to save booking', session.id, '|', err.message, '\n', err.stack);
+    console.error('[stripe-webhook] CRITICAL: saveBooking FAILED PERMANENTLY for', session.id,
+      '|', err.message,
+      '\n  Stack:', err.stack,
+      '\n  Booking context:', JSON.stringify(bookingRow));
+    return res.status(500).json({
+      error:      'database_save_failed',
+      detail:     err.message,
+      session_id: session.id,
+    });
+  }
+
+  /* Damage-hold alert — fire after the booking is safely persisted so the
+     owner has the full context. Best-effort; an alert send failure must
+     not undo the booking. */
+  if (damageHoldError) {
+    try {
+      await sendDamageHoldFailedAlert(bookingRow, damageHoldError);
+      console.log('[stripe-webhook] damage-hold failure alert sent for', session.id);
+    } catch (alertErr) {
+      console.error('[stripe-webhook] damage-hold alert send FAILED (booking still saved):',
+        session.id, '|', alertErr.message);
+    }
   }
 
   const emailData = {
