@@ -1,5 +1,8 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const https = require('https');
+const { calculatePricing } = require('../lib/pricing');
+
+const PRICE_MISMATCH_TOLERANCE = 0.01; // dollars — 1¢ slack for floating-point rounding
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -73,6 +76,61 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Payment processor not configured' });
   }
 
+  /* ── Server-side pricing recompute ──────────────────────────────────
+     Trust nothing the client says about money. Recompute from the raw
+     inputs (vessel / date / duration / addOns / promoCode) and refuse
+     checkout if the client's grandTotal disagrees with ours by more
+     than the rounding tolerance. Pre-consolidation, this handler trusted
+     `amount` and `grandTotal` directly — a one-minute DevTools exploit
+     could underpay any charter. */
+  let serverPricing;
+  try {
+    serverPricing = calculatePricing({
+      vessel:        booking.vessel,
+      date:          booking.date,
+      duration:      Number(booking.duration),
+      partySize:     booking.partySize,
+      addOns:        booking.addOns || {},
+      promoCode:     booking.promoCode || (booking.promoApplied ? 'LAKELIFE10' : null),
+      paymentMethod: 'stripe', // customer flow always pays via Stripe
+    });
+  } catch (err) {
+    console.error('[create-checkout] server-side pricing failed:', err.message,
+      '| inputs:', JSON.stringify({
+        vessel: booking.vessel, date: booking.date, duration: booking.duration,
+      }));
+    return res.status(400).json({
+      error:   'invalid_pricing_inputs',
+      message: 'Could not compute charter price — please refresh and try again.',
+      detail:  err.message,
+    });
+  }
+
+  const clientGrandTotal = Number(grandTotal);
+  const grandTotalDiff = Math.abs(serverPricing.grandTotal - clientGrandTotal);
+  if (grandTotalDiff > PRICE_MISMATCH_TOLERANCE) {
+    console.error('[create-checkout] PRICE MISMATCH refused',
+      '| client_grand_total:', clientGrandTotal,
+      '| server_grand_total:', serverPricing.grandTotal,
+      '| diff:', grandTotalDiff.toFixed(2),
+      '| inputs:', JSON.stringify({
+        vessel: booking.vessel, date: booking.date, duration: booking.duration,
+        addOns: booking.addOns, promoCode: booking.promoCode,
+      }));
+    return res.status(400).json({
+      error:              'price_mismatch',
+      message:            'Pricing has changed — please refresh and try again.',
+      server_grand_total: serverPricing.grandTotal,
+      client_grand_total: clientGrandTotal,
+    });
+  }
+
+  /* From this point on, use SERVER values for the Stripe charge. The client
+     `amount` is ignored. paymentType selects deposit vs. full. */
+  const serverAmount = (paymentType === 'deposit')
+    ? serverPricing.depositAmount
+    : serverPricing.grandTotal;
+
   /* Duplicate-booking guard — protects against the "didn't get a confirmation
      email so I tried again" double-charge pattern. We block when the same
      email + date + time_slot was booked in the last 2 hours. Cancelled rows
@@ -126,7 +184,7 @@ module.exports = async function handler(req, res) {
               name: productName,
               description: productDesc,
             },
-            unit_amount: Math.round(amount * 100),
+            unit_amount: Math.round(serverAmount * 100),
           },
           quantity: 1,
         },
@@ -149,17 +207,21 @@ module.exports = async function handler(req, res) {
         party_size:      String(booking.partySize || ''),
         phone:           truncate(booking.phone),
         payment_type:    paymentType,
-        grand_total:     String(grandTotal || amount),
-        deposit_amount:  String(depositAmount || ''),
+        // Pricing fields below come from the SERVER recompute (serverPricing),
+        // not the client request. The client values were already verified to
+        // match within $0.01 above; we persist the canonical server numbers.
+        grand_total:     String(serverPricing.grandTotal),
+        deposit_amount:  String(serverPricing.depositAmount),
         add_ons:         truncate(JSON.stringify(booking.addOns || {})),
         special_requests: truncate(booking.specialRequests, 490),
         newsletter:      String(!!booking.newsletter),
-        promo_applied:   String(!!booking.promoApplied),
-        admin_fee:        String(booking.adminFee || ''),
-        tax_amount:       String(booking.taxAmount || ''),
-        processing_fee:   String(booking.processingFee || ''),
-        charter_subtotal: String(booking.charterSubtotal || ''),
-        promo_discount:   String(booking.promoDiscount || ''),
+        promo_applied:   String(!!serverPricing.appliedPromoCode),
+        promo_code:      truncate(serverPricing.appliedPromoCode || ''),
+        admin_fee:        String(serverPricing.adminFee),
+        tax_amount:       String(serverPricing.salesTax),
+        processing_fee:   String(serverPricing.processingFee),
+        charter_subtotal: String(serverPricing.charterSubtotal + serverPricing.addOnTotal),
+        promo_discount:   String(serverPricing.promoDiscount),
       },
     });
 

@@ -1841,6 +1841,11 @@
   </div>
 </div>
 
+<!-- Pricing module — single source of truth for charter pricing math.
+     Loaded before the inline admin script so TFCPricing.calculatePricing()
+     is available globally for abComputePricing(). -->
+<script src="lib/pricing.js"></script>
+
 <script>
   const TOKEN_KEY = 'tfc_admin_token';
   let allBookings = [];           // upcoming only — used by Bookings table
@@ -3249,49 +3254,12 @@
   function closeModal(e) { if (e.target === document.getElementById('modal-overlay')) closeModalBtn(); }
   function closeModalBtn() { document.getElementById('modal-overlay').classList.remove('open'); }
 
-  /* ── Add Booking modal ── */
-  const AB_ADDON_PRICES = { drone: 200, towels: 8, water: 25, ice: 50, beerpong: 50 };
-  /* Mirrors bankHolidays in booking.html — keep both lists in sync. */
-  const AB_BANK_HOLIDAYS = new Set([
-    '2025-01-01','2025-01-20','2025-02-17','2025-05-26',
-    '2025-06-19','2025-07-04','2025-09-01','2025-10-13',
-    '2025-11-11','2025-11-27','2025-12-25',
-    '2026-01-01','2026-01-19','2026-02-16','2026-05-25',
-    '2026-06-19','2026-07-04','2026-07-03','2026-09-07',
-    '2026-10-12','2026-11-11','2026-11-26','2026-12-25',
-    '2027-01-01','2027-01-18','2027-02-15','2027-05-31',
-    '2027-06-18','2027-07-05','2027-09-06','2027-11-11',
-    '2027-11-25','2027-12-24',
-  ]);
-  function abDateKey(d) {
-    return d.getFullYear() + '-' +
-      String(d.getMonth()+1).padStart(2,'0') + '-' +
-      String(d.getDate()).padStart(2,'0');
-  }
-  /* Mirrors holidayPricingDays in booking.html — extends each holiday to the
-     surrounding Fri–Mon weekend bracket. Tue/Wed/Thu holidays don't extend. */
-  const AB_HOLIDAY_PRICING_DAYS = (() => {
-    const expanded = new Set();
-    for (const key of AB_BANK_HOLIDAYS) {
-      const [y, m, d] = key.split('-').map(Number);
-      const base = new Date(y, m - 1, d);
-      expanded.add(key);
-      const day = base.getDay();
-      let fridayOffset;
-      if      (day === 5) fridayOffset =  0;
-      else if (day === 6) fridayOffset = -1;
-      else if (day === 0) fridayOffset = -2;
-      else if (day === 1) fridayOffset = -3;
-      else continue;
-      for (let i = 0; i < 4; i++) {
-        const dt = new Date(base);
-        dt.setDate(base.getDate() + fridayOffset + i);
-        expanded.add(abDateKey(dt));
-      }
-    }
-    return expanded;
-  })();
-  function abIsHoliday(d) { return d && AB_HOLIDAY_PRICING_DAYS.has(abDateKey(d)); }
+  /* ── Add Booking modal ──
+     Pricing math (rates, holiday surcharge, 5+hr premium, fee stack) lives
+     in lib/pricing.js (loaded above as window.TFCPricing). The local
+     AB_ADDON_PRICES, AB_BANK_HOLIDAYS, abDateKey, AB_HOLIDAY_PRICING_DAYS,
+     and abIsHoliday helpers were retired here when this module was
+     consolidated — the module is the single source of truth. */
   let abCustomerSearchTimer = null;
   /* Per-field override map for the Add Booking pricing section.
      A field flips to true when the admin manually edits it; recalcs
@@ -3446,40 +3414,54 @@
   }
 
   /* ── Pricing calc (mirrors booking.html) ── */
+  /* Wrapper that delegates to TFCPricing.calculatePricing() so admin and
+     customer flows share one source of truth. Returns the same shape this
+     handler used pre-consolidation so callers (abRecalcPrice, etc.) keep
+     working unchanged. Admin's manual promo discount is intentionally NOT
+     passed in — the operator types the discount amount directly into the
+     `ab-promo-discount` field; the shared module's promo-code logic is for
+     customer-side use only. */
   function abComputePricing() {
     const vessel = document.getElementById('ab-vessel').value;
     const dateStr = document.getElementById('ab-date').value;
     const duration = parseInt(document.getElementById('ab-duration').value) || 4;
-    const date = dateStr ? new Date(dateStr + 'T12:00:00') : null;
-    const day = date ? date.getDay() : 1;
-    let rate;
-    if (vessel === 'yacht') rate = day === 6 ? 350 : (day === 0 || day === 5) ? 300 : 250;
-    else                    rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
-    if (abIsHoliday(date)) rate += 100;
-    if (duration >= 5) rate += 100;
-    const charterBase = rate * duration;
-
-    let addOnsTotal = 0;
     const ao = abReadAddOns();
-    if (ao.drone_footage)     addOnsTotal += AB_ADDON_PRICES.drone;
-    if (ao.towels > 0)        addOnsTotal += AB_ADDON_PRICES.towels * ao.towels;
-    if (ao.water_bottles)     addOnsTotal += AB_ADDON_PRICES.water;
-    if (ao.ice)               addOnsTotal += AB_ADDON_PRICES.ice;
-    if (ao.beer_pong)         addOnsTotal += AB_ADDON_PRICES.beerpong;
-
-    const subtotal = charterBase + addOnsTotal;
-    const adminFee = Math.round(subtotal * 0.10 * 100) / 100;
-    const afterAdmin = subtotal + adminFee;
-    const tax = Math.round(afterAdmin * 0.085 * 100) / 100;
-    const afterTax = afterAdmin + tax;
-
-    // Processing fee only when paying via Stripe link or charge card
     const payment = document.querySelector('input[name="ab-payment"]:checked')?.value;
-    const usesStripe = payment === 'stripe-link';
-    const processingFee = usesStripe ? Math.round(afterTax * 0.029 * 100) / 100 : 0;
-    const total = Math.round((afterTax + processingFee) * 100) / 100;
+    const paymentMethod = payment === 'stripe-link' ? 'stripe' : 'external';
 
-    return { rate, charterBase, addOnsTotal, subtotal, adminFee, tax, processingFee, total, day, duration };
+    // Defensive zero-fallback for the recalc cycle that runs before vessel/date
+    // are picked. Returning the same shape avoids null-checks in callers.
+    if (!vessel || !dateStr) {
+      return {
+        rate: 0, charterBase: 0, addOnsTotal: 0, subtotal: 0,
+        adminFee: 0, tax: 0, processingFee: 0, total: 0,
+        day: 1, duration,
+      };
+    }
+
+    const p = TFCPricing.calculatePricing({
+      vessel,
+      date: dateStr,
+      duration,
+      addOns: ao,
+      promoCode: null,
+      paymentMethod,
+    });
+
+    const DAY_INDEX = { Sunday:0, Monday:1, Tuesday:2, Wednesday:3, Thursday:4, Friday:5, Saturday:6 };
+
+    return {
+      rate:          p.effectiveHourlyRate,
+      charterBase:   p.charterSubtotal,
+      addOnsTotal:   p.addOnTotal,
+      subtotal:      p.subtotal,
+      adminFee:      p.adminFee,
+      tax:           p.salesTax,
+      processingFee: p.processingFee,
+      total:         p.grandTotal,
+      day:           DAY_INDEX[p.dayOfWeek],
+      duration:      p.duration,
+    };
   }
 
   function abReadAddOns() {

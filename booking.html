@@ -2028,6 +2028,11 @@
   <!-- ── ERROR TOAST ── -->
   <div class="error-toast" id="errorToast"></div>
 
+  <!-- Pricing module — single source of truth for charter pricing math.
+       Loaded before any inline script so TFCPricing.calculatePricing() is
+       available globally. Server-side has its own require('lib/pricing'). -->
+  <script src="lib/pricing.js"></script>
+
   <!-- Nav JS (hamburger + scroll) -->
   <script>
     window.addEventListener('scroll', () => {
@@ -2110,52 +2115,19 @@
     let calDepositAmount = 0;
     calendarDate.setDate(1);
 
-    /* ── US Bank Holidays 2025–2027 ── */
-    const bankHolidays = new Set([
-      '2025-01-01','2025-01-20','2025-02-17','2025-05-26',
-      '2025-06-19','2025-07-04','2025-09-01','2025-10-13',
-      '2025-11-11','2025-11-27','2025-12-25',
-      '2026-01-01','2026-01-19','2026-02-16','2026-05-25',
-      '2026-06-19','2026-07-04','2026-07-03','2026-09-07',
-      '2026-10-12','2026-11-11','2026-11-26','2026-12-25',
-      '2027-01-01','2027-01-18','2027-02-15','2027-05-31',
-      '2027-06-18','2027-07-05','2027-09-06','2027-11-11',
-      '2027-11-25','2027-12-24',
-    ]);
-
+    /* Holiday list and pricing math live in lib/pricing.js (loaded above as
+       window.TFCPricing). dateKey() and isHoliday() here are thin wrappers
+       so calendar/UI code that already passes Date objects keeps working. */
     function dateKey(d) {
       return d.getFullYear() + '-' +
         String(d.getMonth()+1).padStart(2,'0') + '-' +
         String(d.getDate()).padStart(2,'0');
     }
 
-    /* Holiday-pricing dates: every actual federal holiday plus the surrounding
-       Fri–Mon long-weekend bracket. Mon holidays expand back to Fri; Fri/Sat/Sun
-       holidays expand to the full Fri–Sun. Holidays landing Tue/Wed/Thu (e.g. a
-       midweek Christmas) don't trigger a weekend bracket. */
-    const holidayPricingDays = (() => {
-      const expanded = new Set();
-      for (const key of bankHolidays) {
-        const [y, m, d] = key.split('-').map(Number);
-        const base = new Date(y, m - 1, d);
-        expanded.add(key);
-        const day = base.getDay(); // 0=Sun … 6=Sat
-        let fridayOffset;
-        if      (day === 5) fridayOffset =  0;
-        else if (day === 6) fridayOffset = -1;
-        else if (day === 0) fridayOffset = -2;
-        else if (day === 1) fridayOffset = -3;
-        else continue;
-        for (let i = 0; i < 4; i++) {
-          const dt = new Date(base);
-          dt.setDate(base.getDate() + fridayOffset + i);
-          expanded.add(dateKey(dt));
-        }
-      }
-      return expanded;
-    })();
-
-    function isHoliday(d) { return holidayPricingDays.has(dateKey(d)); }
+    function isHoliday(d) {
+      if (!d || typeof d.getFullYear !== 'function') return false;
+      return TFCPricing.isHoliday(dateKey(d));
+    }
 
     /* ── Toast ── */
     let toastTimer;
@@ -2699,57 +2671,54 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       updateRunningTotal();
     }
 
-    function getCharterBaseTotal() {
-      const { vessel, duration, date } = booking;
-      if (!vessel || !duration || !date) return 0;
-      const day = date.getDay();
-      let rate;
-      if (vessel === 'yacht') {
-        rate = day === 6 ? 350 : (day === 0 || day === 5) ? 300 : 250;
-      } else {
-        rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
-      }
-      if (isHoliday(date)) rate += 100;
-      if (duration >= 5) rate += 100;
-      return rate * duration;
-    }
-
-    function getAddOnsTotal() {
-      let t = 0;
-      if (booking.addOns.drone) t += 200;
-      t += (booking.addOns.towels || 0) * 8;
-      if (booking.addOns.water) t += 25;
-      if (booking.addOns.ice) t += 50;
-      if (booking.addOns.beerpong) t += 50;
-      return t;
+    /* Translate the customer-side `booking` object into the snake_case shape
+       TFCPricing.calculatePricing() expects. The keys differ from booking.html's
+       internal naming (drone/water/beerpong) to match Supabase's `add_ons` JSON
+       column shape (drone_footage/water_bottles/beer_pong). */
+    function buildPricingInput() {
+      const d = booking.date;
+      const dateStr = d
+        ? d.getFullYear() + '-' +
+          String(d.getMonth() + 1).padStart(2, '0') + '-' +
+          String(d.getDate()).padStart(2, '0')
+        : null;
+      return {
+        vessel: booking.vessel,
+        date: dateStr,
+        duration: booking.duration,
+        partySize: parseInt(booking.partySize) || null,
+        addOns: {
+          drone_footage: !!booking.addOns.drone,
+          water_bottles: !!booking.addOns.water,
+          ice:           !!booking.addOns.ice,
+          beer_pong:     !!booking.addOns.beerpong,
+          towels:        booking.addOns.towels || 0,
+        },
+        promoCode: booking.promoCode || (booking.promoApplied ? 'LAKELIFE10' : null),
+        paymentMethod: 'stripe',
+      };
     }
 
     function updateRunningTotal() {
-      const base = getCharterBaseTotal();
-      const addons = getAddOnsTotal();
-      const sub = base + addons;
-      const adminFee = Math.round(sub * 0.10 * 100) / 100;
-      const afterAdmin = sub + adminFee;
-      const tax = Math.round(afterAdmin * 0.085 * 100) / 100;
-      const afterTax = afterAdmin + tax;
-      const processingFee = Math.round(afterTax * 0.029 * 100) / 100;
-      const beforeDiscount = afterTax + processingFee;
-      const discount = booking.promoApplied ? Math.round(beforeDiscount * 0.10 * 100) / 100 : 0;
-      const total = beforeDiscount - discount;
-      const formatted = '$' + total.toFixed(2);
-
       const inlineEl = document.getElementById('runningTotal');
-      if (inlineEl) inlineEl.textContent = formatted;
-
       const stickyEl = document.getElementById('runningBarAmount');
-      if (stickyEl) {
-        if (booking.vessel && booking.duration && booking.date) {
-          stickyEl.textContent = formatted;
-          stickyEl.classList.remove('placeholder');
-        } else {
+
+      // Pre-pricing state (some inputs missing) — show placeholder
+      if (!booking.vessel || !booking.duration || !booking.date) {
+        if (inlineEl) inlineEl.textContent = '$0.00';
+        if (stickyEl) {
           stickyEl.textContent = 'Select duration to see total';
           stickyEl.classList.add('placeholder');
         }
+        return;
+      }
+
+      const p = TFCPricing.calculatePricing(buildPricingInput());
+      const formatted = '$' + p.grandTotal.toFixed(2);
+      if (inlineEl) inlineEl.textContent = formatted;
+      if (stickyEl) {
+        stickyEl.textContent = formatted;
+        stickyEl.classList.remove('placeholder');
       }
     }
 
@@ -2787,36 +2756,23 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     }
 
     function buildPriceBreakdown() {
-      const { vessel, duration, date } = booking;
-      const day = date ? date.getDay() : 1;
-      let rate;
-      if (vessel === 'yacht') {
-        rate = day === 6 ? 350 : (day === 0 || day === 5) ? 300 : 250;
-      } else {
-        rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
-      }
-      const holidaySurcharge = date && isHoliday(date) ? 100 : 0;
-      const longCharterPremium = duration >= 5 ? 100 : 0;
-      const effectiveRate = rate + holidaySurcharge + longCharterPremium;
-      const charterBase = effectiveRate * duration;
-      const addOnsTotal = getAddOnsTotal();
-      const subtotal = charterBase + addOnsTotal;
-      const adminFee = Math.round(subtotal * 0.10 * 100) / 100;
-      const afterAdmin = subtotal + adminFee;
-      const tax = Math.round(afterAdmin * 0.085 * 100) / 100;
-      const afterTax = afterAdmin + tax;
-      const processingFee = Math.round(afterTax * 0.029 * 100) / 100;
-      const beforeDiscount = afterTax + processingFee;
-      const discount = booking.promoApplied ? Math.round(beforeDiscount * 0.10 * 100) / 100 : 0;
-      booking.adminFee = adminFee;
-      booking.taxAmount = tax;
-      booking.processingFee = processingFee;
-      booking.charterSubtotal = charterBase + addOnsTotal;
-      booking.promoDiscount = discount;
-      calGrandTotal = Math.round((beforeDiscount - discount) * 100) / 100;
-      calDepositAmount = Math.round(calGrandTotal * 0.10 * 100) / 100;
+      if (!booking.vessel || !booking.duration || !booking.date) return;
+      const p = TFCPricing.calculatePricing(buildPricingInput());
 
-      const dayLabel = day === 6 ? 'Saturday rate' : (day === 0 || day === 5) ? 'Fri/Sun rate' : 'Mon–Thu rate';
+      // Persist computed values onto booking. The server (api/create-checkout)
+      // recomputes and verifies before charging Stripe — these are sent as
+      // metadata + cross-check, not as the trusted charge amount.
+      booking.adminFee        = p.adminFee;
+      booking.taxAmount       = p.salesTax;
+      booking.processingFee   = p.processingFee;
+      booking.charterSubtotal = p.charterSubtotal + p.addOnTotal;
+      booking.promoDiscount   = p.promoDiscount;
+      calGrandTotal           = p.grandTotal;
+      calDepositAmount        = p.depositAmount;
+
+      const dayLabel = p.dayOfWeek === 'Saturday' ? 'Saturday rate'
+        : (p.dayOfWeek === 'Sunday' || p.dayOfWeek === 'Friday') ? 'Fri/Sun rate'
+        : 'Mon–Thu rate';
       const rows = document.getElementById('priceRows');
       rows.innerHTML = '';
 
@@ -2824,27 +2780,28 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         rows.innerHTML += '<div class="summary-row' + (cls ? ' ' + cls : '') + '"><div class="summary-row-label">' + label + '</div><div class="summary-row-value">' + val + '</div></div>';
       };
 
-      add('Charter (' + duration + ' hrs × $' + effectiveRate + '/hr · ' + dayLabel + ')', '$' + charterBase.toLocaleString());
-      if (holidaySurcharge) add('Bank Holiday Surcharge (+$100/hr)', '+$' + (holidaySurcharge * duration));
-      if (longCharterPremium) add('Long Charter Premium (5+ hrs · +$100/hr)', '+$' + (longCharterPremium * duration));
-      if (booking.addOns.drone) add('Drone Footage', '$200');
+      add('Charter (' + p.duration + ' hrs × $' + p.effectiveHourlyRate + '/hr · ' + dayLabel + ')', '$' + p.charterSubtotal.toLocaleString());
+      if (p.holidaySurcharge)   add('Bank Holiday Surcharge (+$100/hr)', '+$' + (p.holidaySurcharge * p.duration));
+      if (p.longCharterPremium) add('Long Charter Premium (5+ hrs · +$100/hr)', '+$' + (p.longCharterPremium * p.duration));
+      if (booking.addOns.drone)      add('Drone Footage', '$200');
       if (booking.addOns.towels > 0) add('Towels (' + booking.addOns.towels + ' × $8)', '$' + booking.addOns.towels * 8);
-      if (booking.addOns.water) add('Water Bottles', '$25');
-      if (booking.addOns.ice) add('Ice', '$50');
-      if (booking.addOns.beerpong) add('Beer Pong Setup', '$50');
-      add('Admin Fee (10%)', '+$' + adminFee.toFixed(2));
-      add('Sales Tax (8.5%)', '+$' + tax.toFixed(2), 'tax-row');
-      add('Credit Card Processing (2.9%)', '+$' + processingFee.toFixed(2), 'tax-row');
-      if (discount > 0) add('Promo Discount (10%)', '−$' + discount.toFixed(2), 'discount');
-      add('Total', '$' + calGrandTotal.toFixed(2), 'total');
-      add('Deposit (10%)', '$' + calDepositAmount.toFixed(2), 'deposit');
+      if (booking.addOns.water)      add('Water Bottles', '$25');
+      if (booking.addOns.ice)        add('Ice', '$50');
+      if (booking.addOns.beerpong)   add('Beer Pong Setup', '$50');
+      add('Admin Fee (10%)', '+$' + p.adminFee.toFixed(2));
+      add('Sales Tax (8.5%)', '+$' + p.salesTax.toFixed(2), 'tax-row');
+      add('Credit Card Processing (2.9%)', '+$' + p.processingFee.toFixed(2), 'tax-row');
+      if (p.promoDiscount > 0) add('Promo Discount (10%)', '−$' + p.promoDiscount.toFixed(2), 'discount');
+      add('Total', '$' + p.grandTotal.toFixed(2), 'total');
+      add('Deposit (10%)', '$' + p.depositAmount.toFixed(2), 'deposit');
 
-      document.getElementById('depositAmountBtn').textContent = '$' + calDepositAmount.toFixed(2);
-      document.getElementById('fullAmountBtn').textContent = '$' + calGrandTotal.toFixed(2);
+      document.getElementById('depositAmountBtn').textContent = '$' + p.depositAmount.toFixed(2);
+      document.getElementById('fullAmountBtn').textContent    = '$' + p.grandTotal.toFixed(2);
 
       // Silently auto-apply promo for newsletter subscribers
       if (localStorage.getItem('nl_subscribed') && !booking.promoApplied) {
         booking.promoApplied = true;
+        booking.promoCode = 'LAKELIFE10';
       }
 
       // Hide the entire promo section once a discount is applied (any path)
@@ -2914,6 +2871,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       const input = document.getElementById('promoInput');
       if (code === 'LAKELIFE10' || code === 'FOREVER10' || code === 'TXF10') {
         booking.promoApplied = true;
+        booking.promoCode = code;
         input.classList.add('applied');
         msg.className = 'promo-msg success';
         msg.textContent = '10% discount applied!';
@@ -2921,6 +2879,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         updateRunningTotal();
       } else {
         booking.promoApplied = false;
+        booking.promoCode = null;
         input.classList.remove('applied');
         msg.className = 'promo-msg error';
         msg.textContent = 'Invalid promo code. Try again.';
@@ -2952,12 +2911,34 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       btnFull.disabled = true;
       btn.innerHTML = '<div class="pay-btn-label" style="font-size:13px;letter-spacing:1px">Redirecting to checkout…</div>';
 
+      // Use dateKey() for the date string — timezone-safe (vs.
+       // toISOString().split('T')[0] which can drift a day in non-UTC TZs).
+      const dateString = booking.date ? dateKey(booking.date) : '';
+
+      // Translate booking.addOns (customer-side keys) → snake_case keys that
+      // match Supabase's add_ons JSON column shape and what TFCPricing expects.
+      // Pre-consolidation, customer-style keys flowed through to Supabase,
+      // which silently zeroed the add_on_total column (storage.calcAddOns
+      // looks for snake_case keys). Translating here fixes both the server
+      // recompute path and the persisted column.
+      const addOnsForServer = {
+        drone_footage: !!booking.addOns.drone,
+        water_bottles: !!booking.addOns.water,
+        ice:           !!booking.addOns.ice,
+        beer_pong:     !!booking.addOns.beerpong,
+        towels:        booking.addOns.towels || 0,
+      };
+
       try {
         const res = await fetch('/api/create-checkout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paymentType:   type,
+            // Client's view of the totals — sent so the server can cross-check
+            // against its own recomputation. Server recomputes pricing from
+            // raw inputs (vessel/date/duration/addOns/promoCode) and refuses
+            // checkout if the difference exceeds $0.01.
             amount:        amount,
             grandTotal:    calGrandTotal,
             depositAmount: calDepositAmount,
@@ -2965,7 +2946,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
               charterName:     booking.charterName,
               vessel:          booking.vessel,
               experience:      booking.experience,
-              date:            booking.date ? booking.date.toISOString().split('T')[0] : '',
+              date:            dateString,
               timeSlot:        booking.timeSlot,
               duration:        booking.duration,
               fullName:        booking.fullName,
@@ -2973,8 +2954,9 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
               phone:           booking.phone,
               partySize:       booking.partySize,
               specialRequests: booking.specialRequests,
-              addOns:          booking.addOns,
+              addOns:          addOnsForServer,
               promoApplied:    booking.promoApplied,
+              promoCode:       booking.promoCode || null,
               newsletter:      booking.newsletter,
               adminFee:        booking.adminFee || 0,
               taxAmount:       booking.taxAmount || 0,
@@ -2993,6 +2975,19 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
           // creating a second Stripe charge.
           document.getElementById('paymentButtons').style.display = 'none';
           document.getElementById('dupWarning').style.display = 'block';
+          btn.innerHTML = originalHTML;
+          btnDeposit.disabled = false;
+          btnFull.disabled = false;
+          return;
+        }
+
+        if (res.status === 400 && data.error === 'price_mismatch') {
+          // Server's recomputed total disagrees with what we sent — refresh
+          // the breakdown from current state and ask the user to retry.
+          // Either pricing changed under us (rare) or someone tried to
+          // tamper with the request (the security guard caught it).
+          buildPriceBreakdown();
+          showToast('Pricing updated — please review and try again.');
           btn.innerHTML = originalHTML;
           btnDeposit.disabled = false;
           btnFull.disabled = false;
@@ -3027,6 +3022,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     // Auto-apply promo if already subscribed via newsletter
     if (localStorage.getItem('nl_subscribed')) {
       booking.promoApplied = true;
+      booking.promoCode = 'LAKELIFE10';
     }
 
     // Deep link: ?vessel=yacht or ?vessel=pontoon skips step 1
