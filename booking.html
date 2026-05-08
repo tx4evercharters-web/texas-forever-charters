@@ -2630,7 +2630,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     function getAddOnsTotal() {
       let t = 0;
       if (booking.addOns.drone) t += 200;
-      t += booking.addOns.towels * 8;
+      t += (booking.addOns.towels || 0) * 8;
       if (booking.addOns.water) t += 25;
       if (booking.addOns.ice) t += 50;
       if (booking.addOns.beerpong) t += 50;
