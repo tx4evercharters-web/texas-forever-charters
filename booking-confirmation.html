@@ -698,6 +698,11 @@
       return v === 'yacht' ? '40ft Carver Aft Cabin' : '24ft Bentley Navigator 243';
     }
 
+    // Customer made it through Stripe — their saved resume state is now
+    // stale. Clear it so the next /booking.html load doesn't offer to
+    // resume an already-completed booking.
+    try { localStorage.removeItem('tfc_booking_resume'); } catch {}
+
     // ── Fetch session ──
     async function loadSession() {
       const params = new URLSearchParams(window.location.search);

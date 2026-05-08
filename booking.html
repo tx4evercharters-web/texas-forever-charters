@@ -15,6 +15,79 @@
   <link rel="stylesheet" href="css/styles.css">
 
   <style>
+    /* ── Resume Banner (P1a) ── */
+    /* Shown at top of /booking.html when localStorage has a recent
+       in-progress booking — typically because the customer hit Back on
+       Stripe Checkout. Lets them pick up at Step 8 instead of redoing
+       the 8-step wizard. */
+    .resume-banner {
+      display: none;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deeper) 100%);
+      border-bottom: 2px solid var(--red);
+      padding: 14px 24px;
+      animation: resumeSlideDown 0.35s ease;
+    }
+    .resume-banner-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .resume-banner-text {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: var(--white);
+      flex: 1 1 auto;
+      min-width: 200px;
+      line-height: 1.4;
+    }
+    .resume-banner-text strong {
+      font-weight: 600;
+      color: var(--white);
+    }
+    .resume-banner-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .resume-banner-btn {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 9px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .resume-banner-btn-primary {
+      background: var(--red);
+      color: var(--white);
+      border-color: var(--red);
+    }
+    .resume-banner-btn-primary:hover {
+      background: var(--red-dark);
+      border-color: var(--red-dark);
+    }
+    .resume-banner-btn-secondary {
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+      border-color: rgba(255,255,255,0.3);
+    }
+    .resume-banner-btn-secondary:hover {
+      color: var(--white);
+      border-color: rgba(255,255,255,0.5);
+    }
+    @keyframes resumeSlideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
     /* ── Booking Page Base ── */
     .booking-page {
       min-height: 100vh;
@@ -1526,6 +1599,19 @@
 
   <div class="booking-page">
 
+    <!-- ── RESUME BANNER (P1a) — populated from localStorage if a recent
+         in-progress booking exists. Hidden by default; checkForResumeBooking()
+         flips display:block when a valid saved booking is found. -->
+    <div class="resume-banner" id="resumeBanner">
+      <div class="resume-banner-inner">
+        <div class="resume-banner-text">📋 You have a booking in progress from <strong id="resumeBannerTime">earlier</strong>. Want to pick up where you left off?</div>
+        <div class="resume-banner-actions">
+          <button type="button" class="resume-banner-btn resume-banner-btn-primary" onclick="resumeSavedBooking()">Resume Booking</button>
+          <button type="button" class="resume-banner-btn resume-banner-btn-secondary" onclick="dismissResumeBanner()">Start Over</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ── HERO ── -->
     <div class="booking-hero">
       <div class="booking-hero-eyebrow">Texas Forever Charters</div>
@@ -2994,7 +3080,30 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
           return;
         }
 
+        if (res.status === 400 && data.error === 'invalid_pricing_inputs') {
+          // Server couldn't compute price from the inputs we sent (e.g.
+          // missing/invalid vessel or date). Surface the server's friendly
+          // message instead of the raw error code.
+          showToast(data.message || 'Could not compute charter price — please refresh and try again.');
+          btn.innerHTML = originalHTML;
+          btnDeposit.disabled = false;
+          btnFull.disabled = false;
+          return;
+        }
+
         if (data.url) {
+          // Persist the in-progress booking + checkout URL so the customer
+          // can resume if they hit Back on Stripe Checkout. Cleared on
+          // successful confirmation, on Start Over, or after 24h.
+          try {
+            localStorage.setItem('tfc_booking_resume', JSON.stringify({
+              booking,
+              checkoutUrl: data.url, // saved for reference; resume uses fresh checkout
+              savedAt: Date.now(),
+            }));
+          } catch (storageErr) {
+            console.warn('[booking] could not persist resume state:', storageErr.message);
+          }
           window.location.href = data.url;
         } else {
           throw new Error(data.error || 'Unexpected error from payment server');
@@ -3013,6 +3122,161 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       document.getElementById('dupWarning').style.display = 'none';
       document.getElementById('paymentButtons').style.display = '';
       showStep(5, true);
+    }
+
+    /* ── Resume-from-Stripe-cancel (P1a) ──
+       Stripe Checkout's hosted page sends the customer back to cancel_url
+       (= /booking.html) when they hit Back, fail out, or cancel. Without
+       this, they'd land on a fresh wizard and have to redo all 8 steps —
+       the biggest conversion gap in the audit.
+
+       Saved to localStorage in handlePayment() right before the redirect,
+       cleared on successful confirmation (booking-confirmation.html), on
+       Start Over click, or silently on next load if older than 24 hours. */
+    const RESUME_KEY = 'tfc_booking_resume';
+    const RESUME_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+    function checkForResumeBooking() {
+      let saved;
+      try {
+        const raw = localStorage.getItem(RESUME_KEY);
+        if (!raw) return;
+        saved = JSON.parse(raw);
+      } catch {
+        localStorage.removeItem(RESUME_KEY);
+        return;
+      }
+
+      if (!saved || !saved.booking || !saved.savedAt) {
+        localStorage.removeItem(RESUME_KEY);
+        return;
+      }
+
+      const ageMs = Date.now() - saved.savedAt;
+      if (ageMs > RESUME_MAX_AGE_MS) {
+        localStorage.removeItem(RESUME_KEY);
+        return;
+      }
+
+      // Need at least vessel + date + duration for resume to be useful;
+      // anything less means the customer barely started.
+      const b = saved.booking;
+      if (!b.vessel || !b.date || !b.duration) {
+        localStorage.removeItem(RESUME_KEY);
+        return;
+      }
+
+      // Show banner + format relative time
+      const banner = document.getElementById('resumeBanner');
+      const timeEl = document.getElementById('resumeBannerTime');
+      if (!banner) return;
+      banner.style.display = 'block';
+      if (timeEl) {
+        const mins = Math.floor(ageMs / 60000);
+        const hrs  = Math.floor(mins / 60);
+        timeEl.textContent = mins < 1 ? 'just now'
+          : mins < 60 ? mins + ' minute' + (mins === 1 ? '' : 's') + ' ago'
+          : hrs + ' hour' + (hrs === 1 ? '' : 's') + ' ago';
+      }
+    }
+
+    function dismissResumeBanner() {
+      try { localStorage.removeItem(RESUME_KEY); } catch {}
+      const banner = document.getElementById('resumeBanner');
+      if (banner) banner.style.display = 'none';
+    }
+
+    function resumeSavedBooking() {
+      let saved;
+      try { saved = JSON.parse(localStorage.getItem(RESUME_KEY) || ''); } catch { saved = null; }
+      if (!saved || !saved.booking) {
+        dismissResumeBanner();
+        return;
+      }
+
+      // Restore the booking object in place (booking is `const`, so we copy
+      // properties rather than reassign the reference).
+      Object.keys(saved.booking).forEach(k => { booking[k] = saved.booking[k]; });
+
+      // JSON serializes Date as an ISO string — rehydrate to a Date.
+      if (booking.date && typeof booking.date === 'string') {
+        const parsed = new Date(booking.date);
+        booking.date = isNaN(parsed) ? null : parsed;
+      }
+
+      applyRestoredBookingToDOM();
+
+      // Clear the saved entry now that we've consumed it.
+      try { localStorage.removeItem(RESUME_KEY); } catch {}
+      const banner = document.getElementById('resumeBanner');
+      if (banner) banner.style.display = 'none';
+
+      // Land on Step 8. buildSummary() populates the summary rows and calls
+      // buildPriceBreakdown() which sets calGrandTotal / calDepositAmount
+      // and the Pay button amounts.
+      buildSummary();
+      showStep(8, false);
+    }
+
+    /* Apply the restored `booking` state back to the DOM so back-navigation
+       from Step 8 doesn't leave the user staring at empty form fields and
+       unselected cards. Build* functions for duration / calendar / time
+       slots already read booking.* on render, so they self-restore — we
+       only need to handle the static visual-state pieces here. */
+    function applyRestoredBookingToDOM() {
+      // Step 1: vessel card selection + downstream filters
+      if (booking.vessel) {
+        const yc = document.getElementById('card-yacht');
+        const pc = document.getElementById('card-pontoon');
+        if (yc) yc.classList.toggle('selected', booking.vessel === 'yacht');
+        if (pc) pc.classList.toggle('selected', booking.vessel === 'pontoon');
+        if (typeof filterExperiencesByVessel === 'function') filterExperiencesByVessel(booking.vessel);
+        if (typeof fetchVesselBlackouts === 'function') fetchVesselBlackouts(booking.vessel);
+      }
+
+      // Step 2: experience card selection (matches the value passed to selectExperience)
+      if (booking.experience) {
+        document.querySelectorAll('.exp-select-card').forEach(card => {
+          const onclick = card.getAttribute('onclick') || '';
+          const m = onclick.match(/selectExperience\('([^']+)'/);
+          if (m && m[1] === booking.experience) card.classList.add('selected');
+          else card.classList.remove('selected');
+        });
+      }
+
+      // Step 6: form field values
+      const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null && v !== '') el.value = v; };
+      setVal('charterName',     booking.charterName);
+      setVal('fullName',        booking.fullName);
+      setVal('emailInput',      booking.email);
+      setVal('phoneInput',      booking.phone);
+      setVal('partySizeInput',  booking.partySize);
+      setVal('specialRequests', booking.specialRequests);
+
+      // Step 7: add-on toggle visuals (the click handlers read booking.addOns
+      // on next interaction, but the .selected class is what shows up visually)
+      ['drone','water','ice','beerpong'].forEach(key => {
+        const item = document.getElementById('addon-' + key);
+        if (item) item.classList.toggle('selected', !!booking.addOns[key]);
+        const check = document.getElementById(key + '-check');
+        if (check && check.parentElement) check.parentElement.classList.toggle('selected', !!booking.addOns[key]);
+      });
+      const towelQty = booking.addOns.towels || 0;
+      const qtyEl = document.getElementById('qty-towels');
+      if (qtyEl) qtyEl.textContent = towelQty;
+      const priceEl = document.getElementById('price-towels');
+      if (priceEl) priceEl.textContent = '$' + (towelQty * 8);
+      const towelItem = document.getElementById('addon-towels');
+      if (towelItem) towelItem.classList.toggle('selected', towelQty > 0);
+
+      // Promo input + applied state
+      if (booking.promoCode) {
+        const promoInput = document.getElementById('promoInput');
+        if (promoInput) {
+          promoInput.value = booking.promoCode;
+          promoInput.classList.add('applied');
+        }
+      }
     }
 
     /* ── Init ── */
@@ -3036,6 +3300,12 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       if (_autoAdvanceTimer) { clearTimeout(_autoAdvanceTimer); _autoAdvanceTimer = null; }
       showStep(2, false);
     }
+
+    // Resume banner check — runs after the wizard has initialized so the
+    // restore path can call buildSummary / showStep against fully-built DOM.
+    // Skip resume when a deep-link ?vessel= param is in play (the customer
+    // explicitly clicked into a vessel-specific path; honor that intent).
+    if (!preselect) checkForResumeBooking();
   </script>
 
 </body>
