@@ -211,6 +211,7 @@
   <main class="fb-page">
     <div class="fb-logo">
       <a href="index.html" aria-label="Texas Forever Charters home"><img src="images/New_Tx4Ever_Logo.png" alt="Texas Forever Charters"></a>
+      <div style="margin-top:10px;"><a href="index.html" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#1B2A6B;text-decoration:none;">← Home</a></div>
     </div>
     <div class="fb-wrap">
       <div id="fb-form-view">
@@ -234,23 +235,32 @@
             <div class="fb-stars-hint" id="fb-stars-hint">Tap a star to rate</div>
           </div>
 
-          <div class="fb-field">
-            <label class="fb-section-label" for="fb-comment">Tell us about your experience<span class="req">*</span></label>
-            <textarea id="fb-comment" class="fb-textarea" placeholder="What stood out — good or bad? We want the full story."></textarea>
+          <!-- 5-star path: Google Reviews CTA. Shown when rating === 5, hides
+               the private feedback form below. -->
+          <div id="fb-google-cta" style="display:none; text-align:center; padding:8px 0 4px;">
+            <p style="font-size:16px;color:#1B2A6B;line-height:1.6;margin:0 0 20px;">We're so glad you had an amazing time! 🎉<br>Would you mind leaving us a Google Review? It takes 30 seconds and means the world to us.</p>
+            <a href="https://www.google.com/search?q=texas+forever+charters#sv=CAESzQEKuQEStgEKd0FNbjMteVFqQ1hKWUx5VC05QlFWT1hwR1FGNVJNWHhEeDczTnNEVmdfclJxR3g0eVNOVXd3Z2NaZ2dUbVh6QmFPZWE0TUJvdU9kOTZwSEpaUV9QS0VPeTdxY2R3WTNUN3E5N2xTQVY1MWV2MmVaZW9GUFRzEhcxdVA0YWZlQ09vakFwODRQdTlEaHdRTRoiQUpLTEZtSkRKbXdVOFZWc3dZbHIzMHlQTXNxQ2x3cTk1ZxIEODA1MRoBMyoAMAA4AUAAGAAgq5eYsgJKAhAC" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#C8102E;color:#fff;padding:16px 36px;border-radius:8px;text-decoration:none;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;text-transform:uppercase;">Leave a Google Review →</a>
           </div>
 
-          <div class="fb-row">
+          <div id="fb-form-fields">
             <div class="fb-field">
-              <label class="fb-section-label" for="fb-name">Name (optional)</label>
-              <input id="fb-name" class="fb-input" type="text" autocomplete="name">
+              <label class="fb-section-label" for="fb-comment">Tell us about your experience<span class="req">*</span></label>
+              <textarea id="fb-comment" class="fb-textarea" placeholder="What stood out — good or bad? We want the full story."></textarea>
             </div>
-            <div class="fb-field">
-              <label class="fb-section-label" for="fb-email">Email (optional)</label>
-              <input id="fb-email" class="fb-input" type="email" autocomplete="email">
-            </div>
-          </div>
 
-          <button type="submit" class="fb-submit" id="fb-submit">Send Feedback</button>
+            <div class="fb-row">
+              <div class="fb-field">
+                <label class="fb-section-label" for="fb-name">Name (optional)</label>
+                <input id="fb-name" class="fb-input" type="text" autocomplete="name">
+              </div>
+              <div class="fb-field">
+                <label class="fb-section-label" for="fb-email">Email (optional)</label>
+                <input id="fb-email" class="fb-input" type="email" autocomplete="email">
+              </div>
+            </div>
+
+            <button type="submit" class="fb-submit" id="fb-submit">Send Feedback</button>
+          </div>
         </form>
 
         <div class="fb-call">
@@ -311,11 +321,20 @@
         hintEl.textContent = HINTS[active] || HINTS[0];
       }
 
+      const formFieldsEl = document.getElementById('fb-form-fields');
+      const googleCtaEl  = document.getElementById('fb-google-cta');
+      function applyRatingView(r) {
+        const isFive = r === 5;
+        if (formFieldsEl) formFieldsEl.style.display = isFive ? 'none' : '';
+        if (googleCtaEl)  googleCtaEl.style.display  = isFive ? 'block' : 'none';
+      }
+
       starsEl.addEventListener('click', function (e) {
         const btn = e.target.closest('.fb-star');
         if (!btn) return;
         rating = parseInt(btn.getAttribute('data-value'), 10);
         paint(rating);
+        applyRatingView(rating);
       });
 
       starsEl.addEventListener('mouseover', function (e) {

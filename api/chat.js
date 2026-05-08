@@ -28,9 +28,9 @@ const SYSTEM_PROMPT =
   "\n" +
   "LOCATION & BOOKING: Pickup at Volente Beach Water Park and Resort on Lake Travis. Captains are DJ and Dane. Text (737) 368-1669 or email tx4evercharters@gmail.com to book. " +
   "\n\n" +
-  "THE BOATS & CAPACITY: 40ft Carver Aft Cabin yacht, maximum 20 guests, $200-350/hr, full cabin below deck with salon, kitchen, bedroom, 2 restrooms. 24ft Bentley Navigator 243 pontoon, maximum 13 guests. Both BYOB friendly. " +
+  "THE BOATS & CAPACITY: 40ft Carver Aft Cabin yacht, maximum 20 guests, $250-350/hr (Mon-Thu $250, Fri/Sun $300, Sat $350), full cabin below deck with salon, kitchen, bedroom, 2 restrooms. 24ft Bentley Navigator 243 pontoon, maximum 13 guests, $100/hr weekday or $150/hr weekend. Both BYOB friendly. " +
   "\n\n" +
-  "EXPERIENCES & PRICING: Sunset cruises, private parties, corporate outings, boat tours, inner tube towing (pontoon). Boat tours are 2 hours at $150/hr, can be standalone or part of a charter. Mixed group tours available, call for pricing. Corporate outing pricing by phone only. We cannot guarantee a perfect sunset but we guarantee a great time. No fishing charters. " +
+  "EXPERIENCES & PRICING: Sunset cruises, private parties, corporate outings, boat tours, inner tube towing (pontoon). Boat tours are pontoon only, 2 hours, $100/hr weekday or $150/hr weekend. Mixed group tours available, call for pricing. Corporate outing pricing by phone only. We cannot guarantee a perfect sunset but we guarantee a great time. No fishing charters. Long charters of 5+ hours carry a +$100/hr premium. Bank holiday weekends also carry a +$100/hr surcharge. " +
   "\n\n" +
   "PAYMENT & BOOKING TERMS:\n" +
   "- A non-refundable 10% booking fee is due at the time of reservation.\n" +

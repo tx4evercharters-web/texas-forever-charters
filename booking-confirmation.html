@@ -568,8 +568,14 @@
         <div class="balance-alert" id="balanceAlert" style="display:none">
           <div class="balance-alert-icon">📅</div>
           <div class="balance-alert-text">
-            <strong id="balanceAlertAmount"></strong> remaining balance is due on the day of your charter.
+            <strong id="balanceAlertAmount"></strong> remaining balance is due 14 days before your charter.
             We accept cash, Venmo, or card on board.
+          </div>
+        </div>
+        <div class="balance-alert" style="margin-top:12px">
+          <div class="balance-alert-icon">🔒</div>
+          <div class="balance-alert-text">
+            A <strong>$250 damage deposit hold</strong> has been placed on your card. This is a pre-authorization only — no funds are withdrawn unless damage occurs. The hold will be released within 48 hours after your charter if no damage is reported.
           </div>
         </div>
       </div>
@@ -602,10 +608,14 @@
           </div>
           <div class="next-step-item">
             <div class="next-step-num">2</div>
-            <div class="next-step-text"><strong>We'll be in touch</strong> — Expect a call or text from your captain 48 hours before departure to confirm the details and answer any last-minute questions.</div>
+            <div class="next-step-text"><strong>Sign your liability waiver</strong> — All guests must sign the liability waiver before boarding. Share this link with your group: <a id="waiverLink" href="/waiver.html" style="color:var(--red);text-decoration:underline">Sign the Waiver →</a></div>
           </div>
           <div class="next-step-item">
             <div class="next-step-num">3</div>
+            <div class="next-step-text"><strong>We'll be in touch</strong> — Expect a call or text from your captain 48 hours before departure to confirm the details and answer any last-minute questions.</div>
+          </div>
+          <div class="next-step-item">
+            <div class="next-step-num">4</div>
             <div class="next-step-text"><strong>Show up and enjoy</strong> — Meet at <strong>Volente Beach Waterpark &amp; Resort</strong>, Austin TX. Arrive 15 minutes early. BYOB, wear sunscreen, bring good vibes.</div>
           </div>
         </div>
@@ -746,6 +756,10 @@
       document.getElementById('confirmEmail').textContent = currentEmail;
       document.getElementById('confirmRef').textContent = session.id.slice(-12).toUpperCase();
 
+      // Session-aware waiver link — pre-fills charter info on the waiver page
+      const waiverLinkEl = document.getElementById('waiverLink');
+      if (waiverLinkEl) waiverLinkEl.href = '/waiver.html?session_id=' + encodeURIComponent(session.id);
+
       // Email-failure banner: show only when the booking row exists AND
       // explicitly reports the confirmation email did not go through.
       // If the booking row is missing (Supabase lookup failed), we stay
@@ -772,7 +786,7 @@
         balCell.className = 'payment-cell balance';
         balCell.innerHTML = '<div class="payment-cell-label">Remaining Balance</div>' +
           '<div class="payment-cell-amount">$' + remaining.toFixed(2) + '</div>' +
-          '<div class="payment-cell-note">Due on the day of charter</div>';
+          '<div class="payment-cell-note">Due 14 days before charter</div>';
         paymentGrid.appendChild(balCell);
 
         const alert = document.getElementById('balanceAlert');

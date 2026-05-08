@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
 
+Disallow: /admin.html
+Disallow: /booking-confirmation.html
+Disallow: /feedback.html
+Disallow: /api/
+
 Sitemap: https://texasforevercharters.com/sitemap.xml
