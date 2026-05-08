@@ -975,58 +975,15 @@
       color: var(--white);
     }
 
-    /* ── Persistent Running-Total Bar (Steps 4–7) ── */
-    .running-bar {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      background: linear-gradient(135deg, rgba(27,42,107,0.97), rgba(15,23,58,0.98));
-      border-top: 2px solid var(--red);
-      padding: 14px 20px;
-      z-index: 95;
-      transform: translateY(110%);
-      transition: transform 0.35s ease;
-      box-shadow: 0 -8px 24px rgba(0,0,0,0.35);
-      -webkit-backdrop-filter: blur(8px);
-      backdrop-filter: blur(8px);
-    }
-    .running-bar.visible { transform: translateY(0); }
-    .running-bar[aria-hidden="true"] { pointer-events: none; }
-    .running-bar-inner {
-      max-width: 860px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    .running-bar-label {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.65);
-    }
-    .running-bar-amount {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 30px;
-      letter-spacing: 1px;
-      color: var(--white);
-    }
-    .running-bar-amount.placeholder {
-      font-family: 'Barlow', sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      letter-spacing: 0;
-      color: rgba(255,255,255,0.7);
-      text-align: right;
-    }
-    body.has-running-bar { padding-bottom: 88px; }
+    /* When the price row is visible the step-nav is taller; give the form
+       extra clearance and lift the toast above it. */
+    body.has-running-bar .booking-form-wrap { padding-bottom: 160px; }
+    body.has-running-bar .error-toast { bottom: 140px; }
     @media (max-width: 600px) {
-      .running-bar { padding: 12px 16px; }
-      .running-bar-amount { font-size: 26px; }
-      .running-bar-amount.placeholder { font-size: 13px; }
-      body.has-running-bar { padding-bottom: 80px; }
+      .step-nav-price-amount { font-size: 24px; }
+      .step-nav-price-amount.placeholder { font-size: 13px; }
+      body.has-running-bar .booking-form-wrap { padding-bottom: 150px; }
+      body.has-running-bar .error-toast { bottom: 130px; }
     }
 
     /* ── Summary (Step 8) ── */
@@ -1329,10 +1286,46 @@
       border-top: 1px solid rgba(255,255,255,0.08);
       padding: 14px 24px;
       z-index: 200;
-      display: flex;
+    }
+
+    /* Inline running-total row, shown above the Back/Continue row on Steps 4–7
+       via .step-nav.has-price. Single consolidated bottom bar = no z-index
+       conflicts with the nav controls. */
+    .step-nav-price {
+      display: none;
+      max-width: 860px;
+      margin: 0 auto;
+      padding-bottom: 12px;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 16px;
+    }
+    .step-nav.has-price .step-nav-price { display: flex; }
+    .step-nav.has-price .step-nav-inner {
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .step-nav-price-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+    }
+    .step-nav-price-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 1px;
+      color: var(--white);
+    }
+    .step-nav-price-amount.placeholder {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0;
+      color: rgba(255,255,255,0.7);
+      text-align: right;
     }
 
     .step-nav-inner {
@@ -2006,7 +1999,11 @@
   </div><!-- /booking-page -->
 
   <!-- ── STEP NAV ── -->
-  <div class="step-nav">
+  <div class="step-nav" id="stepNav">
+    <div class="step-nav-price" id="stepNavPrice" aria-live="polite">
+      <div class="step-nav-price-label">Running Total</div>
+      <div class="step-nav-price-amount placeholder" id="runningBarAmount">Select duration to see total</div>
+    </div>
     <div class="step-nav-inner">
       <button class="btn-back" id="btnBack" onclick="goBack()" disabled>← Back</button>
       <div class="step-counter-nav" id="stepCounterNav">Step 1 of 8</div>
@@ -2025,14 +2022,6 @@
 
   <!-- ── ERROR TOAST ── -->
   <div class="error-toast" id="errorToast"></div>
-
-  <!-- ── PERSISTENT RUNNING-TOTAL BAR (Steps 4–7) ── -->
-  <div class="running-bar" id="runningBar" aria-live="polite" aria-hidden="true">
-    <div class="running-bar-inner">
-      <div class="running-bar-label">Running Total</div>
-      <div class="running-bar-amount placeholder" id="runningBarAmount">Select duration to see total</div>
-    </div>
-  </div>
 
   <!-- Nav JS (hamburger + scroll) -->
   <script>
@@ -2760,11 +2749,10 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     }
 
     function updateRunningBarVisibility() {
-      const bar = document.getElementById('runningBar');
-      if (!bar) return;
+      const nav = document.getElementById('stepNav');
+      if (!nav) return;
       const visible = currentStep >= 4 && currentStep <= 7;
-      bar.classList.toggle('visible', visible);
-      bar.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      nav.classList.toggle('has-price', visible);
       document.body.classList.toggle('has-running-bar', visible);
     }
 
