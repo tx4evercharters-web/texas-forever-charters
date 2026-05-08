@@ -2073,7 +2073,33 @@
         String(d.getDate()).padStart(2,'0');
     }
 
-    function isHoliday(d) { return bankHolidays.has(dateKey(d)); }
+    /* Holiday-pricing dates: every actual federal holiday plus the surrounding
+       Fri–Mon long-weekend bracket. Mon holidays expand back to Fri; Fri/Sat/Sun
+       holidays expand to the full Fri–Sun. Holidays landing Tue/Wed/Thu (e.g. a
+       midweek Christmas) don't trigger a weekend bracket. */
+    const holidayPricingDays = (() => {
+      const expanded = new Set();
+      for (const key of bankHolidays) {
+        const [y, m, d] = key.split('-').map(Number);
+        const base = new Date(y, m - 1, d);
+        expanded.add(key);
+        const day = base.getDay(); // 0=Sun … 6=Sat
+        let fridayOffset;
+        if      (day === 5) fridayOffset =  0;
+        else if (day === 6) fridayOffset = -1;
+        else if (day === 0) fridayOffset = -2;
+        else if (day === 1) fridayOffset = -3;
+        else continue;
+        for (let i = 0; i < 4; i++) {
+          const dt = new Date(base);
+          dt.setDate(base.getDate() + fridayOffset + i);
+          expanded.add(dateKey(dt));
+        }
+      }
+      return expanded;
+    })();
+
+    function isHoliday(d) { return holidayPricingDays.has(dateKey(d)); }
 
     /* ── Toast ── */
     let toastTimer;

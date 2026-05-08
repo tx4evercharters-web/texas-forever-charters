@@ -3251,6 +3251,47 @@
 
   /* ── Add Booking modal ── */
   const AB_ADDON_PRICES = { drone: 200, towels: 8, water: 25, ice: 50, beerpong: 50 };
+  /* Mirrors bankHolidays in booking.html — keep both lists in sync. */
+  const AB_BANK_HOLIDAYS = new Set([
+    '2025-01-01','2025-01-20','2025-02-17','2025-05-26',
+    '2025-06-19','2025-07-04','2025-09-01','2025-10-13',
+    '2025-11-11','2025-11-27','2025-12-25',
+    '2026-01-01','2026-01-19','2026-02-16','2026-05-25',
+    '2026-06-19','2026-07-04','2026-07-03','2026-09-07',
+    '2026-10-12','2026-11-11','2026-11-26','2026-12-25',
+    '2027-01-01','2027-01-18','2027-02-15','2027-05-31',
+    '2027-06-18','2027-07-05','2027-09-06','2027-11-11',
+    '2027-11-25','2027-12-24',
+  ]);
+  function abDateKey(d) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
+  }
+  /* Mirrors holidayPricingDays in booking.html — extends each holiday to the
+     surrounding Fri–Mon weekend bracket. Tue/Wed/Thu holidays don't extend. */
+  const AB_HOLIDAY_PRICING_DAYS = (() => {
+    const expanded = new Set();
+    for (const key of AB_BANK_HOLIDAYS) {
+      const [y, m, d] = key.split('-').map(Number);
+      const base = new Date(y, m - 1, d);
+      expanded.add(key);
+      const day = base.getDay();
+      let fridayOffset;
+      if      (day === 5) fridayOffset =  0;
+      else if (day === 6) fridayOffset = -1;
+      else if (day === 0) fridayOffset = -2;
+      else if (day === 1) fridayOffset = -3;
+      else continue;
+      for (let i = 0; i < 4; i++) {
+        const dt = new Date(base);
+        dt.setDate(base.getDate() + fridayOffset + i);
+        expanded.add(abDateKey(dt));
+      }
+    }
+    return expanded;
+  })();
+  function abIsHoliday(d) { return d && AB_HOLIDAY_PRICING_DAYS.has(abDateKey(d)); }
   let abCustomerSearchTimer = null;
   /* Per-field override map for the Add Booking pricing section.
      A field flips to true when the admin manually edits it; recalcs
@@ -3414,6 +3455,7 @@
     let rate;
     if (vessel === 'yacht') rate = day === 6 ? 350 : (day === 0 || day === 5) ? 300 : 250;
     else                    rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
+    if (abIsHoliday(date)) rate += 100;
     if (duration >= 5) rate += 100;
     const charterBase = rate * duration;
 
