@@ -2623,6 +2623,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
       }
       if (isHoliday(date)) rate += 100;
+      if (duration >= 5) rate += 100;
       return rate * duration;
     }
 

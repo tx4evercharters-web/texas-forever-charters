@@ -3414,6 +3414,7 @@
     let rate;
     if (vessel === 'yacht') rate = day === 6 ? 350 : (day === 0 || day === 5) ? 300 : 250;
     else                    rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
+    if (duration >= 5) rate += 100;
     const charterBase = rate * duration;
 
     let addOnsTotal = 0;
