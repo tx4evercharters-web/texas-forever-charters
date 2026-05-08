@@ -975,6 +975,60 @@
       color: var(--white);
     }
 
+    /* ── Persistent Running-Total Bar (Steps 4–7) ── */
+    .running-bar {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, rgba(27,42,107,0.97), rgba(15,23,58,0.98));
+      border-top: 2px solid var(--red);
+      padding: 14px 20px;
+      z-index: 95;
+      transform: translateY(110%);
+      transition: transform 0.35s ease;
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.35);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+    .running-bar.visible { transform: translateY(0); }
+    .running-bar[aria-hidden="true"] { pointer-events: none; }
+    .running-bar-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .running-bar-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+    }
+    .running-bar-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px;
+      letter-spacing: 1px;
+      color: var(--white);
+    }
+    .running-bar-amount.placeholder {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0;
+      color: rgba(255,255,255,0.7);
+      text-align: right;
+    }
+    body.has-running-bar { padding-bottom: 88px; }
+    @media (max-width: 600px) {
+      .running-bar { padding: 12px 16px; }
+      .running-bar-amount { font-size: 26px; }
+      .running-bar-amount.placeholder { font-size: 13px; }
+      body.has-running-bar { padding-bottom: 80px; }
+    }
+
     /* ── Summary (Step 8) ── */
     .summary-card {
       background: var(--navy-dark);
@@ -1972,6 +2026,14 @@
   <!-- ── ERROR TOAST ── -->
   <div class="error-toast" id="errorToast"></div>
 
+  <!-- ── PERSISTENT RUNNING-TOTAL BAR (Steps 4–7) ── -->
+  <div class="running-bar" id="runningBar" aria-live="polite" aria-hidden="true">
+    <div class="running-bar-inner">
+      <div class="running-bar-label">Running Total</div>
+      <div class="running-bar-amount placeholder" id="runningBarAmount">Select duration to see total</div>
+    </div>
+  </div>
+
   <!-- Nav JS (hamburger + scroll) -->
   <script>
     window.addEventListener('scroll', () => {
@@ -2144,6 +2206,8 @@
       if (back) nw.classList.add('going-back');
       nw.classList.add('active');
       updateProgress();
+      updateRunningBarVisibility();
+      updateRunningTotal();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -2255,6 +2319,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       // we're not on step 1 — selectVessel also runs from the deep-link
       // path, where the caller decides whether to advance.
       if (currentStep === 1) flashAndAdvance(document.getElementById('card-' + v));
+      updateRunningTotal();
     }
 
     function filterExperiencesByVessel(vessel) {
@@ -2425,6 +2490,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
           booking.timeSlot = null;
           document.querySelectorAll('.duration-btn').forEach(b => b.classList.remove('selected'));
           btn.classList.add('selected');
+          updateRunningTotal();
           flashAndAdvance(btn);
         };
         grid.appendChild(btn);
@@ -2502,6 +2568,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       // renderCalendar() rebuilds cells, so the originally-clicked cell is
       // detached. Look up the live one for the pulse.
       const liveCell = document.querySelector('#calCells .cal-cell.selected') || cellEl;
+      updateRunningTotal();
       flashAndAdvance(liveCell);
     }
 
@@ -2675,7 +2742,30 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       const beforeDiscount = afterTax + processingFee;
       const discount = booking.promoApplied ? Math.round(beforeDiscount * 0.10 * 100) / 100 : 0;
       const total = beforeDiscount - discount;
-      document.getElementById('runningTotal').textContent = '$' + total.toFixed(2);
+      const formatted = '$' + total.toFixed(2);
+
+      const inlineEl = document.getElementById('runningTotal');
+      if (inlineEl) inlineEl.textContent = formatted;
+
+      const stickyEl = document.getElementById('runningBarAmount');
+      if (stickyEl) {
+        if (booking.vessel && booking.duration && booking.date) {
+          stickyEl.textContent = formatted;
+          stickyEl.classList.remove('placeholder');
+        } else {
+          stickyEl.textContent = 'Select duration to see total';
+          stickyEl.classList.add('placeholder');
+        }
+      }
+    }
+
+    function updateRunningBarVisibility() {
+      const bar = document.getElementById('runningBar');
+      if (!bar) return;
+      const visible = currentStep >= 4 && currentStep <= 7;
+      bar.classList.toggle('visible', visible);
+      bar.setAttribute('aria-hidden', visible ? 'false' : 'true');
+      document.body.classList.toggle('has-running-bar', visible);
     }
 
     /* ── Step 8: Summary ── */
@@ -2833,12 +2923,14 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         msg.className = 'promo-msg success';
         msg.textContent = '10% discount applied!';
         buildPriceBreakdown();
+        updateRunningTotal();
       } else {
         booking.promoApplied = false;
         input.classList.remove('applied');
         msg.className = 'promo-msg error';
         msg.textContent = 'Invalid promo code. Try again.';
         buildPriceBreakdown();
+        updateRunningTotal();
       }
     }
 
