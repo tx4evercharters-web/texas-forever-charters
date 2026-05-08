@@ -217,6 +217,10 @@ module.exports = async function handler(req, res) {
         newsletter:      String(!!booking.newsletter),
         promo_applied:   String(!!serverPricing.appliedPromoCode),
         promo_code:      truncate(serverPricing.appliedPromoCode || ''),
+        // Terms-of-service acknowledgment captured at Step 8.
+        // Persisted into the bookings row by the webhook for compliance audit.
+        terms_agreed:    String(booking.terms_agreed === true),
+        terms_agreed_at: truncate(booking.terms_agreed_at || ''),
         admin_fee:        String(serverPricing.adminFee),
         tax_amount:       String(serverPricing.salesTax),
         processing_fee:   String(serverPricing.processingFee),

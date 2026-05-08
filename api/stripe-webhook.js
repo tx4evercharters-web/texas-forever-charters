@@ -200,6 +200,11 @@ module.exports = async function handler(req, res) {
     special_requests: meta.special_requests,
     promo_applied:    meta.promo_applied,
     newsletter:       meta.newsletter,
+    /* Terms-of-service acknowledgment captured at Step 8 (booking.html).
+       Stripe metadata stores everything as strings, so coerce 'true' → true,
+       and an empty string becomes null on the timestamp. */
+    terms_agreed:     meta.terms_agreed === 'true',
+    terms_agreed_at:  meta.terms_agreed_at || null,
     city:  city,
     state: state,
     stripe_customer_id: stripeCustomerId,

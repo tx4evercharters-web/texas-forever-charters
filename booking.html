@@ -1270,6 +1270,18 @@
 
     .pay-btn-full:hover { background: var(--red-dark); border-color: var(--red-dark); }
 
+    /* Disabled state — Pay buttons stay locked until the terms checkbox is
+       ticked. Visual cue + non-pointer cursor so the customer immediately
+       sees what's blocking them. Hover overrides also suppressed. */
+    .pay-btn:disabled,
+    .pay-btn:disabled:hover {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: transparent;
+      border-color: rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.5);
+    }
+
     .pay-btn-amount {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 26px;
@@ -2046,21 +2058,22 @@
           </div>
           <div class="form-checks" style="margin-top:16px">
             <label class="form-check" id="termsCheckWrap">
-              <input type="checkbox" id="termsCheck">
+              <input type="checkbox" id="termsCheck" oninput="onTermsCheckChange()">
               <div class="form-check-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-              <span class="form-check-label"><strong>I have read and agree to the full Charter Agreement and Terms of Service</strong>, including the cancellation policy, damage deposit, gratuity requirement, and liability waiver.</span>
+              <span class="form-check-label">I have read and agree to the <a href="/terms.html" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;font-weight:700;">Charter Agreement &amp; Terms of Service ↗</a> and acknowledge the cancellation policy, damage deposit terms, and that all guests must sign the liability waiver before boarding.</span>
             </label>
           </div>
         </div>
 
-        <!-- Payment -->
+        <!-- Payment — buttons disabled until #termsCheck is ticked
+             (onTermsCheckChange toggles the disabled attribute) -->
         <div class="payment-buttons" id="paymentButtons">
-          <button class="pay-btn pay-btn-deposit" onclick="handlePayment('deposit')">
+          <button class="pay-btn pay-btn-deposit" onclick="handlePayment('deposit')" disabled>
             <div class="pay-btn-label">Pay Deposit</div>
             <div class="pay-btn-amount" id="depositAmountBtn">$0</div>
             <div class="pay-btn-label">10% of total · holds your date</div>
           </button>
-          <button class="pay-btn pay-btn-full" onclick="handlePayment('full')">
+          <button class="pay-btn pay-btn-full" onclick="handlePayment('full')" disabled>
             <div class="pay-btn-label">Pay In Full</div>
             <div class="pay-btn-amount" id="fullAmountBtn">$0</div>
             <div class="pay-btn-label">Total amount due today</div>
@@ -2107,8 +2120,6 @@
     <a href="/terms.html">Charter Agreement &amp; Terms of Service</a>
     <span class="sep">&bull;</span>
     <a href="/waiver.html">Liability Waiver</a>
-    <span class="sep">&bull;</span>
-    <a href="#">Privacy Policy</a>
   </div>
 
   <!-- ── ERROR TOAST ── -->
@@ -2184,6 +2195,8 @@
       over21: false,
       smsAlerts: false,
       newsletter: false,
+      terms_agreed:    false, // set true via onTermsCheckChange when #termsCheck ticks
+      terms_agreed_at: null,  // ISO timestamp captured at the moment of agreement
       addOns: {
         drone: false,
         towels: 0,
@@ -2978,7 +2991,27 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       if (e.key === 'Enter') applyPromo();
     });
 
-    /* ── Payment ── */
+    /* ── Payment ──
+       Pay buttons are disabled until the customer ticks #termsCheck.
+       onTermsCheckChange runs on every input event (covers both check
+       and uncheck) and stamps the agreement state onto the booking
+       object so it flows through to the Stripe metadata + Supabase
+       row via the create-checkout payload. */
+    function onTermsCheckChange() {
+      const checked = document.getElementById('termsCheck').checked;
+      const btnDeposit = document.querySelector('.pay-btn-deposit');
+      const btnFull    = document.querySelector('.pay-btn-full');
+      if (btnDeposit) btnDeposit.disabled = !checked;
+      if (btnFull)    btnFull.disabled    = !checked;
+      if (checked) {
+        booking.terms_agreed    = true;
+        booking.terms_agreed_at = new Date().toISOString();
+      } else {
+        booking.terms_agreed    = false;
+        booking.terms_agreed_at = null;
+      }
+    }
+
     async function handlePayment(type) {
       if (!document.getElementById('termsCheck').checked) {
         showToast('Please agree to the terms and policies');
@@ -3044,6 +3077,11 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
               promoApplied:    booking.promoApplied,
               promoCode:       booking.promoCode || null,
               newsletter:      booking.newsletter,
+              // Terms-of-service acknowledgment (P1 legal/compliance) — read
+              // freshly from the DOM here in case of any in-flight tampering.
+              // The DOM is the source of truth; booking.terms_agreed mirrors it.
+              terms_agreed:    document.getElementById('termsCheck').checked === true,
+              terms_agreed_at: booking.terms_agreed_at || null,
               adminFee:        booking.adminFee || 0,
               taxAmount:       booking.taxAmount || 0,
               processingFee:   booking.processingFee || 0,
@@ -3202,6 +3240,16 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       if (booking.date && typeof booking.date === 'string') {
         const parsed = new Date(booking.date);
         booking.date = isNaN(parsed) ? null : parsed;
+      }
+
+      // Force a fresh terms-of-service acknowledgment on resume — never
+      // auto-restore. Each payment attempt is treated as a new agreement.
+      booking.terms_agreed    = false;
+      booking.terms_agreed_at = null;
+      const termsCheckEl = document.getElementById('termsCheck');
+      if (termsCheckEl) {
+        termsCheckEl.checked = false;
+        if (typeof onTermsCheckChange === 'function') onTermsCheckChange();
       }
 
       applyRestoredBookingToDOM();
