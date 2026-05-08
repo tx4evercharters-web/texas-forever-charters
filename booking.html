@@ -2821,6 +2821,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
 
       add('Charter (' + duration + ' hrs × $' + effectiveRate + '/hr · ' + dayLabel + ')', '$' + charterBase.toLocaleString());
       if (holidaySurcharge) add('Bank Holiday Surcharge (+$100/hr)', '+$' + (holidaySurcharge * duration));
+      if (longCharterPremium) add('Long Charter Premium (5+ hrs · +$100/hr)', '+$' + (longCharterPremium * duration));
       if (booking.addOns.drone) add('Drone Footage', '$200');
       if (booking.addOns.towels > 0) add('Towels (' + booking.addOns.towels + ' × $8)', '$' + booking.addOns.towels * 8);
       if (booking.addOns.water) add('Water Bottles', '$25');
