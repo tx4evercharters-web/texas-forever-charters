@@ -2791,7 +2791,8 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         rate = (day === 5 || day === 6 || day === 0) ? 150 : 100;
       }
       const holidaySurcharge = date && isHoliday(date) ? 100 : 0;
-      const effectiveRate = rate + holidaySurcharge;
+      const longCharterPremium = duration >= 5 ? 100 : 0;
+      const effectiveRate = rate + holidaySurcharge + longCharterPremium;
       const charterBase = effectiveRate * duration;
       const addOnsTotal = getAddOnsTotal();
       const subtotal = charterBase + addOnsTotal;
