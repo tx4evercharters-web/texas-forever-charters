@@ -409,26 +409,11 @@
             </div>
             <div class="wv-field">
               <label class="wv-label" for="wvTime">Start Time <span class="req">*</span></label>
-              <select class="wv-select" id="wvTime">
-                <option value="">— select —</option>
-                <option value="9:00am">9:00 AM</option>
-                <option value="9:30am">9:30 AM</option>
-                <option value="10:00am">10:00 AM</option>
-                <option value="10:30am">10:30 AM</option>
-                <option value="11:00am">11:00 AM</option>
-                <option value="11:30am">11:30 AM</option>
-                <option value="12:00pm">12:00 PM</option>
-                <option value="12:30pm">12:30 PM</option>
-                <option value="1:00pm">1:00 PM</option>
-                <option value="1:30pm">1:30 PM</option>
-                <option value="2:00pm">2:00 PM</option>
-                <option value="2:30pm">2:30 PM</option>
-                <option value="3:00pm">3:00 PM</option>
-                <option value="3:30pm">3:30 PM</option>
-                <option value="4:00pm">4:00 PM</option>
-                <option value="4:30pm">4:30 PM</option>
-                <option value="5:00pm">5:00 PM</option>
-              </select>
+              <!-- Options populated at load from TFCTimeSlots.renderOptions(),
+                   with a leading "— select —" placeholder added inline.
+                   Waiver shows all 17 slots — guests are signing for whatever
+                   time the booking already has, no per-duration filtering. -->
+              <select class="wv-select" id="wvTime"></select>
             </div>
             <div class="wv-field full">
               <label class="wv-label" for="wvVessel">Vessel <span class="req">*</span></label>
@@ -663,7 +648,20 @@
     </div>
   </main>
 
+  <!-- Time-slots module — populates the #wvTime dropdown at page load.
+       Waiver shows all 17 slots (no per-duration filtering — guests
+       are signing for whatever time the booking already has). -->
+  <script src="lib/timeslots.js"></script>
+
   <script>
+    /* Populate the time-slot dropdown from the canonical TFCTimeSlots
+       list. Runs at parse-time — DOM is already built. The "— select —"
+       placeholder is prepended to match the pre-refactor UI. */
+    (function populateWaiverTimeSlots() {
+      var sel = document.getElementById('wvTime');
+      if (sel) sel.innerHTML = '<option value="">— select —</option>' + TFCTimeSlots.renderOptions();
+    })();
+
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session_id');
     const isPrefillMode = !!sessionId;

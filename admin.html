@@ -1356,25 +1356,9 @@
           </div>
           <div class="edit-form-group">
             <label class="edit-label">Time Slot</label>
-            <select class="edit-input" id="ab-time-slot">
-              <option value="9:00am">9:00 AM</option>
-              <option value="9:30am">9:30 AM</option>
-              <option value="10:00am">10:00 AM</option>
-              <option value="10:30am">10:30 AM</option>
-              <option value="11:00am">11:00 AM</option>
-              <option value="11:30am">11:30 AM</option>
-              <option value="12:00pm">12:00 PM</option>
-              <option value="12:30pm">12:30 PM</option>
-              <option value="1:00pm">1:00 PM</option>
-              <option value="1:30pm">1:30 PM</option>
-              <option value="2:00pm">2:00 PM</option>
-              <option value="2:30pm">2:30 PM</option>
-              <option value="3:00pm">3:00 PM</option>
-              <option value="3:30pm">3:30 PM</option>
-              <option value="4:00pm">4:00 PM</option>
-              <option value="4:30pm">4:30 PM</option>
-              <option value="5:00pm">5:00 PM</option>
-            </select>
+            <!-- Options populated at load from TFCTimeSlots.renderOptions().
+                 Admin shows all 17 slots regardless of duration. -->
+            <select class="edit-input" id="ab-time-slot"></select>
           </div>
           <div class="edit-form-group">
             <label class="edit-label">Duration (hrs)</label>
@@ -1640,26 +1624,9 @@
         </div>
         <div class="edit-form-group">
           <label class="edit-label">Time Slot</label>
-          <select class="edit-input" id="bk-blackout-time">
-            <option value="">— select —</option>
-            <option value="9:00am">9:00 AM</option>
-            <option value="9:30am">9:30 AM</option>
-            <option value="10:00am">10:00 AM</option>
-            <option value="10:30am">10:30 AM</option>
-            <option value="11:00am">11:00 AM</option>
-            <option value="11:30am">11:30 AM</option>
-            <option value="12:00pm">12:00 PM</option>
-            <option value="12:30pm">12:30 PM</option>
-            <option value="1:00pm">1:00 PM</option>
-            <option value="1:30pm">1:30 PM</option>
-            <option value="2:00pm">2:00 PM</option>
-            <option value="2:30pm">2:30 PM</option>
-            <option value="3:00pm">3:00 PM</option>
-            <option value="3:30pm">3:30 PM</option>
-            <option value="4:00pm">4:00 PM</option>
-            <option value="4:30pm">4:30 PM</option>
-            <option value="5:00pm">5:00 PM</option>
-          </select>
+          <!-- Options populated at load from TFCTimeSlots.renderOptions(),
+               with a leading "— select —" placeholder added inline. -->
+          <select class="edit-input" id="bk-blackout-time"></select>
         </div>
       </div>
       <div style="font-size:11px;color:var(--gray-400);margin-top:10px;">
@@ -1862,7 +1829,26 @@
      is available globally for abComputePricing(). -->
 <script src="lib/pricing.js"></script>
 
+<!-- Time-slots module — populates #ab-time-slot and #bk-blackout-time
+     dropdowns at page load. Admin shows all 17 slots regardless of
+     duration (operators have flexibility to override business rules
+     for special arrangements called in by phone). -->
+<script src="lib/timeslots.js"></script>
+
 <script>
+  /* Populate the two time-slot <select> elements from the canonical
+     TFCTimeSlots list. Runs at parse-time — DOM is already built since
+     this script sits after the body content. The "— select —"
+     placeholder is prepended to #bk-blackout-time only (matches the
+     pre-refactor UI; #ab-time-slot didn't have one and gets a JS-set
+     default of '11:00am' when the modal opens). */
+  (function populateTimeSlotDropdowns() {
+    var ab = document.getElementById('ab-time-slot');
+    if (ab) ab.innerHTML = TFCTimeSlots.renderOptions();
+    var bk = document.getElementById('bk-blackout-time');
+    if (bk) bk.innerHTML = '<option value="">— select —</option>' + TFCTimeSlots.renderOptions();
+  })();
+
   const TOKEN_KEY = 'tfc_admin_token';
   let allBookings = [];           // upcoming only — used by Bookings table
   let allBookingsAll = [];        // upcoming + past — used by Analytics
@@ -3885,8 +3871,10 @@
     document.getElementById('ab-date').value           = b.date || '';
     /* Normalize legacy admin-saved time_slot values ("9:00 AM" with space)
        to the lowercase-no-space format ("9:00am") that the dropdown options
-       now use, so editing an old booking still selects the right option. */
-    document.getElementById('ab-time-slot').value      = (b.time_slot || '').toLowerCase().replace(/\s+/g, '') || '11:00am';
+       now use, so editing an old booking still selects the right option.
+       Uses TFCTimeSlots.normalize() — single source of truth for the
+       legacy-format → canonical conversion. */
+    document.getElementById('ab-time-slot').value      = TFCTimeSlots.normalize(b.time_slot) || '11:00am';
     document.getElementById('ab-duration').value       = String(b.duration || '4');
     document.getElementById('ab-party-size').value     = String(b.party_size || '6');
     document.getElementById('ab-charter-name').value   = b.charter_name || '';

@@ -2174,6 +2174,12 @@
        available globally. Server-side has its own require('lib/pricing'). -->
   <script src="lib/pricing.js"></script>
 
+  <!-- Time-slots module — single source of truth for the 17 canonical
+       time slots and the duration-availability matrix. TFCTimeSlots is
+       used by buildTimeSlots() below for slot rendering and per-duration
+       filtering. -->
+  <script src="lib/timeslots.js"></script>
+
   <!-- Nav JS (hamburger + scroll) -->
   <script>
     window.addEventListener('scroll', () => {
@@ -2482,17 +2488,15 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     // typical charter (4 hrs) so we never under-block.
     const DEFAULT_BOOKED_DURATION_HRS = 4;
 
-    // Latest allowed start time (minutes since midnight) for each charter
-    // duration. The charter must end by the value implied here — short charters
-    // can finish by 7–8 PM, longer ones run up to 9 PM.
+    // Legacy fallback for charter durations not covered by the
+    // TFCTimeSlots matrix (currently only 2hr — Boat Tour, Sunset Cruise,
+    // Proposal). The matrix in lib/timeslots.js encodes 3-8hr explicitly.
+    // 2hr is intentionally left out per ops; this table preserves its
+    // original "fits before close" behavior so 2hr charters continue to
+    // see all in-window slots. DO NOT add a 2hr row to the matrix
+    // without explicit owner approval.
     const LATEST_START_BY_DURATION = {
       2: 17 * 60,        // 5:00 PM  (ends 7:00 PM)
-      3: 17 * 60,        // 5:00 PM  (ends 8:00 PM)
-      4: 16 * 60 + 30,   // 4:30 PM  (ends 8:30 PM)
-      5: 16 * 60,        // 4:00 PM  (ends 9:00 PM)
-      6: 15 * 60,        // 3:00 PM  (ends 9:00 PM)
-      7: 14 * 60,        // 2:00 PM  (ends 9:00 PM, interpolated for completeness)
-      8: 13 * 60,        // 1:00 PM  (ends 9:00 PM)
     };
 
     // Experience-specific duration constraints. Vessel is accepted for future
@@ -2681,9 +2685,13 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       flashAndAdvance(liveCell);
     }
 
-    /* ── Step 5: Time Slots ── */
-    const MORNING_SLOTS = ['9:00am','9:30am','10:00am','10:30am','11:00am'];
-    const AFTERNOON_SLOTS = ['2:30pm','3:00pm','4:00pm','5:00pm'];
+    /* ── Step 5: Time Slots ──
+       Canonical slot lists + duration-availability matrix live in
+       lib/timeslots.js (loaded above as window.TFCTimeSlots). Local
+       aliases below keep the existing buildTimeSlots / makeTimeSection
+       call sites readable without a wholesale rename. */
+    const MORNING_SLOTS   = TFCTimeSlots.MORNING_SLOTS;
+    const AFTERNOON_SLOTS = TFCTimeSlots.AFTERNOON_SLOTS;
 
     async function buildTimeSlots() {
       const wrap = document.getElementById('timeSlotsWrap');
@@ -2740,15 +2748,22 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     }
 
     function makeTimeSection(label, slots, bookedList, blockedSet, slotDurationHrs) {
-      // Drop any slot whose start time is later than what the duration allows
-      // — those would run past the operating-day end and are never bookable.
+      // Apply the per-duration availability rules. For 3-8hr charters the
+      // TFCTimeSlots matrix is the source of truth (encodes the midday
+      // shift gap, the 11:30am+4hr quirk, and the 8:30pm cutoff). For
+      // any duration outside the matrix (today: 2hr only — Boat Tour,
+      // Sunset Cruise, Proposal), fall back to the legacy
+      // LATEST_START_BY_DURATION table to preserve original behavior.
+      const inMatrix = TFCTimeSlots.hasMatrixRulesFor(slotDurationHrs);
       const latestStart = LATEST_START_BY_DURATION[slotDurationHrs];
-      const filtered = (latestStart == null)
-        ? slots.slice()
-        : slots.filter(s => {
-            const ms = parseTimeToMinutes(s);
-            return ms == null || ms <= latestStart;
-          });
+      const filtered = inMatrix
+        ? slots.filter(s => TFCTimeSlots.isBookable(s, slotDurationHrs))
+        : (latestStart == null
+            ? slots.slice()
+            : slots.filter(s => {
+                const ms = parseTimeToMinutes(s);
+                return ms == null || ms <= latestStart;
+              }));
       if (filtered.length === 0) return null;
 
       const sec = document.createElement('div');
