@@ -952,28 +952,23 @@
         <div class="addon-breakdown">
           <div class="addon-item">
             <div class="addon-item-label">Drone Footage</div>
-            <div class="addon-item-value" id="bd-drone">$0</div>
-            <div class="addon-item-count" id="bd-drone-ct">0 bookings</div>
+            <div class="addon-item-value" id="bd-drone-ct">0 orders</div>
           </div>
           <div class="addon-item">
             <div class="addon-item-label">Towels</div>
-            <div class="addon-item-value" id="bd-towels">$0</div>
-            <div class="addon-item-count" id="bd-towels-ct">0 bookings</div>
+            <div class="addon-item-value" id="bd-towels-ct">0 orders</div>
           </div>
           <div class="addon-item">
             <div class="addon-item-label">Water Bottles</div>
-            <div class="addon-item-value" id="bd-water">$0</div>
-            <div class="addon-item-count" id="bd-water-ct">0 bookings</div>
+            <div class="addon-item-value" id="bd-water-ct">0 orders</div>
           </div>
           <div class="addon-item">
             <div class="addon-item-label">Ice</div>
-            <div class="addon-item-value" id="bd-ice">$0</div>
-            <div class="addon-item-count" id="bd-ice-ct">0 bookings</div>
+            <div class="addon-item-value" id="bd-ice-ct">0 orders</div>
           </div>
           <div class="addon-item">
             <div class="addon-item-label">Beer Pong</div>
-            <div class="addon-item-value" id="bd-beerpong">$0</div>
-            <div class="addon-item-count" id="bd-beerpong-ct">0 bookings</div>
+            <div class="addon-item-value" id="bd-beerpong-ct">0 orders</div>
           </div>
         </div>
       </div>
@@ -2643,7 +2638,7 @@
     let revenue = 0, outstanding = 0;
     let charterSubtotal = 0, addonTotal = 0, taxAmount = 0;
     const addonCounts = { drone: 0, towels: 0, water: 0, ice: 0, beerpong: 0 };
-    const addonRevenue = { drone: 0, towels: 0, water: 0, ice: 0, beerpong: 0 };
+    let towelQtyTotal = 0;
 
     bookings.forEach(b => {
       // Use cents from amount_total if available, else grand_total in dollars
@@ -2655,12 +2650,21 @@
       addonTotal += parseFloat(b.add_on_total || 0);
       taxAmount += parseFloat(b.tax_amount || 0);
 
+      /* Per-add-on dollar splits were removed because they were derived from
+         hardcoded current prices, which silently rewrote historical bookings
+         whenever a price changed (e.g., the ice $50 → $25 incident). Total
+         Add-On Revenue (bd-addons above) reads stored add_on_total per row
+         and remains historically accurate. */
       const ao = parseAddOns(b.add_ons);
-      if (ao.drone_footage || ao.drone) { addonCounts.drone++; addonRevenue.drone += 200; }
-      if (ao.towels > 0) { addonCounts.towels++; addonRevenue.towels += 8 * (ao.towels || 1); }
-      if (ao.water_bottles || ao.water) { addonCounts.water++; addonRevenue.water += 25; }
-      if (ao.ice) { addonCounts.ice++; addonRevenue.ice += 25; }
-      if (ao.beer_pong || ao.beerpong) { addonCounts.beerpong++; addonRevenue.beerpong += 50; }
+      if (ao.drone_footage || ao.drone) addonCounts.drone++;
+      if (ao.towels > 0) {
+        addonCounts.towels++;
+        const qty = parseInt(ao.towels, 10);
+        towelQtyTotal += (isFinite(qty) && qty > 0) ? qty : 1;
+      }
+      if (ao.water_bottles || ao.water) addonCounts.water++;
+      if (ao.ice)                       addonCounts.ice++;
+      if (ao.beer_pong || ao.beerpong)  addonCounts.beerpong++;
     });
 
     document.getElementById('stat-count').textContent = bookings.length;
@@ -2671,16 +2675,13 @@
     document.getElementById('bd-addons').textContent = fmtMoney(addonTotal);
     document.getElementById('bd-tax').textContent = fmtMoney(taxAmount);
 
-    document.getElementById('bd-drone').textContent = fmtMoney(addonRevenue.drone);
-    document.getElementById('bd-drone-ct').textContent = addonCounts.drone + ' booking' + (addonCounts.drone !== 1 ? 's' : '');
-    document.getElementById('bd-towels').textContent = fmtMoney(addonRevenue.towels);
-    document.getElementById('bd-towels-ct').textContent = addonCounts.towels + ' booking' + (addonCounts.towels !== 1 ? 's' : '');
-    document.getElementById('bd-water').textContent = fmtMoney(addonRevenue.water);
-    document.getElementById('bd-water-ct').textContent = addonCounts.water + ' booking' + (addonCounts.water !== 1 ? 's' : '');
-    document.getElementById('bd-ice').textContent = fmtMoney(addonRevenue.ice);
-    document.getElementById('bd-ice-ct').textContent = addonCounts.ice + ' booking' + (addonCounts.ice !== 1 ? 's' : '');
-    document.getElementById('bd-beerpong').textContent = fmtMoney(addonRevenue.beerpong);
-    document.getElementById('bd-beerpong-ct').textContent = addonCounts.beerpong + ' booking' + (addonCounts.beerpong !== 1 ? 's' : '');
+    const orderText = n => n + ' order' + (n !== 1 ? 's' : '');
+    document.getElementById('bd-drone-ct').textContent = orderText(addonCounts.drone);
+    document.getElementById('bd-towels-ct').textContent = orderText(addonCounts.towels) +
+      (towelQtyTotal > 0 ? ' · ' + towelQtyTotal + ' towel' + (towelQtyTotal !== 1 ? 's' : '') : '');
+    document.getElementById('bd-water-ct').textContent = orderText(addonCounts.water);
+    document.getElementById('bd-ice-ct').textContent = orderText(addonCounts.ice);
+    document.getElementById('bd-beerpong-ct').textContent = orderText(addonCounts.beerpong);
   }
 
   function toggleRevenue() {
