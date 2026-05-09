@@ -5,6 +5,8 @@ const {
   sendOwnerAlertEmail,
   sendFinalNoticeEmail,
   sendReviewRequestEmail,
+  sendConfirmationEmails,
+  sendConfirmationEmailPermanentFailureAlert,
 } = require('../lib/send-emails');
 
 /* ── Supabase REST helper (same shape as lib/storage.js) ── */
@@ -182,6 +184,121 @@ module.exports = async function handler(req, res) {
       summary.errors.push({ session_id: b.session_id, type: r.sender, error: err.message });
     }
   }
+
+  /* ── Confirmation-email retry pass: re-send customer confirmation emails
+     that initially failed at booking time (Resend outage, recipient mailbox
+     bounce, etc.). Picks up rows where the webhook recorded
+     confirmation_email_sent=false. Window: booked between 7 days ago and
+     1 hour ago — the 1hr floor avoids racing with brand-new bookings whose
+     webhook may still be in flight; the 7-day ceiling caps indefinite
+     retries on permanently broken addresses. Capped at 5 attempts per row,
+     after which a one-time owner alert is fired. ── */
+  const retry = {
+    candidates: 0,
+    retried: 0,
+    succeeded: 0,
+    failed: 0,
+    skipped_perm_fail: 0,
+    perm_fail_alerted: 0,
+    errors: [],
+    actions: [],
+  };
+
+  let retryBookings = [];
+  try {
+    const oneHourAgoIso   = new Date(Date.now() -      60 * 60 * 1000).toISOString();
+    const sevenDaysAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    retryBookings = await supabase(
+      'GET',
+      '/bookings?select=*' +
+      '&confirmation_email_sent=eq.false' +
+      '&customer_email=not.is.null' +
+      '&booked_at=lt.' + encodeURIComponent(oneHourAgoIso) +
+      '&booked_at=gt.' + encodeURIComponent(sevenDaysAgoIso) +
+      '&order=booked_at.asc'
+    ) || [];
+  } catch (err) {
+    console.error('[cron-reminders] confirmation-retry query failed:', err.message);
+    summary.confirmation_retry = { error: err.message };
+  }
+
+  retry.candidates = retryBookings.length;
+  console.log('[cron-reminders] confirmation-retry candidates:', retry.candidates);
+
+  for (const b of retryBookings) {
+    if (b.status === 'cancelled') continue;
+
+    const attempts = Number(b.confirmation_email_retries) || 0;
+
+    /* Past the 5-attempt cap. Send a one-time owner alert (tracked via
+       reminders_sent.confirmation_perm_fail_alerted) and skip the row. */
+    if (attempts >= 5) {
+      retry.skipped_perm_fail++;
+      const sent = (b.reminders_sent && typeof b.reminders_sent === 'object') ? b.reminders_sent : {};
+      if (sent.confirmation_perm_fail_alerted) continue;
+      try {
+        await sendConfirmationEmailPermanentFailureAlert(b);
+        const merged = { ...sent, confirmation_perm_fail_alerted: true };
+        await supabase(
+          'PATCH',
+          '/bookings?session_id=eq.' + encodeURIComponent(b.session_id),
+          { reminders_sent: merged },
+          { Prefer: 'return=minimal' }
+        );
+        retry.perm_fail_alerted++;
+        console.log('[cron-reminders] PERM-FAIL ALERT sent for session:', b.session_id, 'after', attempts, 'attempts');
+      } catch (err) {
+        console.error('[cron-reminders] perm-fail alert send failed for', b.session_id, ':', err.message);
+        retry.errors.push({ session_id: b.session_id, step: 'perm_fail_alert', error: err.message });
+      }
+      continue;
+    }
+
+    const nextAttempt = attempts + 1;
+    console.log('[cron-reminders] Retrying confirmation email for', b.session_id, '(attempt', nextAttempt, 'of 5)');
+
+    /* sendConfirmationEmails throws only if BOTH customer + business sends
+       fail. Customer-side success is the real signal that the confirmation
+       was delivered, so we read result.customerError to decide. */
+    let result, sendError = null;
+    try {
+      result = await sendConfirmationEmails(b);
+    } catch (err) {
+      sendError = err;
+    }
+
+    const customerOk = !sendError && result && !result.customerError;
+    const updates = { confirmation_email_retries: nextAttempt };
+    if (customerOk) updates.confirmation_email_sent = true;
+
+    try {
+      await supabase(
+        'PATCH',
+        '/bookings?session_id=eq.' + encodeURIComponent(b.session_id),
+        updates,
+        { Prefer: 'return=minimal' }
+      );
+    } catch (patchErr) {
+      console.error('[cron-reminders] retry-counter PATCH failed for', b.session_id, ':', patchErr.message);
+      retry.errors.push({ session_id: b.session_id, step: 'patch_counter', error: patchErr.message });
+      continue;
+    }
+
+    retry.retried++;
+    if (customerOk) {
+      retry.succeeded++;
+      retry.actions.push({ session_id: b.session_id, attempt: nextAttempt, to: b.customer_email, status: 'sent' });
+      console.log('[cron-reminders] RETRY SUCCESS for session:', b.session_id, '→', b.customer_email, '(attempt', nextAttempt, 'of 5)');
+    } else {
+      retry.failed++;
+      const errMsg = sendError ? sendError.message
+        : (result && result.customerError ? result.customerError.message : 'unknown');
+      retry.errors.push({ session_id: b.session_id, step: 'retry_send', attempt: nextAttempt, error: errMsg });
+      console.error('[cron-reminders] RETRY FAILED for session:', b.session_id, '(attempt', nextAttempt, 'of 5):', errMsg);
+    }
+  }
+
+  summary.confirmation_retry = retry;
 
   /* ── Post-charter pass: auto-conclude yesterday's upcoming charters and
      send a review-request email exactly once per booking. ── */
