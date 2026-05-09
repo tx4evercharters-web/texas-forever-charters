@@ -1357,15 +1357,23 @@
           <div class="edit-form-group">
             <label class="edit-label">Time Slot</label>
             <select class="edit-input" id="ab-time-slot">
-              <option value="9:00 AM">9:00 AM</option>
-              <option value="10:00 AM">10:00 AM</option>
-              <option value="11:00 AM">11:00 AM</option>
-              <option value="12:00 PM">12:00 PM</option>
-              <option value="1:00 PM">1:00 PM</option>
-              <option value="2:30 PM">2:30 PM</option>
-              <option value="3:00 PM">3:00 PM</option>
-              <option value="4:00 PM">4:00 PM</option>
-              <option value="5:00 PM">5:00 PM</option>
+              <option value="9:00am">9:00 AM</option>
+              <option value="9:30am">9:30 AM</option>
+              <option value="10:00am">10:00 AM</option>
+              <option value="10:30am">10:30 AM</option>
+              <option value="11:00am">11:00 AM</option>
+              <option value="11:30am">11:30 AM</option>
+              <option value="12:00pm">12:00 PM</option>
+              <option value="12:30pm">12:30 PM</option>
+              <option value="1:00pm">1:00 PM</option>
+              <option value="1:30pm">1:30 PM</option>
+              <option value="2:00pm">2:00 PM</option>
+              <option value="2:30pm">2:30 PM</option>
+              <option value="3:00pm">3:00 PM</option>
+              <option value="3:30pm">3:30 PM</option>
+              <option value="4:00pm">4:00 PM</option>
+              <option value="4:30pm">4:30 PM</option>
+              <option value="5:00pm">5:00 PM</option>
             </select>
           </div>
           <div class="edit-form-group">
@@ -1634,15 +1642,23 @@
           <label class="edit-label">Time Slot</label>
           <select class="edit-input" id="bk-blackout-time">
             <option value="">— select —</option>
-            <option value="9:00 AM">9:00 AM</option>
-            <option value="10:00 AM">10:00 AM</option>
-            <option value="11:00 AM">11:00 AM</option>
-            <option value="12:00 PM">12:00 PM</option>
-            <option value="1:00 PM">1:00 PM</option>
-            <option value="2:30 PM">2:30 PM</option>
-            <option value="3:00 PM">3:00 PM</option>
-            <option value="4:00 PM">4:00 PM</option>
-            <option value="5:00 PM">5:00 PM</option>
+            <option value="9:00am">9:00 AM</option>
+            <option value="9:30am">9:30 AM</option>
+            <option value="10:00am">10:00 AM</option>
+            <option value="10:30am">10:30 AM</option>
+            <option value="11:00am">11:00 AM</option>
+            <option value="11:30am">11:30 AM</option>
+            <option value="12:00pm">12:00 PM</option>
+            <option value="12:30pm">12:30 PM</option>
+            <option value="1:00pm">1:00 PM</option>
+            <option value="1:30pm">1:30 PM</option>
+            <option value="2:00pm">2:00 PM</option>
+            <option value="2:30pm">2:30 PM</option>
+            <option value="3:00pm">3:00 PM</option>
+            <option value="3:30pm">3:30 PM</option>
+            <option value="4:00pm">4:00 PM</option>
+            <option value="4:30pm">4:30 PM</option>
+            <option value="5:00pm">5:00 PM</option>
           </select>
         </div>
       </div>
@@ -3354,7 +3370,7 @@
     document.getElementById('ab-vessel').value = 'yacht';
     document.getElementById('ab-experience').value = 'Private Party';
     document.getElementById('ab-date').value = prefillDate || '';
-    document.getElementById('ab-time-slot').value = '11:00 AM';
+    document.getElementById('ab-time-slot').value = '11:00am';
     document.getElementById('ab-duration').value = '4';
     document.getElementById('ab-party-size').value = '6';
     document.getElementById('ab-charter-name').value = '';
@@ -3867,7 +3883,10 @@
     document.getElementById('ab-vessel').value         = b.vessel || 'yacht';
     document.getElementById('ab-experience').value     = b.experience || 'Private Party';
     document.getElementById('ab-date').value           = b.date || '';
-    document.getElementById('ab-time-slot').value      = b.time_slot || '11:00 AM';
+    /* Normalize legacy admin-saved time_slot values ("9:00 AM" with space)
+       to the lowercase-no-space format ("9:00am") that the dropdown options
+       now use, so editing an old booking still selects the right option. */
+    document.getElementById('ab-time-slot').value      = (b.time_slot || '').toLowerCase().replace(/\s+/g, '') || '11:00am';
     document.getElementById('ab-duration').value       = String(b.duration || '4');
     document.getElementById('ab-party-size').value     = String(b.party_size || '6');
     document.getElementById('ab-charter-name').value   = b.charter_name || '';
