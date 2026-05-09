@@ -1934,6 +1934,15 @@
     return `<button class="btn-sm btn-green" onclick="bkOpenWaiverList('${id}', event)">${list.length} signed</button>`;
   }
 
+  function bkChargebackBadge(b) {
+    if (!b || !b.dispute_id) return '';
+    const amt = parseFloat(b.dispute_amount || 0);
+    const reason = b.dispute_reason ? ' (' + esc(b.dispute_reason) + ')' : '';
+    const title = 'Chargeback filed' + (amt > 0 ? ' — ' + fmtMoney(amt) : '') + reason +
+      ' — respond in Stripe dashboard before deadline';
+    return '<span class="badge" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);font-weight:800" title="' + title + '">⚠️ CHARGEBACK</span>';
+  }
+
   function bkDamageBadge(b) {
     if (!b) return '';
     const s = (b.damage_hold_status || '').toLowerCase();
@@ -2940,7 +2949,7 @@
           <td class="addon-list">${esc(addOnText(b.add_ons))}</td>
           <td style="white-space:nowrap;font-weight:700">${fmtMoney(b.grand_total || (b.amount_total ? b.amount_total/100 : 0))}</td>
           <td style="white-space:nowrap;color:${parseFloat(b.remaining_balance)>0?'var(--amber)':'var(--green)'}">${fmtMoney(b.remaining_balance)}</td>
-          <td style="white-space:nowrap">${badge}${statusBadge ? '<div style="margin-top:4px">'+statusBadge+'</div>' : ''}${(() => { const d = bkDamageBadge(b); return d ? '<div style="margin-top:4px">'+d+'</div>' : ''; })()}</td>
+          <td style="white-space:nowrap">${badge}${statusBadge ? '<div style="margin-top:4px">'+statusBadge+'</div>' : ''}${(() => { const d = bkDamageBadge(b); return d ? '<div style="margin-top:4px">'+d+'</div>' : ''; })()}${(() => { const c = bkChargebackBadge(b); return c ? '<div style="margin-top:4px">'+c+'</div>' : ''; })()}</td>
           <td style="white-space:nowrap">${bkWaiverCell(b)}</td>
           <td>
             <div class="action-btns">
@@ -4235,6 +4244,7 @@
           const payment = `<span class="badge ${pay.cls}">${pay.label}</span>`;
           const lifecycle = bkStatusBadge(b);
           const damage = bkDamageBadge(b);
+          const chargeback = bkChargebackBadge(b);
           const total = b.amount_total ? b.amount_total / 100 : parseFloat(b.grand_total || 0);
           const dim = bkStatus(b) === 'cancelled' ? ' style="opacity:0.7"' : '';
           return `<tr${dim}>
@@ -4242,7 +4252,7 @@
             <td>${esc(vesselLabel(b.vessel))}</td>
             <td>${esc(b.experience || '—')}</td>
             <td>${fmtMoney(total)}</td>
-            <td style="white-space:nowrap">${payment}${lifecycle ? ' ' + lifecycle : ''}${damage ? ' ' + damage : ''}</td>
+            <td style="white-space:nowrap">${payment}${lifecycle ? ' ' + lifecycle : ''}${damage ? ' ' + damage : ''}${chargeback ? ' ' + chargeback : ''}</td>
             <td style="text-align:right">${bkActionMenu(b)}</td>
           </tr>`;
         }).join('')}</tbody>

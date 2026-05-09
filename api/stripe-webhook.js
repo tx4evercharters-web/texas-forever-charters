@@ -1,6 +1,11 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { sendConfirmationEmails, sendDamageHoldFailedAlert } = require('../lib/send-emails');
-const { saveBooking, patchBooking } = require('../lib/storage');
+const {
+  sendConfirmationEmails,
+  sendDamageHoldFailedAlert,
+  sendStripeRefundReconciledAlert,
+  sendChargebackAlert,
+} = require('../lib/send-emails');
+const { saveBooking, patchBooking, findBookingByPaymentIntent } = require('../lib/storage');
 
 // Vercel must not parse the body — Stripe signature verification needs the raw bytes.
 module.exports.config = { api: { bodyParser: false } };
@@ -53,6 +58,150 @@ async function saveBookingWithRetry(bookingRow, sessionId) {
   throw lastErr;
 }
 
+/* ── Additive event handlers (added 2026-05) ─────────────────────────────────
+   These sit alongside the existing checkout.session.completed flow below.
+   Each returns its own res.status — the dispatcher in handler() routes here
+   before the existing flow ever sees the event. The legacy flow is untouched. */
+
+async function handleChargeRefunded(event, res) {
+  const charge = event.data.object;
+  const piId = charge.payment_intent;
+  const amountRefundedCents = charge.amount_refunded || 0;
+  const amountTotalCents    = charge.amount || 0;
+  const isFull = amountRefundedCents >= amountTotalCents && amountTotalCents > 0;
+
+  console.log('[stripe-webhook] charge.refunded',
+    'charge:', charge.id,
+    '| payment_intent:', piId,
+    '| amount_refunded:', amountRefundedCents,
+    '| amount:', amountTotalCents,
+    '| isFull:', isFull);
+
+  if (!piId) {
+    console.warn('[stripe-webhook] charge.refunded with no payment_intent — ignoring', charge.id);
+    return res.status(200).json({ received: true, ignored: 'no_payment_intent' });
+  }
+
+  let booking;
+  try {
+    booking = await findBookingByPaymentIntent(piId);
+  } catch (err) {
+    console.error('[stripe-webhook] booking lookup failed for refund reconciliation:', err.message);
+    return res.status(500).json({ error: 'booking_lookup_failed' });
+  }
+
+  if (!booking) {
+    console.warn('[stripe-webhook] charge.refunded — no booking found for payment_intent', piId, '(possibly old/test charge)');
+    return res.status(200).json({ received: true, ignored: 'no_booking' });
+  }
+
+  const newRefundDollars       = amountRefundedCents / 100;
+  const existingRefundDollars  = parseFloat(booking.refund_amount || 0);
+  const bookingTotalDollars    = (booking.amount_total || 0) / 100;
+
+  /* Idempotency: the admin refund flow patches Supabase directly, so by
+     the time charge.refunded arrives the row may already match. Skip the
+     re-write AND the alert when the existing record already reflects this
+     refund (or more), so admin-side refunds don't double-fire. */
+  if (Math.abs(existingRefundDollars - newRefundDollars) < 0.01 ||
+      existingRefundDollars >= newRefundDollars) {
+    console.log('[stripe-webhook] refund already reconciled in Supabase — skipping', booking.session_id,
+      '| existing:', existingRefundDollars, '| incoming:', newRefundDollars);
+    return res.status(200).json({ received: true, idempotent: true });
+  }
+
+  const updates = {
+    refund_amount: newRefundDollars,
+    refunded_at:   new Date().toISOString(),
+  };
+  if (isFull) updates.status = 'cancelled';
+
+  try {
+    await patchBooking(booking.session_id, updates);
+    console.log('[stripe-webhook] booking', booking.session_id, 'updated for Stripe-side refund: $', newRefundDollars,
+      '| isFull:', isFull, '| total:', bookingTotalDollars);
+  } catch (err) {
+    console.error('[stripe-webhook] failed to patch booking for refund:', booking.session_id, err.message);
+    return res.status(500).json({ error: 'patch_failed' });
+  }
+
+  /* Best-effort alert — booking is already updated, an alert send failure
+     must not unwind the patch. */
+  try {
+    await sendStripeRefundReconciledAlert({ ...booking, ...updates }, newRefundDollars, isFull);
+    console.log('[stripe-webhook] Stripe-refund reconciled alert sent for', booking.session_id);
+  } catch (err) {
+    console.error('[stripe-webhook] refund-reconciled alert send FAILED (booking still updated):',
+      booking.session_id, '|', err.message);
+  }
+
+  return res.status(200).json({ received: true, refunded: newRefundDollars });
+}
+
+async function handleDisputeCreated(event, res) {
+  const dispute = event.data.object;
+  const piId = dispute.payment_intent;
+  const amountCents = dispute.amount || 0;
+
+  console.log('[stripe-webhook] charge.dispute.created',
+    'dispute:', dispute.id,
+    '| payment_intent:', piId,
+    '| amount:', amountCents,
+    '| reason:', dispute.reason,
+    '| status:', dispute.status);
+
+  let booking = null;
+  if (piId) {
+    try {
+      booking = await findBookingByPaymentIntent(piId);
+    } catch (err) {
+      console.error('[stripe-webhook] booking lookup failed for chargeback:', err.message);
+    }
+  }
+
+  if (!booking) {
+    /* Unknown payment_intent — still send the alert with whatever Stripe
+       gave us so the owner can manually research it. Build a stub. */
+    console.warn('[stripe-webhook] charge.dispute.created — no booking found for payment_intent', piId);
+    booking = {
+      session_id:        null,
+      payment_intent_id: piId,
+      customer_email:    null,
+      full_name:         null,
+      date:              null,
+      time_slot:         null,
+      vessel:            null,
+      phone:             null,
+    };
+  } else {
+    /* Persist dispute metadata to the booking row. Status is intentionally
+       NOT changed — chargebacks aren't cancellations, they're disputes. */
+    const updates = {
+      dispute_id:     dispute.id,
+      dispute_status: dispute.status,
+      dispute_amount: amountCents / 100,
+      dispute_reason: dispute.reason,
+      disputed_at:    new Date().toISOString(),
+    };
+    try {
+      await patchBooking(booking.session_id, updates);
+      console.log('[stripe-webhook] dispute persisted to booking', booking.session_id);
+      Object.assign(booking, updates);
+    } catch (err) {
+      console.error('[stripe-webhook] failed to persist dispute on booking:', booking.session_id, err.message);
+    }
+  }
+
+  try {
+    await sendChargebackAlert(booking, dispute);
+    console.log('[stripe-webhook] chargeback alert sent for dispute', dispute.id);
+  } catch (err) {
+    console.error('[stripe-webhook] chargeback alert send FAILED:', dispute.id, '|', err.message);
+  }
+
+  return res.status(200).json({ received: true });
+}
+
 module.exports = async function handler(req, res) {
   console.log('[stripe-webhook] hit',
     'method:', req.method,
@@ -86,6 +235,41 @@ module.exports = async function handler(req, res) {
   }
 
   console.log('[stripe-webhook] event verified', 'id:', event.id, 'type:', event.type);
+
+  /* ── Dispatch new event types BEFORE the legacy checkout.session.completed
+     early-return. Each handler returns its own response. The original
+     checkout.session.completed flow below is unchanged. ── */
+  if (event.type === 'charge.refunded') {
+    return await handleChargeRefunded(event, res);
+  }
+  if (event.type === 'charge.dispute.created') {
+    return await handleDisputeCreated(event, res);
+  }
+  if (event.type === 'checkout.session.expired') {
+    const s = event.data.object;
+    const email = s.customer_email
+      || (s.customer_details && s.customer_details.email)
+      || 'unknown';
+    console.log('[stripe-webhook] checkout.session.expired —',
+      'customer:', email,
+      '| amount: $' + ((s.amount_total || 0) / 100).toFixed(2),
+      '| session:', s.id);
+    return res.status(200).json({ received: true });
+  }
+  if (event.type === 'payment_intent.payment_failed') {
+    const pi = event.data.object;
+    const lastErr = pi.last_payment_error || {};
+    const email = pi.receipt_email
+      || (lastErr.payment_method && lastErr.payment_method.billing_details && lastErr.payment_method.billing_details.email)
+      || 'unknown';
+    console.log('[stripe-webhook] payment_intent.payment_failed —',
+      'code:', lastErr.code || lastErr.decline_code || 'unknown',
+      '| message:', lastErr.message || '(none)',
+      '| amount: $' + ((pi.amount || 0) / 100).toFixed(2),
+      '| customer:', email,
+      '| intent:', pi.id);
+    return res.status(200).json({ received: true });
+  }
 
   if (event.type !== 'checkout.session.completed') {
     return res.status(200).json({ received: true });
