@@ -73,7 +73,7 @@ function oldBuildPriceBreakdown({ vessel, dateStr, duration, addOns, promoApplie
   if (addOns.drone) addOnsTotal += 200;
   addOnsTotal += (addOns.towels || 0) * 8;
   if (addOns.water) addOnsTotal += 25;
-  if (addOns.ice) addOnsTotal += 50;
+  if (addOns.ice) addOnsTotal += 25;
   if (addOns.beerpong) addOnsTotal += 50;
 
   const subtotal = charterBase + addOnsTotal;
@@ -124,7 +124,7 @@ function oldAdminCompute({ vessel, dateStr, duration, addOns, paymentMethod }) {
   if (addOns.drone_footage) addOnsTotal += 200;
   addOnsTotal += (addOns.towels || 0) * 8;
   if (addOns.water_bottles) addOnsTotal += 25;
-  if (addOns.ice)           addOnsTotal += 50;
+  if (addOns.ice)           addOnsTotal += 25;
   if (addOns.beer_pong)     addOnsTotal += 50;
 
   const subtotal = charterBase + addOnsTotal;

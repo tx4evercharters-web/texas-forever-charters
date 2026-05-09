@@ -2000,7 +2000,7 @@
               </div>
             </div>
             <div class="addon-right">
-              <div class="addon-price">$50</div>
+              <div class="addon-price">$25</div>
             </div>
           </div>
 
@@ -2790,7 +2790,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     });
 
     /* ── Step 7: Add-Ons ── */
-    const ADDON_PRICES = { drone: 200, water: 25, ice: 50, beerpong: 50 };
+    const ADDON_PRICES = { drone: 200, water: 25, ice: 25, beerpong: 50 };
 
     function toggleAddon(key) {
       if (key === 'towels') return;
@@ -2927,7 +2927,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       if (booking.addOns.drone)      add('Drone Footage', '$200');
       if (booking.addOns.towels > 0) add('Towels (' + booking.addOns.towels + ' × $8)', '$' + booking.addOns.towels * 8);
       if (booking.addOns.water)      add('Water Bottles', '$25');
-      if (booking.addOns.ice)        add('Ice', '$50');
+      if (booking.addOns.ice)        add('Ice', '$25');
       if (booking.addOns.beerpong)   add('Beer Pong Setup', '$50');
       add('Admin Fee (10%)', '+$' + p.adminFee.toFixed(2));
       add('Sales Tax (8.5%)', '+$' + p.salesTax.toFixed(2), 'tax-row');

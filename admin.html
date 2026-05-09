@@ -1428,7 +1428,7 @@
         <div class="edit-addon-grid" style="margin-bottom:12px;">
           <div class="edit-addon-item"><input type="checkbox" id="ab-addon-drone"><label for="ab-addon-drone">🎥 Drone Footage ($200)</label></div>
           <div class="edit-addon-item"><input type="checkbox" id="ab-addon-water"><label for="ab-addon-water">💧 Water Bottles ($25)</label></div>
-          <div class="edit-addon-item"><input type="checkbox" id="ab-addon-ice"><label for="ab-addon-ice">🧊 Ice ($50)</label></div>
+          <div class="edit-addon-item"><input type="checkbox" id="ab-addon-ice"><label for="ab-addon-ice">🧊 Ice ($25)</label></div>
           <div class="edit-addon-item"><input type="checkbox" id="ab-addon-beerpong"><label for="ab-addon-beerpong">🏓 Beer Pong ($50)</label></div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
@@ -2648,7 +2648,7 @@
       if (ao.drone_footage || ao.drone) { addonCounts.drone++; addonRevenue.drone += 200; }
       if (ao.towels > 0) { addonCounts.towels++; addonRevenue.towels += 8 * (ao.towels || 1); }
       if (ao.water_bottles || ao.water) { addonCounts.water++; addonRevenue.water += 25; }
-      if (ao.ice) { addonCounts.ice++; addonRevenue.ice += 50; }
+      if (ao.ice) { addonCounts.ice++; addonRevenue.ice += 25; }
       if (ao.beer_pong || ao.beerpong) { addonCounts.beerpong++; addonRevenue.beerpong += 50; }
     });
 
