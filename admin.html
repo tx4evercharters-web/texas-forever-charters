@@ -632,6 +632,253 @@
        section shows it on ≤768px. */
     .cal-agenda-actions { display: none; }
 
+    /* ── Mobile view toggle (Month | Agenda) ───────────────────────
+       Pill-style switch, only rendered on mobile. Default to Month;
+       persisted to localStorage key `tfc_cal_mobile_view`. */
+    .cal-mobile-view-toggle { display: none; }
+
+    /* ── Mobile month grid (Google-Calendar-style) ─────────────────
+       Separate element from the desktop `.calendar-grid` so desktop
+       styling is fully untouched. Shows day numbers only + colored
+       dots beneath; tapping opens the day sheet. */
+    .cal-mobile-grid { display: none; }
+    .cal-mobile-grid-inner {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--color-border);
+      gap: 1px;
+    }
+    .cal-mobile-dayhdr {
+      background: var(--color-bg-subtle);
+      text-align: center;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-secondary);
+      padding: var(--space-2) 0;
+    }
+    .cal-mobile-day {
+      background: var(--color-bg-card);
+      min-height: 56px;          /* >44px touch target */
+      padding: 4px 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+      position: relative;
+      transition: background var(--transition-fast);
+      -webkit-tap-highlight-color: transparent;
+      /* Button reset — these cells are <button> for keyboard/AT a11y. */
+      border: none;
+      outline: none;
+      font-family: var(--font-body);
+      color: inherit;
+      text-align: center;
+      width: 100%;
+    }
+    .cal-mobile-day:focus-visible {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: -2px;
+    }
+    .cal-mobile-day:active { background: var(--color-bg-subtle); }
+    .cal-mobile-day.other-month { opacity: 0.4; }
+    .cal-mobile-day-num {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      line-height: 1;
+      width: 22px; height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-full);
+    }
+    .cal-mobile-day.today .cal-mobile-day-num {
+      background: var(--color-brand-primary);
+      color: var(--color-text-on-brand);
+      font-weight: var(--font-weight-bold);
+    }
+    .cal-mobile-day.blocked-full .cal-mobile-day-num {
+      text-decoration: line-through;
+      color: var(--color-text-tertiary);
+    }
+    .cal-mobile-dots {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      max-width: 100%;
+    }
+    .cal-mobile-dot {
+      width: 6px; height: 6px;
+      border-radius: var(--radius-full);
+      background: var(--color-text-tertiary);
+      flex-shrink: 0;
+    }
+    .cal-mobile-more {
+      font-size: 9px;
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-secondary);
+      line-height: 1;
+      margin-top: 1px;
+    }
+
+    /* ── Day sheet (bottom sheet) ──────────────────────────────────
+       Tap a day on the mobile grid to slide this up from the bottom.
+       Backdrop click + close button + swipe-down on the header all
+       dismiss. Sheet body scrolls internally; footer stays sticky. */
+    .day-sheet-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+      z-index: 240;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-base);
+    }
+    .day-sheet-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .day-sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      max-width: 640px;
+      margin: 0 auto;
+      background: var(--color-bg-elevated);
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      box-shadow: 0 -10px 30px -8px rgba(15, 23, 42, 0.25);
+      height: 70vh;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform var(--transition-slow);
+      z-index: 241;
+      touch-action: pan-y;
+    }
+    .day-sheet.open { transform: translateY(0); }
+    .day-sheet.dragging { transition: none; }
+    .day-sheet-header {
+      flex-shrink: 0;
+      padding: var(--space-3) var(--space-5) var(--space-3);
+      border-bottom: 1px solid var(--color-border-subtle);
+      position: relative;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .day-sheet-header::before {
+      content: '';
+      display: block;
+      width: 36px; height: 4px;
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+      margin: 0 auto 10px;
+    }
+    .day-sheet-title {
+      font-family: var(--font-body);
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      padding-right: 32px;
+    }
+    .day-sheet-close {
+      position: absolute;
+      top: 14px;
+      right: 12px;
+      width: 32px; height: 32px;
+      border-radius: var(--radius-full);
+      background: var(--color-bg-subtle);
+      border: none;
+      color: var(--color-text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .day-sheet-close:hover { background: var(--color-border); color: var(--color-text-primary); }
+    .day-sheet-body {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: var(--space-2) var(--space-3) var(--space-3);
+    }
+    .day-sheet-empty {
+      text-align: center;
+      padding: var(--space-7) var(--space-4);
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+    .day-sheet-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      width: 100%;
+      padding: var(--space-3);
+      background: transparent;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      text-align: left;
+      font-family: var(--font-body);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      cursor: pointer;
+      margin-bottom: var(--space-2);
+      transition: background var(--transition-fast), border-color var(--transition-fast);
+    }
+    .day-sheet-row:hover { background: var(--color-bg-subtle); }
+    .day-sheet-row:last-child { margin-bottom: 0; }
+    .day-sheet-row.is-cancelled { opacity: 0.55; }
+    .day-sheet-row.is-cancelled .day-sheet-row-name { text-decoration: line-through; }
+    .day-sheet-row.is-blocked {
+      background: var(--color-danger-bg);
+      border-color: color-mix(in srgb, var(--color-danger) 25%, transparent);
+      color: var(--color-danger);
+      cursor: default;
+    }
+    .day-sheet-row.is-blocked:hover { background: var(--color-danger-bg); }
+    .day-sheet-row-time {
+      font-weight: var(--font-weight-bold);
+      min-width: 56px;
+      flex-shrink: 0;
+    }
+    .day-sheet-row-dot {
+      width: 10px; height: 10px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+    .day-sheet-row-vessel {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+    .day-sheet-row-name {
+      font-weight: var(--font-weight-semibold);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .day-sheet-footer {
+      flex-shrink: 0;
+      display: flex;
+      gap: var(--space-2);
+      padding: var(--space-3);
+      border-top: 1px solid var(--color-border-subtle);
+      background: var(--color-bg-card);
+      padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+    }
+    .day-sheet-footer .btn-sm { white-space: nowrap; }
+    .day-sheet-footer .ds-add   { flex: 6; }
+    .day-sheet-footer .ds-block { flex: 4; }
+
     .cal-agenda-empty {
       padding: var(--space-7) var(--space-5);
       text-align: center;
@@ -733,13 +980,56 @@
        agenda row, so admins don't lose the vessel mapping. */
     @media (max-width: 768px) {
       .calendar-grid   { display: none; }
-      .calendar-agenda { display: block; }
+      /* Default visibility flipped by data-mobile-view on .calendar-wrap.
+         Agenda elements are hidden by default below and re-shown when
+         the toggle is set to "agenda". */
+      .calendar-agenda { display: none; }
+
+      /* View toggle pill — shown on mobile only. */
+      .cal-mobile-view-toggle {
+        display: inline-flex;
+        background: var(--color-bg-subtle);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-full);
+        padding: 3px;
+        margin-bottom: var(--space-3);
+        align-self: flex-start;
+      }
+      .cal-mobile-view-toggle button {
+        background: transparent;
+        border: none;
+        font-family: var(--font-body);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-secondary);
+        padding: 6px var(--space-4);
+        border-radius: var(--radius-full);
+        cursor: pointer;
+        line-height: 1;
+        transition: background var(--transition-fast), color var(--transition-fast);
+      }
+      .cal-mobile-view-toggle button.is-active {
+        background: var(--color-bg-card);
+        color: var(--color-brand-primary);
+        box-shadow: var(--shadow-sm);
+      }
+
+      /* Mobile-view switching — driven by data-mobile-view on
+         .calendar-wrap. Default (attribute absent) is treated as
+         month so the page renders correctly before JS sets it. */
+      .calendar-wrap[data-mobile-view="agenda"] .cal-mobile-grid { display: none; }
+      .calendar-wrap[data-mobile-view="agenda"] .calendar-agenda { display: block; }
+      .calendar-wrap[data-mobile-view="agenda"] .cal-agenda-actions { display: flex; }
+
+      .calendar-wrap:not([data-mobile-view="agenda"]) .cal-mobile-grid { display: block; }
+      .calendar-wrap:not([data-mobile-view="agenda"]) .calendar-agenda { display: none; }
+      .calendar-wrap:not([data-mobile-view="agenda"]) .cal-agenda-actions { display: none; }
 
       /* Action bar above the agenda. Full-width side-by-side buttons
          that fall back to a vertical stack on the narrowest phones
          where two pills would crowd. */
       .cal-agenda-actions {
-        display: flex;
+        display: none;
         gap: var(--space-2);
         margin-bottom: var(--space-3);
       }
@@ -1809,7 +2099,13 @@
           <div class="section-title">Booking Calendar</div>
           <div style="font-size:11px;color:var(--gray-400);">Click empty day to add · Right-click to block</div>
         </div>
-        <div class="calendar-wrap">
+        <div class="calendar-wrap" id="calendar-wrap">
+          <!-- Mobile-only view toggle (Month | Agenda). Hidden on desktop.
+               State persisted to localStorage key `tfc_cal_mobile_view`. -->
+          <div class="cal-mobile-view-toggle" id="cal-mobile-view-toggle">
+            <button type="button" id="cal-mview-month"  onclick="setCalMobileView('month')">Month</button>
+            <button type="button" id="cal-mview-agenda" onclick="setCalMobileView('agenda')">Agenda</button>
+          </div>
           <div class="calendar-nav">
             <div class="cal-nav-group">
               <button class="cal-nav-btn" onclick="calPrev()">‹</button>
@@ -1826,17 +2122,21 @@
             </div>
           </div>
           <div class="calendar-grid" id="calendar-grid"></div>
+          <!-- Mobile month grid (Google-Calendar-style: day numbers +
+               colored dots). Renders only on mobile when the view
+               toggle is set to Month (the default). Tap a cell to
+               open the day sheet. -->
+          <div class="cal-mobile-grid" id="cal-mobile-grid"></div>
           <!-- Mobile-only action bar. Replaces the click-empty-day +
                right-click-to-block affordances that the grid offers
                on desktop but mobile users can't reach. Hidden on
-               desktop via CSS. -->
+               desktop via CSS. Visible only when mobile view = Agenda. -->
           <div class="cal-agenda-actions" id="cal-agenda-actions">
             <button class="btn-sm btn-navy" onclick="openAddBooking()">+ Add Booking</button>
             <button class="btn-sm btn-gray" onclick="openBlackoutDateModal()">+ Block Dates</button>
           </div>
-          <!-- Mobile-only agenda view. Hidden by default; the
-               @media (max-width: 768px) block shows it AND hides the
-               grid. Populated by renderCalendarAgenda() on every
+          <!-- Mobile agenda list view. Visible only when mobile view =
+               Agenda. Populated by renderCalendarAgenda() on every
                calendar render so the two views stay in sync as the
                admin navigates months. -->
           <div class="calendar-agenda" id="calendar-agenda"></div>
@@ -1846,6 +2146,22 @@
 
     <!-- Calendar context menu / popover -->
     <div class="cal-ctx-menu" id="cal-ctx-menu"></div>
+
+    <!-- Day sheet (mobile bottom sheet for tapped day). Rendered at
+         calendar-tab level so it overlays content but lives outside
+         the calendar wrap so its fixed positioning is unambiguous. -->
+    <div class="day-sheet-overlay" id="day-sheet-overlay" onclick="closeDaySheet(event)"></div>
+    <div class="day-sheet" id="day-sheet" aria-hidden="true" role="dialog">
+      <div class="day-sheet-header" id="day-sheet-header">
+        <div class="day-sheet-title" id="day-sheet-title">—</div>
+        <button class="day-sheet-close" type="button" onclick="closeDaySheetBtn()" aria-label="Close">✕</button>
+      </div>
+      <div class="day-sheet-body" id="day-sheet-body"></div>
+      <div class="day-sheet-footer">
+        <button class="btn-sm btn-navy ds-add"   id="day-sheet-add">+ Add Booking</button>
+        <button class="btn-sm btn-gray ds-block" id="day-sheet-block">+ Block Day</button>
+      </div>
+    </div>
 
     <!-- ══ CUSTOMERS TAB ══ -->
     <div class="tab-panel" id="tab-customers">
@@ -4132,6 +4448,52 @@
   /* ── Calendar ── */
   const CAL_MAX_CHIPS = 3;
 
+  /* Vessel → dot color map. Adding a future boat = one entry here;
+     the mobile month grid + day sheet read from this lookup so no
+     other code needs to change. Falls back to a neutral gray for any
+     vessel value not listed. */
+  const VESSEL_COLORS = {
+    yacht:   'var(--color-brand-primary)',   // #1B2A6B
+    pontoon: 'var(--color-brand-accent)',    // #C8102E
+    // Future boats: add entries here, palette ready:
+    // boat3:  '#0F9D8C',  // teal
+    // boat4:  '#E0A82E',  // amber
+  };
+  const BLACKOUT_DOT_STYLE = { background: 'var(--color-text-tertiary)', textDecoration: 'line-through' };
+
+  function vesselDotColor(v) {
+    const k = String(v || '').toLowerCase();
+    if (VESSEL_COLORS[k]) return VESSEL_COLORS[k];
+    // Fuzzy match for legacy values ("Yacht", "Carver", "24FT BENTLEY"...).
+    if (k.includes('yacht') || k.includes('carver')) return VESSEL_COLORS.yacht;
+    if (k.includes('pontoon') || k.includes('bentley')) return VESSEL_COLORS.pontoon;
+    return 'var(--color-text-tertiary)';
+  }
+
+  /* Mobile view state (Month | Agenda). Persisted across reloads so
+     admins land on whichever they last used. Default = month. */
+  const CAL_MOBILE_VIEW_KEY = 'tfc_cal_mobile_view';
+  let calMobileView = 'month';
+  try {
+    const stored = localStorage.getItem(CAL_MOBILE_VIEW_KEY);
+    if (stored === 'agenda' || stored === 'month') calMobileView = stored;
+  } catch (_) { /* localStorage may be unavailable */ }
+
+  function setCalMobileView(v) {
+    if (v !== 'month' && v !== 'agenda') return;
+    calMobileView = v;
+    try { localStorage.setItem(CAL_MOBILE_VIEW_KEY, v); } catch (_) {}
+    applyCalMobileView();
+  }
+  function applyCalMobileView() {
+    const wrap = document.getElementById('calendar-wrap');
+    if (wrap) wrap.setAttribute('data-mobile-view', calMobileView);
+    const mb = document.getElementById('cal-mview-month');
+    const ab = document.getElementById('cal-mview-agenda');
+    if (mb) mb.classList.toggle('is-active', calMobileView === 'month');
+    if (ab) ab.classList.toggle('is-active', calMobileView === 'agenda');
+  }
+
   function timeSortKey(t) {
     if (!t) return 9999;
     const m = String(t).match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)?$/i);
@@ -4246,10 +4608,92 @@
     }
 
     grid.innerHTML = html;
-    /* Keep the mobile agenda view in sync with grid navigation. The
-       agenda is hidden on desktop via CSS so this is essentially free
-       there (innerHTML on an off-screen element). */
+    /* Mirror the data into both mobile views so the toggle can flip
+       between them instantly without re-fetching. Both are hidden on
+       desktop via CSS so writing to them is essentially free. */
+    renderCalendarMobileGrid(bookingMap, blackoutMap);
     renderCalendarAgenda(bookingMap, blackoutMap);
+    applyCalMobileView();
+  }
+
+  /* Mobile-only month grid (Google-Calendar-style). Day numbers
+     only, with up to 4 colored dots beneath; "+N" if more. Tap a
+     cell to open the day sheet. Reuses bookingMap + blackoutMap
+     already built by renderCalendar(). */
+  function renderCalendarMobileGrid(bookingMap, blackoutMap) {
+    const root = document.getElementById('cal-mobile-grid');
+    if (!root) return;
+
+    const dayHeaders = ['S','M','T','W','T','F','S'];
+    const first = new Date(calYear, calMonth, 1);
+    const last  = new Date(calYear, calMonth + 1, 0);
+    const today = new Date();
+    const prevLast = new Date(calYear, calMonth, 0).getDate();
+
+    let html = '<div class="cal-mobile-grid-inner">';
+    for (const h of dayHeaders) html += `<div class="cal-mobile-dayhdr">${h}</div>`;
+
+    // Previous-month padding (still tappable; we resolve their full date below).
+    for (let i = first.getDay() - 1; i >= 0; i--) {
+      const dnum = prevLast - i;
+      const pm = calMonth === 0 ? 11 : calMonth - 1;
+      const py = calMonth === 0 ? calYear - 1 : calYear;
+      const dateStr = py + '-' + String(pm + 1).padStart(2, '0') + '-' + String(dnum).padStart(2, '0');
+      html += `<button type="button" class="cal-mobile-day other-month" data-date="${dateStr}" onclick="openDaySheet('${dateStr}')"><div class="cal-mobile-day-num">${dnum}</div></button>`;
+    }
+
+    for (let d = 1; d <= last.getDate(); d++) {
+      const dateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      const isToday = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+      const bookingsOnDay = bookingMap[dateStr] || [];
+      const dayBlackouts  = blackoutMap[dateStr] || [];
+      const scope = dayBlackoutScope(dayBlackouts);
+
+      // Build indicator list: blackouts first (one dot per scope row OR
+      // one per per-slot row), then booking dots colored by vessel.
+      const indicators = [];
+      if (scope === 'both' || scope === 'yacht' || scope === 'pontoon') {
+        indicators.push({ kind: 'blackout', scope });
+      }
+      dayBlackouts.forEach(b => {
+        if (b.time_slot && b.time_slot !== 'all') indicators.push({ kind: 'blackout-slot' });
+      });
+      bookingsOnDay.forEach(b => indicators.push({ kind: 'booking', vessel: b.vessel }));
+
+      const MAX_DOTS = 4;
+      const visible = indicators.slice(0, MAX_DOTS);
+      const overflow = indicators.length - visible.length;
+      const dotsHtml = visible.map(ind => {
+        const color = ind.kind === 'booking'
+          ? vesselDotColor(ind.vessel)
+          : BLACKOUT_DOT_STYLE.background;
+        return `<span class="cal-mobile-dot" style="background:${color};"></span>`;
+      }).join('');
+      const moreHtml = overflow > 0 ? `<div class="cal-mobile-more">+${overflow}</div>` : '';
+
+      let cls = 'cal-mobile-day';
+      if (isToday) cls += ' today';
+      if (scope === 'both') cls += ' blocked-full';
+
+      html += `<button type="button" class="${cls}" data-date="${dateStr}" onclick="openDaySheet('${dateStr}')">` +
+              `<div class="cal-mobile-day-num">${d}</div>` +
+              (dotsHtml ? `<div class="cal-mobile-dots">${dotsHtml}</div>` : '') +
+              moreHtml +
+              `</button>`;
+    }
+
+    // Next-month padding.
+    const totalCells = first.getDay() + last.getDate();
+    const remaining = (7 - (totalCells % 7)) % 7;
+    for (let i = 1; i <= remaining; i++) {
+      const nm = calMonth === 11 ? 0 : calMonth + 1;
+      const ny = calMonth === 11 ? calYear + 1 : calYear;
+      const dateStr = ny + '-' + String(nm + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
+      html += `<button type="button" class="cal-mobile-day other-month" data-date="${dateStr}" onclick="openDaySheet('${dateStr}')"><div class="cal-mobile-day-num">${i}</div></button>`;
+    }
+
+    html += '</div>';
+    root.innerHTML = html;
   }
 
   /* Mobile-only chronological list view for the calendar. Reads the
@@ -4331,6 +4775,133 @@
   function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
   function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
   function calToday() { const n = new Date(); calYear = n.getFullYear(); calMonth = n.getMonth(); renderCalendar(); }
+
+  /* ── Day sheet (mobile bottom sheet) ─────────────────────────────
+     Opened by tapping a cell on the mobile month grid. Re-reads the
+     latest allBookings + allBlackouts so the sheet reflects any
+     refresh that happened since the calendar last rendered. */
+  let daySheetCurrentDate = null;
+
+  function openDaySheet(dateStr) {
+    if (!dateStr) return;
+    daySheetCurrentDate = dateStr;
+
+    // Title: "Thursday, May 14, 2026"
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const localDate = new Date(y, m - 1, d);
+    const weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('day-sheet-title').textContent =
+      `${weekdays[localDate.getDay()]}, ${months[localDate.getMonth()]} ${localDate.getDate()}, ${localDate.getFullYear()}`;
+
+    const dayBookings  = (allBookings  || []).filter(b => b.date === dateStr);
+    const dayBlackouts = (allBlackouts || []).filter(b => b.date === dateStr);
+    dayBookings.sort((a, b) => timeSortKey(a.time_slot) - timeSortKey(b.time_slot));
+    const scope = dayBlackoutScope(dayBlackouts);
+
+    const rows = [];
+    if (scope === 'both') {
+      rows.push(`<div class="day-sheet-row is-blocked"><span>🚫 Blocked — both vessels</span></div>`);
+    } else {
+      if (scope === 'yacht')   rows.push(`<div class="day-sheet-row is-blocked"><span>🚫 Blocked — YACHT only</span></div>`);
+      if (scope === 'pontoon') rows.push(`<div class="day-sheet-row is-blocked"><span>🚫 Blocked — 24FT BENTLEY only</span></div>`);
+    }
+    // Per-slot blackouts (don't count toward scope but still meaningful).
+    dayBlackouts.forEach(b => {
+      if (b.time_slot && b.time_slot !== 'all') {
+        const vlabel = b.vessel === 'both' ? 'both vessels' : (b.vessel === 'yacht' ? 'YACHT' : '24FT BENTLEY');
+        rows.push(`<div class="day-sheet-row is-blocked"><span class="day-sheet-row-time">${esc(timeShort(b.time_slot) || b.time_slot)}</span><span>🚫 ${esc(vlabel)} blocked</span></div>`);
+      }
+    });
+
+    dayBookings.forEach(b => {
+      const status = bkStatus(b);
+      const cancelledCls = status === 'cancelled' ? ' is-cancelled' : '';
+      const time = esc(timeShort(b.time_slot) || '—');
+      const color = vesselDotColor(b.vessel);
+      const vesselTxt = esc(vesselLabel(b.vessel));
+      const name = esc(chipName(b));
+      rows.push(
+        `<button type="button" class="day-sheet-row${cancelledCls}" onclick="daySheetOpenBooking('${esc(b.session_id)}')">` +
+          `<span class="day-sheet-row-time">${time}</span>` +
+          `<span class="day-sheet-row-dot" style="background:${color};"></span>` +
+          `<span class="day-sheet-row-vessel">${vesselTxt}</span>` +
+          `<span class="day-sheet-row-name">${name}</span>` +
+        `</button>`
+      );
+    });
+
+    const body = document.getElementById('day-sheet-body');
+    body.innerHTML = rows.length
+      ? rows.join('')
+      : '<div class="day-sheet-empty">No bookings or blackouts</div>';
+
+    document.getElementById('day-sheet-add').onclick   = () => { closeDaySheetBtn(); openAddBooking(dateStr); };
+    document.getElementById('day-sheet-block').onclick = () => { closeDaySheetBtn(); openBlackoutDateModal(dateStr); };
+
+    const overlay = document.getElementById('day-sheet-overlay');
+    const sheet   = document.getElementById('day-sheet');
+    overlay.classList.add('open');
+    sheet.classList.add('open');
+    sheet.setAttribute('aria-hidden', 'false');
+  }
+
+  function daySheetOpenBooking(sid) {
+    closeDaySheetBtn();
+    openEditModal(sid);
+  }
+
+  function closeDaySheet(e) {
+    const overlay = document.getElementById('day-sheet-overlay');
+    if (e && e.target !== overlay) return;
+    closeDaySheetBtn();
+  }
+  function closeDaySheetBtn() {
+    const overlay = document.getElementById('day-sheet-overlay');
+    const sheet   = document.getElementById('day-sheet');
+    overlay.classList.remove('open');
+    sheet.classList.remove('open');
+    sheet.style.transform = '';
+    sheet.classList.remove('dragging');
+    sheet.setAttribute('aria-hidden', 'true');
+    daySheetCurrentDate = null;
+  }
+
+  /* Swipe-down dismiss on the sheet header. Pointer events so it
+     works for mouse, touch, and pen. Closes if dragged past ~80px. */
+  (function wireDaySheetSwipe() {
+    const header = document.getElementById('day-sheet-header');
+    const sheet  = document.getElementById('day-sheet');
+    if (!header || !sheet) return;
+    let startY = null;
+    let active = false;
+
+    header.addEventListener('pointerdown', (e) => {
+      startY = e.clientY;
+      active = true;
+      sheet.classList.add('dragging');
+      header.setPointerCapture?.(e.pointerId);
+    });
+    header.addEventListener('pointermove', (e) => {
+      if (!active || startY == null) return;
+      const dy = e.clientY - startY;
+      if (dy > 0) sheet.style.transform = `translateY(${dy}px)`;
+    });
+    const finish = (e) => {
+      if (!active) return;
+      const dy = (e.clientY != null && startY != null) ? (e.clientY - startY) : 0;
+      active = false;
+      startY = null;
+      sheet.classList.remove('dragging');
+      if (dy > 80) {
+        closeDaySheetBtn();
+      } else {
+        sheet.style.transform = '';
+      }
+    };
+    header.addEventListener('pointerup', finish);
+    header.addEventListener('pointercancel', finish);
+  })();
 
   /* Calendar interactions: click chip → edit, click empty day → add, right-click → context menu, click blackout → popover */
   function calOnClick(e) {
