@@ -7,7 +7,12 @@ const {
   sendReviewRequestEmail,
   sendConfirmationEmails,
   sendConfirmationEmailPermanentFailureAlert,
+  sendDailyLeadDigest,
 } = require('../lib/send-emails');
+const { listRecentLeads, deleteStaleLeads } = require('../lib/storage');
+
+const LEAD_DIGEST_WINDOW_HOURS = 24;
+const LEAD_RETENTION_DAYS = 90;
 
 /* ── Supabase REST helper (same shape as lib/storage.js) ── */
 function supabase(method, path, body, extraHeaders) {
@@ -381,6 +386,57 @@ module.exports = async function handler(req, res) {
   }
 
   summary.post_charter = post;
+
+  /* ── Leads digest pass: send one digest email summarising lead activity
+     from the last 24 hours, grouped by status. Skip entirely if there
+     was zero activity (no leads in window). ────────────────────────── */
+  const leadsDigest = {
+    window_hours: LEAD_DIGEST_WINDOW_HOURS,
+    total:        0,
+    by_status:    { captured: 0, abandoned_stripe: 0, payment_failed: 0, converted: 0, contacted: 0 },
+    digest_sent:  false,
+    digest_error: null,
+  };
+  try {
+    const recent = await listRecentLeads(LEAD_DIGEST_WINDOW_HOURS);
+    leadsDigest.total = recent.length;
+    const grouped = { captured: [], abandoned_stripe: [], payment_failed: [], converted: [], contacted: [] };
+    for (const l of recent) {
+      const k = l.status && grouped[l.status] ? l.status : 'captured';
+      grouped[k].push(l);
+      leadsDigest.by_status[k] = (leadsDigest.by_status[k] || 0) + 1;
+    }
+    if (recent.length === 0) {
+      console.log('[cron-reminders] leads digest: 0 leads in last', LEAD_DIGEST_WINDOW_HOURS, 'h — skipping email');
+    } else {
+      try {
+        await sendDailyLeadDigest(grouped, { dateLabel: today });
+        leadsDigest.digest_sent = true;
+        console.log('[cron-reminders] leads digest sent | total:', recent.length, '| by_status:', leadsDigest.by_status);
+      } catch (err) {
+        leadsDigest.digest_error = err.message;
+        console.error('[cron-reminders] leads digest send failed:', err.message);
+      }
+    }
+  } catch (err) {
+    leadsDigest.digest_error = err.message;
+    console.error('[cron-reminders] leads digest query failed:', err.message);
+  }
+  summary.leads_digest = leadsDigest;
+
+  /* ── 90-day retention cleanup: hard-delete unconverted leads older than
+     LEAD_RETENTION_DAYS. Converted leads are retained because they represent
+     real customer-booking relationships and may be useful for reporting.
+     Committed in the privacy policy as a 90-day window. ───────────── */
+  try {
+    const purged = await deleteStaleLeads(LEAD_RETENTION_DAYS);
+    summary.leads_retention = { days: LEAD_RETENTION_DAYS, purged };
+    if (purged > 0) console.log('[cron-reminders] retention cleanup purged', purged, 'unconverted leads older than', LEAD_RETENTION_DAYS, 'days');
+  } catch (err) {
+    summary.leads_retention = { days: LEAD_RETENTION_DAYS, error: err.message };
+    console.error('[cron-reminders] retention cleanup failed:', err.message);
+  }
+
   console.log('[cron-reminders] done. summary:', JSON.stringify(summary));
   return res.status(200).json(summary);
 };

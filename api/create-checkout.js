@@ -195,7 +195,10 @@ module.exports = async function handler(req, res) {
         setup_future_usage: 'off_session',
       },
       success_url: `${baseUrl}/booking-confirmation.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/booking.html`,
+      // Cancel URL carries the session ID so booking.html can detect a
+      // returned-from-Stripe customer and (if they haven't completed)
+      // surface the exit-intent lead-capture modal automatically.
+      cancel_url: `${baseUrl}/booking.html?cancelled_session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         charter_name:    truncate(booking.charterName),
         vessel:          truncate(booking.vessel),

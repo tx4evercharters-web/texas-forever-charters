@@ -5,8 +5,19 @@ const {
   sendDamageHoldFailedCustomerNotice,
   sendStripeRefundReconciledAlert,
   sendChargebackAlert,
+  sendHighValueLeadAlert,
 } = require('../lib/send-emails');
-const { saveBooking, patchBooking, findBookingByPaymentIntent } = require('../lib/storage');
+const {
+  saveBooking,
+  patchBooking,
+  findBookingByPaymentIntent,
+  findActiveLeadByEmail,
+  findLeadByStripeSession,
+  findLeadByPaymentIntent,
+  patchLead,
+} = require('../lib/storage');
+
+const LEAD_HIGH_VALUE_THRESHOLD = 500;
 
 // Vercel must not parse the body — Stripe signature verification needs the raw bytes.
 module.exports.config = { api: { bodyParser: false } };
@@ -255,6 +266,22 @@ module.exports = async function handler(req, res) {
       'customer:', email,
       '| amount: $' + ((s.amount_total || 0) / 100).toFixed(2),
       '| session:', s.id);
+    /* If a lead exists for this checkout session, flip it to
+       'abandoned_stripe' and fire a high-value alert above threshold.
+       Best-effort — never let a lead lookup failure block the 200 response. */
+    try {
+      const lead = await findLeadByStripeSession(s.id);
+      if (lead && lead.status !== 'converted' && lead.status !== 'abandoned_stripe') {
+        const updated = await patchLead(lead.id, { status: 'abandoned_stripe' });
+        console.log('[stripe-webhook] lead', lead.id, 'marked abandoned_stripe');
+        if (updated && parseFloat(updated.grand_total || 0) >= LEAD_HIGH_VALUE_THRESHOLD) {
+          try { await sendHighValueLeadAlert(updated, 'abandoned_stripe'); }
+          catch (alertErr) { console.error('[stripe-webhook] high-value lead alert (abandoned) failed:', alertErr.message); }
+        }
+      }
+    } catch (err) {
+      console.error('[stripe-webhook] lead lifecycle (expired) lookup/patch failed:', err.message);
+    }
     return res.status(200).json({ received: true });
   }
   if (event.type === 'payment_intent.payment_failed') {
@@ -269,6 +296,27 @@ module.exports = async function handler(req, res) {
       '| amount: $' + ((pi.amount || 0) / 100).toFixed(2),
       '| customer:', email,
       '| intent:', pi.id);
+    /* If a lead exists for this payment intent (or this email), flip it
+       to 'payment_failed' and fire a high-value alert above threshold.
+       Try intent first (more specific), fall back to email. */
+    try {
+      let lead = await findLeadByPaymentIntent(pi.id);
+      if (!lead && email && email !== 'unknown') {
+        lead = await findActiveLeadByEmail(email);
+      }
+      if (lead && lead.status !== 'converted' && lead.status !== 'payment_failed') {
+        const updates = { status: 'payment_failed' };
+        if (!lead.payment_intent_id && pi.id) updates.payment_intent_id = pi.id;
+        const updated = await patchLead(lead.id, updates);
+        console.log('[stripe-webhook] lead', lead.id, 'marked payment_failed');
+        if (updated && parseFloat(updated.grand_total || 0) >= LEAD_HIGH_VALUE_THRESHOLD) {
+          try { await sendHighValueLeadAlert(updated, 'payment_failed'); }
+          catch (alertErr) { console.error('[stripe-webhook] high-value lead alert (payment_failed) failed:', alertErr.message); }
+        }
+      }
+    } catch (err) {
+      console.error('[stripe-webhook] lead lifecycle (payment_failed) lookup/patch failed:', err.message);
+    }
     return res.status(200).json({ received: true });
   }
 
@@ -499,6 +547,27 @@ module.exports = async function handler(req, res) {
     console.log('[stripe-webhook] confirmation_email_sent =', customerEmailOk, 'for', session.id);
   } catch (err) {
     console.error('[stripe-webhook] failed to update confirmation_email_sent for', session.id, ':', err.message);
+  }
+
+  /* Lead conversion — if this customer previously consented to exit-intent
+     follow-up, flip their lead row from 'captured'/'abandoned_stripe'/
+     'payment_failed' to 'converted' and stamp the booking session id +
+     converted_at. Match by email first (works for leads captured pre-Stripe),
+     fall back to stripe_session_id (works for leads captured at cancel-return).
+     Best-effort — never let a lead-update failure block the 200 response. */
+  try {
+    let lead = session.customer_email ? await findActiveLeadByEmail(session.customer_email) : null;
+    if (!lead) lead = await findLeadByStripeSession(session.id);
+    if (lead && lead.status !== 'converted') {
+      await patchLead(lead.id, {
+        status:                       'converted',
+        converted_booking_session_id: session.id,
+        converted_at:                 new Date().toISOString(),
+      });
+      console.log('[stripe-webhook] lead', lead.id, 'marked converted for booking', session.id);
+    }
+  } catch (err) {
+    console.error('[stripe-webhook] lead conversion lookup/patch failed for', session.id, ':', err.message);
   }
 
   return res.status(200).json({ received: true });

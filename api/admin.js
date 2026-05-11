@@ -22,6 +22,8 @@ const {
   deleteBookingRow,
   listWaivers,
   getAllWaivers,
+  listLeads,
+  patchLead,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail } = require('../lib/send-emails');
 
@@ -775,6 +777,38 @@ async function handleUpdatePayment(req, res) {
   }
 }
 
+/* ── Leads ─────────────────────────────────────────────────────────── */
+
+async function handleListLeads(req, res) {
+  if (req.method !== 'GET') return res.status(405).end();
+  const status = req.query.status; // optional filter — 'captured' | 'abandoned_stripe' | ...
+  try {
+    const leads = await listLeads({ status: status || undefined, limit: 500 });
+    return res.status(200).json({ leads });
+  } catch (err) {
+    console.error('[admin] list-leads failed:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleMarkLeadContacted(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { id, notes } = req.body || {};
+  if (!id) return res.status(400).json({ error: 'id required' });
+  try {
+    const updated = await patchLead(id, {
+      status:        'contacted',
+      contacted_at:  new Date().toISOString(),
+      contact_notes: notes ? String(notes).slice(0, 2000) : null,
+    });
+    if (!updated) return res.status(404).json({ error: 'Lead not found' });
+    return res.status(200).json({ ok: true, lead: updated });
+  } catch (err) {
+    console.error('[admin] mark-lead-contacted failed:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 /* ── Router ── */
 
 const PUBLIC_ACTIONS = new Set(['login']);
@@ -805,6 +839,8 @@ const ROUTES = {
   'capture-damage-charge':handleCaptureDamageCharge,
   'list-waivers':         handleListWaivers,
   'send-waiver-link':     handleSendWaiverLink,
+  'leads':                handleListLeads,
+  'mark-lead-contacted':  handleMarkLeadContacted,
 };
 
 module.exports = async function handler(req, res) {

@@ -2158,6 +2158,125 @@
     </div>
   </div>
 
+  <!-- ── EXIT-INTENT LEAD CAPTURE ─────────────────────────────────────
+       Modal (desktop) + bottom banner (mobile). Consent-based — POSTs to
+       /api/capture-lead only when the user explicitly clicks YES. The
+       wiring lives in a self-contained IIFE further down. ──────────── -->
+  <style>
+    #lead-modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100000;
+      display: none; align-items: center; justify-content: center;
+      padding: 16px;
+      animation: lead-fadein 0.2s ease;
+    }
+    #lead-modal-overlay.open { display: flex; }
+    @keyframes lead-fadein { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes lead-slidein { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+    #lead-modal {
+      background: #FFFFFF; border-radius: 12px;
+      max-width: 540px; width: 100%;
+      padding: 28px 28px 24px;
+      font-family: Arial, Helvetica, sans-serif;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+      position: relative;
+      animation: lead-slidein 0.25s cubic-bezier(0.2,0.8,0.2,1);
+    }
+    #lead-modal-close {
+      position: absolute; top: 12px; right: 12px;
+      background: transparent; border: none;
+      width: 32px; height: 32px; border-radius: 6px;
+      cursor: pointer; font-size: 22px; color: #6B7280;
+      line-height: 1;
+    }
+    #lead-modal-close:hover { background: #F0F2F8; color: #1B2A6B; }
+    #lead-modal h2 {
+      color: #1B2A6B; font-size: 26px; margin: 0 0 14px;
+      font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px;
+    }
+    #lead-modal p {
+      color: #1F2937; font-size: 14px; line-height: 1.55; margin: 0 0 22px;
+    }
+    #lead-modal .lead-btn-yes {
+      display: block; width: 100%;
+      background: #C8102E; color: #FFFFFF;
+      border: none; border-radius: 8px;
+      padding: 14px 18px; font-size: 15px; font-weight: 800;
+      cursor: pointer; margin-bottom: 10px;
+      font-family: Arial, Helvetica, sans-serif;
+      text-align: center; letter-spacing: 0.3px;
+    }
+    #lead-modal .lead-btn-yes:hover { background: #A30D26; }
+    #lead-modal .lead-btn-no {
+      display: block; width: 100%;
+      background: transparent; color: #6B7280;
+      border: 1px solid #E5E7EB; border-radius: 8px;
+      padding: 12px 18px; font-size: 13px; font-weight: 600;
+      cursor: pointer;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    #lead-modal .lead-btn-no:hover { background: #F8F9FC; color: #1B2A6B; }
+    #lead-modal[data-state="sent"] .lead-btn-yes,
+    #lead-modal[data-state="sent"] .lead-btn-no { display: none; }
+    #lead-modal[data-state="sent"] .lead-sent-msg { display: block; }
+    .lead-sent-msg {
+      display: none;
+      background: #ECFDF5; border: 1px solid #10B981;
+      color: #065F46; border-radius: 8px;
+      padding: 14px 16px; font-size: 14px;
+      text-align: center; font-weight: 700;
+    }
+
+    /* Mobile bottom banner — non-modal, dismissible */
+    #lead-banner-mobile {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #FFFFFF;
+      border-top: 3px solid #C8102E;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+      padding: 14px 16px 18px;
+      z-index: 99000;
+      display: none;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    #lead-banner-mobile.open { display: block; }
+    #lead-banner-mobile p {
+      margin: 0 0 10px;
+      color: #1F2937; font-size: 13px; line-height: 1.45;
+      text-align: center;
+    }
+    #lead-banner-mobile .lead-mob-btns { display: flex; gap: 8px; }
+    #lead-banner-mobile button {
+      flex: 1; padding: 11px; border-radius: 6px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: Arial, Helvetica, sans-serif;
+      border: 1px solid #E5E7EB;
+    }
+    #lead-banner-mobile .lead-mob-yes {
+      background: #C8102E; color: #FFFFFF; border-color: #C8102E;
+    }
+    #lead-banner-mobile .lead-mob-no {
+      background: #FFFFFF; color: #6B7280;
+    }
+  </style>
+  <div id="lead-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="lead-modal-title">
+    <div id="lead-modal" data-state="initial">
+      <button id="lead-modal-close" type="button" aria-label="Close">×</button>
+      <h2 id="lead-modal-title">Don't go quite yet...</h2>
+      <p>Looks like something might've gotten in the way of your booking. We'd love to help you finish — can a Texas Forever Charters rep reach out to you?</p>
+      <button class="lead-btn-yes" type="button" id="lead-btn-yes">Yes — I can't wait to be on the water with Texas Forever Charters</button>
+      <button class="lead-btn-no" type="button" id="lead-btn-no">No, I hate having fun on the lake</button>
+      <div class="lead-sent-msg">✓ Got it — we'll be in touch if needed.</div>
+    </div>
+  </div>
+  <div id="lead-banner-mobile" role="region" aria-label="Follow-up offer">
+    <p><strong>Want a Texas Forever rep to follow up if anything goes wrong?</strong></p>
+    <div class="lead-mob-btns">
+      <button class="lead-mob-yes" type="button" id="lead-mob-yes">Yes please</button>
+      <button class="lead-mob-no"  type="button" id="lead-mob-no">No thanks</button>
+    </div>
+  </div>
+
   <!-- ── LEGAL FOOTER ── -->
   <div class="legal-footer">
     <a href="/terms.html">Charter Agreement &amp; Terms of Service</a>
@@ -3414,6 +3533,154 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     // Skip resume when a deep-link ?vessel= param is in play (the customer
     // explicitly clicked into a vessel-specific path; honor that intent).
     if (!preselect) checkForResumeBooking();
+  </script>
+
+  <!-- ── EXIT-INTENT LEAD CAPTURE — wiring ──────────────────────────────
+       Self-contained IIFE. Reads `booking` / `calGrandTotal` /
+       `calDepositAmount` from the main wizard script above. Only POSTs
+       to /api/capture-lead when the user explicitly clicks YES. ─────── -->
+  <script>
+  (function () {
+    'use strict';
+
+    const SS_KEY  = 'tfcLeadModalShownV1';
+    const MOB_KEY = 'tfcLeadMobileBannerShownV1';
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function hasMinimumContact() {
+      const b = window.booking || {};
+      return typeof b.fullName === 'string' && b.fullName.trim().length >= 2 &&
+             typeof b.email === 'string' && EMAIL_RE.test(b.email.trim());
+    }
+
+    /* Build the POST body from the current wizard state. Mirrors the
+       shape that /api/create-checkout posts, minus the server-trusted
+       pricing — capture-lead recomputes nothing, just stores what the
+       client says. */
+    function gatherFormState(source) {
+      const b = window.booking || {};
+      const gt  = (typeof window.calGrandTotal   === 'number') ? window.calGrandTotal   : null;
+      const dep = (typeof window.calDepositAmount === 'number') ? window.calDepositAmount : null;
+      let cancelledSid = null;
+      try {
+        cancelledSid = new URL(window.location.href).searchParams.get('cancelled_session_id');
+      } catch (e) {}
+      return {
+        full_name:         b.fullName || '',
+        customer_email:    b.email    || '',
+        phone:             b.phone    || '',
+        vessel:            b.vessel || null,
+        experience:        b.experience || null,
+        date:              b.date || null,
+        time_slot:         b.timeSlot || null,
+        duration:          b.duration != null ? String(b.duration) : null,
+        party_size:        b.partySize || null,
+        add_ons:           b.addOns || null,
+        special_requests:  b.specialRequests || null,
+        grand_total:       gt,
+        deposit_amount:    dep,
+        stripe_session_id: cancelledSid || null,
+        source:            cancelledSid ? 'website_stripe_cancel_return' : source,
+      };
+    }
+
+    async function postLead(source) {
+      try {
+        const res = await fetch('/api/capture-lead', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(gatherFormState(source)),
+        });
+        if (!res.ok) console.warn('[lead-capture] POST failed', res.status);
+      } catch (err) {
+        console.warn('[lead-capture] POST error', err && err.message);
+      }
+    }
+
+    /* ── Modal (desktop) ── */
+    const overlay = document.getElementById('lead-modal-overlay');
+    const modal   = document.getElementById('lead-modal');
+
+    function openModal() {
+      if (sessionStorage.getItem(SS_KEY) === '1') return;
+      if (!hasMinimumContact()) return;
+      if (overlay.classList.contains('open')) return;
+      /* If the customer reached the confirmation page they've already
+         converted — don't pester. booking-confirmation.html is a
+         different file, but a misfire on resume could still land here. */
+      if (/booking-confirmation/.test(location.pathname)) return;
+      sessionStorage.setItem(SS_KEY, '1');
+      modal.setAttribute('data-state', 'initial');
+      overlay.classList.add('open');
+    }
+    function closeModal() { overlay.classList.remove('open'); }
+
+    document.getElementById('lead-btn-yes').addEventListener('click', function () {
+      modal.setAttribute('data-state', 'sent');
+      postLead('website_exit_intent');
+      setTimeout(closeModal, 1200);
+    });
+    document.getElementById('lead-btn-no').addEventListener('click', closeModal);
+    document.getElementById('lead-modal-close').addEventListener('click', closeModal);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+    });
+
+    /* Desktop exit-intent: skip on touch devices (the bottom banner
+       handles mobile). Fire when cursor exits via the top edge. */
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
+    if (!isTouchDevice) {
+      document.documentElement.addEventListener('mouseleave', function (e) {
+        if (e.clientY > 50) return;
+        openModal();
+      });
+    }
+
+    /* ── Mobile bottom banner (visible while on Step 8) ── */
+    const banner = document.getElementById('lead-banner-mobile');
+    function showMobileBanner() {
+      if (sessionStorage.getItem(MOB_KEY) === '1') return;
+      if (!hasMinimumContact()) return;
+      sessionStorage.setItem(MOB_KEY, '1');
+      banner.classList.add('open');
+    }
+    function hideMobileBanner() { banner.classList.remove('open'); }
+
+    document.getElementById('lead-mob-yes').addEventListener('click', function () {
+      postLead('website_exit_intent_mobile');
+      hideMobileBanner();
+      if (typeof showToast === 'function') showToast("Got it — we'll be in touch if needed");
+    });
+    document.getElementById('lead-mob-no').addEventListener('click', hideMobileBanner);
+
+    if (isTouchDevice) {
+      /* Poll for Step 8 becoming visible; avoids monkey-patching showStep.
+         Stops as soon as we surface the banner once. */
+      const bannerTimer = setInterval(function () {
+        const step8 = document.getElementById('step8');
+        if (step8 && step8.classList.contains('active') && hasMinimumContact()) {
+          showMobileBanner();
+          clearInterval(bannerTimer);
+        }
+      }, 500);
+    }
+
+    /* Return-from-Stripe-cancel: auto-fire the modal if we land here with
+       ?cancelled_session_id=cs_*. Delay slightly so the wizard's
+       checkForResumeBooking() can rehydrate `booking` from localStorage. */
+    try {
+      const cancelledSid = new URL(window.location.href).searchParams.get('cancelled_session_id');
+      if (cancelledSid && /^cs_/.test(cancelledSid)) {
+        setTimeout(function () {
+          if (hasMinimumContact()) {
+            sessionStorage.removeItem(SS_KEY); // override the once-per-session gate
+            openModal();
+          }
+        }, 800);
+      }
+    } catch (e) { /* ignore */ }
+  })();
   </script>
 
 </body>
