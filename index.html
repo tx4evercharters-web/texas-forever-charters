@@ -35,6 +35,16 @@
 </head>
 <body>
 
+<!-- EMERGENCY: Online booking offline banner. Remove this block after the
+     Stripe sandbox-vs-live issue is fully resolved AND a real test charge
+     confirms live mode. End-to-end test before removing. -->
+<div id="emergency-booking-banner" role="alert" style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#C8102E;color:#FFFFFF;padding:14px 16px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:600;line-height:1.5;box-shadow:0 2px 12px rgba(0,0,0,0.3);border-bottom:3px solid #8B0000;">
+  ⚠️ Online booking is temporarily unavailable. Please call or text
+  <a href="tel:+17373681669" style="color:#FFFFFF;text-decoration:underline;font-weight:800;">(737) 368-1669</a>
+  to book your charter. We apologize for the inconvenience.
+</div>
+<div id="emergency-booking-banner-spacer" style="height:64px"></div>
+
   <a href="#home" class="skip-nav">Skip to main content</a>
 
   <!-- ── NAVIGATION ── -->
