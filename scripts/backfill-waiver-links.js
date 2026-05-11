@@ -140,7 +140,9 @@ async function main() {
 
   for (const w of orphans) {
     const sname = fmtSigner(w).padEnd(28);
-    const tag = w.id.slice(0, 8) + '  ' + sname;
+    /* Coerce to string for display because waivers.id is an integer
+       (bookings.id is a UUID string — handled below the same way). */
+    const tag = String(w.id).slice(0, 8) + '  ' + sname;
 
     if (!w.charter_date || !w.charter_time || !w.vessel) {
       summary.missing_fields++;
@@ -167,13 +169,13 @@ async function main() {
     }
     if (candidates.length > 1) {
       summary.ambiguous++;
-      const ids = candidates.map(b => b.id.slice(0, 8)).join(', ');
+      const ids = candidates.map(b => String(b.id).slice(0, 8)).join(', ');
       console.log(`  ${YELLOW}AMBG${RESET}  ${tag} — ${candidates.length} candidates: ${ids}`);
       continue;
     }
 
     const booking = candidates[0];
-    const target = booking.id.slice(0, 8) + ' (' + (booking.full_name || '—') + ')';
+    const target = String(booking.id).slice(0, 8) + ' (' + (booking.full_name || '—') + ')';
 
     if (DRY_RUN) {
       summary.linked++;
