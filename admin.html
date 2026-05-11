@@ -4692,6 +4692,16 @@
     }
   }
 
+  /* Inline expand toggle for the Customer detail's Signed Waivers
+     section. Uses a `cust-wv-expand-{id}` id prefix to avoid collision
+     with the Waivers tab's `wv-expand-{id}` ids (both tabs sit in the
+     DOM simultaneously; only one is .active at a time). */
+  function custWvToggleExpand(id) {
+    const row = document.getElementById('cust-wv-expand-' + id);
+    if (!row) return;
+    row.style.display = (row.style.display === 'none' || !row.style.display) ? 'table-row' : 'none';
+  }
+
   function renderCustDetail(c) {
     const bookings = (c.bookings || []).slice().sort((a, b) => (b.date || b.booked_at || '').localeCompare(a.date || a.booked_at || ''));
     const bookingsHtml = bookings.length ? `
@@ -4716,6 +4726,54 @@
         }).join('')}</tbody>
       </table>
     ` : '<div class="cust-detail-empty">No bookings on file.</div>';
+
+    /* ── Signed waivers (A1) ───────────────────────────────────────
+       Each booking in c.bookings was enriched server-side with a
+       .waivers array (see handleListCustomers). Flatten across the
+       customer's bookings, sort newest signed first, and only render
+       the section if there's at least one waiver — empty state is
+       intentionally hidden per the spec. */
+    const allCustWaivers = bookings.flatMap(b => b.waivers || []);
+    allCustWaivers.sort((a, b) => (b.signed_at || '').localeCompare(a.signed_at || ''));
+    const waiversHtml = allCustWaivers.length ? `
+      <h4 style="margin-top:18px;">✍️ Signed Waivers (${allCustWaivers.length} total)</h4>
+      <table class="cust-bookings-mini">
+        <thead><tr>
+          <th>Date Signed</th>
+          <th>Charter Date</th>
+          <th>Vessel</th>
+          <th>Signer Name</th>
+          <th style="text-align:center;">Age</th>
+          <th>Emergency Contact</th>
+        </tr></thead>
+        <tbody>${allCustWaivers.map(w => {
+          const wid = esc(String(w.id));
+          const signerFull = ((w.signer_first_name || '') + ' ' + (w.signer_last_name || '')).trim() || '(no name)';
+          const dateSignedStr = w.signed_at
+            ? new Date(w.signed_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+            : '—';
+          const emName  = w.emergency_contact_name  || '';
+          const emPhone = w.emergency_contact_phone || '';
+          const emergencyCell = (emName || emPhone)
+            ? esc(emName || '—') + (emPhone
+                ? '<br><a href="tel:' + esc(emPhone) + '" style="color:var(--gray-600);font-size:11px;text-decoration:none;">' + esc(emPhone) + '</a>'
+                : '')
+            : '<span style="color:var(--gray-400);">—</span>';
+          return `
+            <tr>
+              <td style="white-space:nowrap;">${esc(dateSignedStr)}</td>
+              <td style="white-space:nowrap;">${esc(w.charter_date ? fmtDate(w.charter_date) : '—')}</td>
+              <td>${esc(vesselLabel(w.vessel))}</td>
+              <td><button style="background:transparent;border:none;color:var(--navy);font-weight:700;cursor:pointer;padding:0;text-decoration:underline;font-family:inherit;font-size:inherit;" onclick="custWvToggleExpand('${wid}')">${esc(signerFull)}</button></td>
+              <td style="text-align:center;">${w.age != null ? esc(String(w.age)) : '—'}</td>
+              <td>${emergencyCell}</td>
+            </tr>
+            <tr id="cust-wv-expand-${wid}" style="display:none;background:var(--gray-50);">
+              <td colspan="6" style="padding:14px 18px;">${wvExpandContent(w)}</td>
+            </tr>`;
+        }).join('')}</tbody>
+      </table>
+    ` : '';
 
     const tagSet = new Set(c.tags || []);
     const suggestions = COMMON_TAGS.filter(t => !tagSet.has(t));
@@ -4757,6 +4815,7 @@
           </div>
           <h4>Booking History</h4>
           ${bookingsHtml}
+          ${waiversHtml}
         </div>
         <div class="cust-side">
           <div>

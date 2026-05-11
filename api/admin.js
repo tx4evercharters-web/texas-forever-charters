@@ -639,7 +639,26 @@ async function handleAddBooking(req, res) {
 async function handleListCustomers(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
   try {
-    const [customers, bookings] = await Promise.all([listCustomers(), getBookings()]);
+    /* Now also pulls waivers so each booking in the customer detail can
+       show its signed-waivers section (A1). Same per-booking enrichment
+       shape as handleBookings — primary match by session_id, fallback by
+       booking_id to catch waivers that were fuzzy-linked. */
+    const [customers, bookings, waivers] = await Promise.all([
+      listCustomers(),
+      getBookings(),
+      getAllWaivers(),
+    ]);
+
+    const waiversBySession = {};
+    const waiversByBookingId = {};
+    for (const w of waivers || []) {
+      if (w.session_id) (waiversBySession[w.session_id] || (waiversBySession[w.session_id] = [])).push(w);
+      if (w.booking_id) (waiversByBookingId[w.booking_id] || (waiversByBookingId[w.booking_id] = [])).push(w);
+    }
+    const enrichBookingWithWaivers = (b) => {
+      const list = waiversBySession[b.session_id] || waiversByBookingId[b.id] || [];
+      return { ...b, waivers: list, waiver_count: list.length };
+    };
 
     // Index bookings by lowercase email
     const byEmail = {};
@@ -651,9 +670,11 @@ async function handleListCustomers(req, res) {
 
     // Enrich each customer with derived stats from booking history
     const enriched = customers.map(c => {
-      const bk = byEmail[(c.email || '').toLowerCase()] || [];
+      let bk = byEmail[(c.email || '').toLowerCase()] || [];
       // Sort ascending for first/last
       bk.sort((a, b) => (a.date || a.booked_at || '').localeCompare(b.date || b.booked_at || ''));
+      // Attach per-booking waivers so renderCustDetail can flatten them.
+      bk = bk.map(enrichBookingWithWaivers);
       const firstBooking = bk[0] || null;
       const lastBooking  = bk[bk.length - 1] || null;
       // Derive source from earliest booking
