@@ -859,8 +859,10 @@
     .edit-addon-item label { font-size: 13px; cursor: pointer; }
     .edit-modal-footer { display: flex; gap: 10px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--gray-200); margin-top: 8px; }
 
-    /* ── Payment buttons ── */
-    .action-btns { display: flex; flex-direction: column; gap: 4px; }
+    /* ── Booking row actions ──
+       Was: stacked column of 4-5 colored buttons taking massive
+       vertical space per row. Now: just Edit + kebab side-by-side. */
+    .action-btns { display: flex; align-items: center; gap: var(--space-2); }
 
     .modal-body { padding: 24px; }
 
@@ -2583,21 +2585,58 @@
     const refundable = bkRefundable(b);
     const damageStatus = (b.damage_hold_status || 'pending').toLowerCase();
     const hasActiveHold = !!b.damage_hold_intent_id && damageStatus !== 'released' && damageStatus !== 'captured';
+    /* Payment state — drives the Mark Paid / Charge Card / Send Payment
+       Link tri-state. Per spec, these three always appear in the menu;
+       items that don't apply in the current state are shown disabled
+       (rather than hidden) so admins always see the full action set
+       and learn what's available where. */
+    const pay = bkPaymentStatus(b);
+    const isPaidInFull = pay.label === 'PAID IN FULL';
     const items = [];
+
+    /* ── Status changes ────────────────────────────────────────────── */
+    if (isPaidInFull) {
+      items.push(`<button class="bk-menu-item disabled" disabled title="Already paid in full">✓ Mark Paid</button>`);
+    } else {
+      items.push(`<button class="bk-menu-item" onclick="markPaid('${id}', this)">✓ Mark Paid</button>`);
+    }
+    if (isPaidInFull) {
+      items.push(`<button class="bk-menu-item disabled" disabled title="Already paid in full">💳 Charge Card</button>`);
+    } else if (!b.payment_method_id) {
+      items.push(`<button class="bk-menu-item disabled" disabled title="No saved card on this booking">💳 Charge Card</button>`);
+    } else {
+      items.push(`<button class="bk-menu-item" onclick="chargeCard('${id}', this)">💳 Charge Card</button>`);
+    }
     if (s !== 'concluded') items.push(`<button class="bk-menu-item" onclick="bkMarkConcluded('${id}')">✓ Mark Concluded</button>`);
     if (s !== 'cancelled') items.push(`<button class="bk-menu-item" onclick="bkCancel('${id}')">⊘ Cancel Booking</button>`);
-    items.push(`<button class="bk-menu-item" onclick="bkResendConfirmation('${id}')">📧 Resend Confirmation</button>`);
+
+    /* ── Refunds ──────────────────────────────────────────────────── */
     if (hasIntent && refundable > 0) {
       items.push(`<button class="bk-menu-item" onclick="bkFullRefund('${id}')">↩ Full Refund (${fmtMoney(refundable)})</button>`);
       items.push(`<button class="bk-menu-item" onclick="bkPartialRefund('${id}')">↪ Partial Refund…</button>`);
     } else if (!hasIntent) {
-      items.push(`<button class="bk-menu-item disabled" title="No Stripe payment_intent on this booking" disabled>↩ Refund (no Stripe payment)</button>`);
+      items.push(`<button class="bk-menu-item disabled" disabled title="No Stripe payment_intent on this booking">↩ Refund (no Stripe payment)</button>`);
+    } else {
+      items.push(`<button class="bk-menu-item disabled" disabled title="Nothing left to refund">↩ Refund (fully refunded)</button>`);
     }
+
+    /* ── Communications ───────────────────────────────────────────── */
+    if (isPaidInFull) {
+      items.push(`<button class="bk-menu-item disabled" disabled title="Already paid in full">📧 Send Payment Link</button>`);
+    } else {
+      items.push(`<button class="bk-menu-item" onclick="sendPaymentLink('${id}', this)">📧 Send Payment Link</button>`);
+    }
+    items.push(`<button class="bk-menu-item" onclick="bkResendConfirmation('${id}')">📧 Resend Confirmation</button>`);
+
+    /* ── Damage hold (only when an active hold exists) ────────────── */
     if (hasActiveHold) {
       items.push(`<button class="bk-menu-item" onclick="bkReleaseDamageHold('${id}')">🔓 Release Damage Hold</button>`);
       items.push(`<button class="bk-menu-item danger" onclick="bkCaptureDamageOpen('${id}')">⚠ Capture Damage Charge…</button>`);
     }
+
+    /* ── Destructive ──────────────────────────────────────────────── */
     items.push(`<button class="bk-menu-item danger" onclick="bkDelete('${id}')">🗑 Delete Booking</button>`);
+
     return `
       <div class="bk-menu-wrap">
         <button class="btn-sm btn-gray bk-menu-trigger" onclick="bkToggleMenu('${id}', event)">⋯</button>
@@ -3925,13 +3964,16 @@
           <td style="white-space:nowrap">${badge}${statusBadge ? '<div style="margin-top:4px">'+statusBadge+'</div>' : ''}${(() => { const d = bkDamageBadge(b); return d ? '<div style="margin-top:4px">'+d+'</div>' : ''; })()}${(() => { const c = bkChargebackBadge(b); return c ? '<div style="margin-top:4px">'+c+'</div>' : ''; })()}</td>
           <td style="white-space:nowrap">${bkWaiverCell(b)}</td>
           <td>
+            <!-- Row actions consolidated: one visible primary "Edit"
+                 button + kebab menu containing everything else (Mark
+                 Paid, Charge Card, Send Payment Link, Mark Concluded,
+                 Cancel, Refunds, Resend Confirmation, Damage Hold
+                 actions, Delete). The 3 stacked payment buttons that
+                 used to live here moved into bkActionMenu — they
+                 still show in the kebab but disabled when not
+                 applicable, so admins always see the full action set. -->
             <div class="action-btns">
               <button class="btn-sm btn-navy" onclick="openEditModal('${esc(b.session_id)}')">✏ Edit</button>
-              ${pay.label !== 'PAID IN FULL' ? `
-                <button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}',this)">✓ Mark Paid</button>
-                ${b.payment_method_id ? `<button class="btn-sm btn-navy" onclick="chargeCard('${esc(b.session_id)}',this)">💳 Charge Card</button>` : ''}
-                <button class="btn-sm" style="background:var(--amber);color:#fff;" onclick="sendPaymentLink('${esc(b.session_id)}',this)">📧 Send Link</button>
-              ` : ''}
               ${bkActionMenu(b)}
             </div>
           </td>
