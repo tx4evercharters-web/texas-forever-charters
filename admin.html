@@ -624,6 +624,14 @@
        Default: hidden. Desktop continues using the grid. */
     .calendar-agenda { display: none; }
 
+    /* Mobile-only action bar above the agenda. Desktop keeps the
+       grid's click-empty-day + right-click-to-block affordances; on
+       mobile those gestures aren't available, so we expose Add
+       Booking + Block Dates as explicit buttons here. Hidden by
+       default; the @media block at the bottom of the calendar
+       section shows it on ≤768px. */
+    .cal-agenda-actions { display: none; }
+
     .cal-agenda-empty {
       padding: var(--space-7) var(--space-5);
       text-align: center;
@@ -726,6 +734,23 @@
     @media (max-width: 768px) {
       .calendar-grid   { display: none; }
       .calendar-agenda { display: block; }
+
+      /* Action bar above the agenda. Full-width side-by-side buttons
+         that fall back to a vertical stack on the narrowest phones
+         where two pills would crowd. */
+      .cal-agenda-actions {
+        display: flex;
+        gap: var(--space-2);
+        margin-bottom: var(--space-3);
+      }
+      .cal-agenda-actions .btn-sm {
+        flex: 1;
+        text-align: center;
+        white-space: nowrap;
+      }
+      @media (max-width: 360px) {
+        .cal-agenda-actions { flex-direction: column; }
+      }
 
       .calendar-nav {
         flex-direction: row;
@@ -1801,6 +1826,14 @@
             </div>
           </div>
           <div class="calendar-grid" id="calendar-grid"></div>
+          <!-- Mobile-only action bar. Replaces the click-empty-day +
+               right-click-to-block affordances that the grid offers
+               on desktop but mobile users can't reach. Hidden on
+               desktop via CSS. -->
+          <div class="cal-agenda-actions" id="cal-agenda-actions">
+            <button class="btn-sm btn-navy" onclick="openAddBooking()">+ Add Booking</button>
+            <button class="btn-sm btn-gray" onclick="openBlackoutDateModal()">+ Block Dates</button>
+          </div>
           <!-- Mobile-only agenda view. Hidden by default; the
                @media (max-width: 768px) block shows it AND hides the
                grid. Populated by renderCalendarAgenda() on every
@@ -2259,6 +2292,46 @@
       <div class="edit-modal-footer">
         <button class="btn-sm btn-gray" onclick="closeBlackoutSlotModalBtn()">Cancel</button>
         <button class="btn-sm btn-red" onclick="bkBlackoutSlotSave()">Block This Slot</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Block Dates modal — full-day blackout for a single day or date range.
+     Independent of any calendar cell context, so it can be opened from the
+     mobile agenda's "+ Block Dates" button (no right-click target needed).
+     For per-time-slot blocks, use the older #blackout-slot-overlay modal. -->
+<div class="modal-overlay" id="blackout-date-overlay" onclick="closeBlackoutDateModal(event)">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title">🚫 Block Dates</div>
+      <button class="modal-close" onclick="closeBlackoutDateModalBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="edit-form-grid">
+        <div class="edit-form-group">
+          <label class="edit-label">Start Date</label>
+          <input class="edit-input" id="bd-start-date" type="date">
+        </div>
+        <div class="edit-form-group">
+          <label class="edit-label">End Date <span style="font-weight:normal;color:var(--color-text-tertiary);">(optional)</span></label>
+          <input class="edit-input" id="bd-end-date" type="date">
+        </div>
+        <div class="edit-form-group full">
+          <label class="edit-label">Vessel</label>
+          <select class="edit-input" id="bd-vessel">
+            <option value="both">Both vessels</option>
+            <option value="yacht">YACHT only</option>
+            <option value="pontoon">24FT BENTLEY only</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--gray-400);margin-top:10px;">
+        Blocks every day in the range (inclusive) for the selected vessel. Leave End Date empty to block a single day.
+      </div>
+      <div class="edit-modal-footer">
+        <button class="btn-sm btn-gray" onclick="closeBlackoutDateModalBtn()">Cancel</button>
+        <button class="btn-sm btn-red" onclick="bkBlackoutDateSave()">Block Dates</button>
       </div>
     </div>
   </div>
@@ -5155,6 +5228,55 @@
   }
   function closeBlackoutSlotModal(e) { if (e && e.target !== document.getElementById('blackout-slot-overlay')) return; document.getElementById('blackout-slot-overlay').classList.remove('open'); }
   function closeBlackoutSlotModalBtn() { document.getElementById('blackout-slot-overlay').classList.remove('open'); }
+
+  /* ── Full-day blackout modal (single date or range) ──
+     Opened from the mobile agenda's "+ Block Dates" button. The
+     desktop right-click context menu still uses the inline "Block
+     this date" items, which bypass this modal — that path is
+     unchanged. Date is NOT pre-filled when this modal is opened
+     standalone; the admin picks it inside. */
+  function openBlackoutDateModal(prefillDate) {
+    const start = document.getElementById('bd-start-date');
+    const end   = document.getElementById('bd-end-date');
+    start.value = prefillDate || '';
+    end.value   = '';
+    document.getElementById('bd-vessel').value = 'both';
+    document.getElementById('blackout-date-overlay').classList.add('open');
+  }
+  function closeBlackoutDateModal(e) { if (e && e.target !== document.getElementById('blackout-date-overlay')) return; document.getElementById('blackout-date-overlay').classList.remove('open'); }
+  function closeBlackoutDateModalBtn() { document.getElementById('blackout-date-overlay').classList.remove('open'); }
+
+  async function bkBlackoutDateSave() {
+    const startStr = document.getElementById('bd-start-date').value;
+    const endStr   = document.getElementById('bd-end-date').value || startStr;
+    const vessel   = document.getElementById('bd-vessel').value;
+    if (!startStr) { showError('Pick a start date.'); return; }
+    if (!vessel)   { showError('Pick a vessel.'); return; }
+    // Build YYYY-MM-DD list inclusive. Parse as UTC to dodge timezone drift
+    // on the increment loop — these are date-only values, not instants.
+    const [sy, sm, sd] = startStr.split('-').map(Number);
+    const [ey, em, ed] = endStr.split('-').map(Number);
+    const startDt = Date.UTC(sy, sm - 1, sd);
+    const endDt   = Date.UTC(ey, em - 1, ed);
+    if (endDt < startDt) { showError('End date is before start date.'); return; }
+    const MS_PER_DAY = 86400000;
+    const dates = [];
+    for (let t = startDt; t <= endDt; t += MS_PER_DAY) {
+      const d = new Date(t);
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      dates.push(`${y}-${m}-${day}`);
+    }
+    if (dates.length > 60) { showError('Range too large — keep it under 60 days.'); return; }
+    document.getElementById('blackout-date-overlay').classList.remove('open');
+    // Sequential to keep the server-side row inserts ordered. addBlackout()
+    // updates allBlackouts + re-renders on each return, so the calendar
+    // grows progressively if the network is slow.
+    for (const date of dates) {
+      await addBlackout({ date, vessel, time_slot: 'all' });
+    }
+  }
 
   /* ── Customers ── */
   const SOURCE_OPTIONS = ['phone','walkup','referral','repeat_direct','tripadvisor','viator','peek','fareharbor','instagram','facebook','website','other'];
