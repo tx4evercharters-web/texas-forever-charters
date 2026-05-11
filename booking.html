@@ -289,8 +289,11 @@
 
     .step.active.going-back { animation: stepIn-back 0.35s ease both; }
 
+    /* Step heading block shared by all 8 steps. Tightened to claw back
+       ~30px per step — the "STEP N OF 8" eyebrow + h2 + subtitle were
+       eating ~120px before content on every step. */
     .step-header {
-      margin-bottom: 32px;
+      margin-bottom: 20px;
     }
 
     .step-number {
@@ -300,12 +303,14 @@
       letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--red);
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .step-title {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(28px, 5vw, 42px);
+      /* Was clamp(28,5vw,42) — reduced so headings stop dominating each
+         step's fold. Mobile still hits a 24px floor (legible Bebas Neue). */
+      font-size: clamp(24px, 4vw, 32px);
       letter-spacing: 2px;
       color: var(--white);
       line-height: 1.1;
@@ -313,9 +318,9 @@
 
     .step-desc {
       font-family: 'Barlow', sans-serif;
-      font-size: 15px;
+      font-size: 14px;
       color: rgba(255,255,255,0.55);
-      margin-top: 6px;
+      margin-top: 4px;
     }
 
     /* ── Vessel Cards (Step 1) ── */
@@ -386,7 +391,11 @@
 
     .vessel-img {
       width: 100%;
-      aspect-ratio: 4/3;
+      /* Was 4/3 — at ~390px card width that gave a 292px-tall image which
+         made the cards feel like billboards. 16/9 trims to ~219px so the
+         info block sits in view and both cards fit comfortably on screen.
+         Mobile keeps a taller 3/2 via the media-query override below. */
+      aspect-ratio: 16/9;
       object-fit: cover;
       display: block;
       transition: transform 0.3s;
@@ -397,7 +406,9 @@
     .vessel-img-wrap { overflow: hidden; }
 
     .vessel-info {
-      padding: 20px 20px 22px;
+      /* Was 20/20/22 — tightened to 14/18/16 to match the more "card-like"
+         feel and remove dead space below the badge / specs. */
+      padding: 14px 18px 16px;
     }
 
     .vessel-badge {
@@ -417,7 +428,7 @@
 
     .vessel-name {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
+      font-size: 20px;
       letter-spacing: 1.5px;
       color: var(--white);
       margin-bottom: 4px;
@@ -427,7 +438,7 @@
       font-family: 'Barlow', sans-serif;
       font-size: 13px;
       color: rgba(255,255,255,0.5);
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
 
     .vessel-specs {
