@@ -98,7 +98,9 @@
     .booking-hero {
       background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy-deeper) 100%);
       border-bottom: 1px solid rgba(200,16,46,0.25);
-      padding: 36px 24px 32px;
+      /* Tightened from 36/32 to 22/18 to reclaim ~28px above the fold so
+         Step 1 vessel cards land in the viewport on 1080p desktops. */
+      padding: 22px 24px 18px;
       text-align: center;
     }
 
@@ -109,13 +111,15 @@
       letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--red);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .booking-hero h1 {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(36px, 6vw, 56px);
-      letter-spacing: 3px;
+      /* Reduced from clamp(36px,6vw,56px) to ~60% so the title doesn't
+         dominate the fold. Letter-spacing scaled proportionally. */
+      font-size: clamp(28px, 4vw, 36px);
+      letter-spacing: 2px;
       color: var(--white);
       line-height: 1;
     }
@@ -124,16 +128,19 @@
 
     .booking-hero-sub {
       font-family: 'Barlow', sans-serif;
-      font-size: 15px;
+      font-size: 13px;
       color: rgba(255,255,255,0.6);
-      margin-top: 8px;
+      margin-top: 6px;
     }
 
     /* ── Progress Bar ── */
     .progress-wrap {
       background: var(--navy-dark);
       border-bottom: 1px solid rgba(255,255,255,0.07);
-      padding: 20px 24px 16px;
+      /* Tightened from 20/16 to 12/10 (same as existing mobile values)
+         to reclaim ~14px above the fold. Total header savings paired
+         with the hero compression: ~78px. */
+      padding: 12px 24px 10px;
       position: sticky;
       top: 70px;
       z-index: 100;
@@ -144,7 +151,7 @@
       align-items: center;
       justify-content: center;
       max-width: 860px;
-      margin: 0 auto 12px;
+      margin: 0 auto 8px;
       gap: 0;
     }
 
@@ -159,9 +166,10 @@
     .ps-item::before {
       content: '';
       position: absolute;
-      top: 16px;
-      left: calc(50% + 16px);
-      right: calc(-50% + 16px);
+      /* Repositioned to match the new 26px dot's vertical center. */
+      top: 13px;
+      left: calc(50% + 13px);
+      right: calc(-50% + 13px);
       height: 2px;
       background: rgba(255,255,255,0.12);
       transition: background 0.4s;
@@ -172,8 +180,10 @@
     .ps-item.completed::before { background: var(--red); }
 
     .ps-dot {
-      width: 32px;
-      height: 32px;
+      /* Was 32x32 on desktop, 26x26 on mobile. Unified to 26x26 across
+         viewports for a tighter progress strip. */
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
       border: 2px solid rgba(255,255,255,0.2);
       background: var(--navy-deeper);
@@ -181,7 +191,7 @@
       align-items: center;
       justify-content: center;
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 700;
       color: rgba(255,255,255,0.4);
       transition: all 0.3s;
@@ -209,10 +219,19 @@
       letter-spacing: 1px;
       text-transform: uppercase;
       color: rgba(255,255,255,0.3);
-      margin-top: 5px;
+      margin-top: 3px;
       text-align: center;
       white-space: nowrap;
       transition: color 0.3s;
+    }
+
+    /* When showStep() calls scrollIntoView on a .step container, the
+       sticky progress bar (top:70px, ~70px tall) would otherwise cover
+       the heading. scroll-margin-top tells the browser to leave room
+       for it. ~140px = nav (70) + progress wrap (~60) + breathing room. */
+    .step { scroll-margin-top: 140px; }
+    .step input, .step select, .step textarea {
+      scroll-margin-top: 140px;
     }
 
     .ps-item.active .ps-label,
@@ -2443,7 +2462,15 @@
       updateProgress();
       updateRunningBarVisibility();
       updateRunningTotal();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      /* Scroll the new step's heading into view rather than jumping to
+         page top — accounts for the sticky progress bar via the .step's
+         scroll-margin-top so the heading isn't covered. Falls back to
+         a hard scroll-to-top on older browsers without scrollIntoView. */
+      if (nw && typeof nw.scrollIntoView === 'function') {
+        nw.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     }
 
     function goNext() {
@@ -3533,6 +3560,36 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     // Skip resume when a deep-link ?vessel= param is in play (the customer
     // explicitly clicked into a vessel-specific path; honor that intent).
     if (!preselect) checkForResumeBooking();
+
+    /* ── Tab-focus auto-scroll ─────────────────────────────────────────
+       When a user Tabs between form fields, browsers don't always scroll
+       the focused element into view (especially when something is barely
+       below the fold). Track whether the last interaction key was Tab,
+       and only auto-scroll on focus changes triggered by Tab — not on
+       mouse-click focus (the user already knows where they clicked).
+       Scrolls to viewport center so a sticky header can never cover
+       the field. */
+    (function () {
+      let lastKeyWasTab = false;
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Tab') lastKeyWasTab = true;
+      }, true);
+      document.addEventListener('focusin', function (e) {
+        if (!lastKeyWasTab) return;
+        lastKeyWasTab = false;
+        const el = e.target;
+        if (!el || typeof el.scrollIntoView !== 'function') return;
+        const tag = (el.tagName || '').toLowerCase();
+        if (!['input', 'select', 'textarea', 'button', 'a'].includes(tag)) return;
+        const rect = el.getBoundingClientRect();
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const STICKY_TOP = 140;
+        const BOTTOM_PAD = 20;
+        if (rect.top < STICKY_TOP || rect.bottom > vh - BOTTOM_PAD) {
+          el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      });
+    })();
 
     /* ── EXIT-INTENT LEAD CAPTURE ─────────────────────────────────────
        Inline at the end of the main wizard script so it shares closure
