@@ -1084,18 +1084,26 @@
        softer shadow to feel less utility-belt, more app menu. */
     .bk-menu-wrap { position: relative; display: inline-block; }
     .bk-menu-trigger { padding: var(--space-1) var(--space-3); font-size: var(--font-size-base); line-height: 1; }
+    /* Kebab popover — `position: fixed` so it escapes the .table-wrap
+       overflow:auto clipping context AND the sticky-pinned actions
+       column's stacking context. Top/right are set in bkToggleMenu
+       from the trigger's getBoundingClientRect() each time the menu
+       opens. z-index sits between the sticky tab bar (99) and the
+       modal layer (200) so the popover renders above table rows but
+       below any modal that's already open. */
     .bk-menu {
       display: none;
-      position: absolute;
-      top: 100%; right: 0;
-      margin-top: var(--space-1);
+      position: fixed;
+      margin-top: 0;
       background: var(--color-bg-elevated);
       border: 1px solid var(--color-border);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-lg);
       padding: var(--space-1);
       min-width: 200px;
-      z-index: 60;
+      max-height: 70vh;
+      overflow-y: auto;
+      z-index: 150;
       flex-direction: column;
       gap: 2px;
     }
@@ -2651,6 +2659,24 @@
     document.querySelectorAll('.bk-menu.open').forEach(m => { if (m.id !== 'bk-menu-' + id) m.classList.remove('open'); });
     const el = document.getElementById('bk-menu-' + id);
     if (!el) return;
+
+    /* If we're about to open, position the fixed-positioned menu
+       relative to its trigger's bounding rect. Right-align with the
+       trigger (menu opens to the left/down). Done BEFORE toggling
+       .open so there's no flash at the default 0,0 position. */
+    const willOpen = !el.classList.contains('open');
+    if (willOpen) {
+      const wrap = el.parentElement;
+      const trigger = wrap && wrap.querySelector('.bk-menu-trigger');
+      if (trigger) {
+        const rect = trigger.getBoundingClientRect();
+        const gap = 4; // breathing room below trigger
+        el.style.top  = (rect.bottom + gap) + 'px';
+        el.style.left = 'auto';
+        el.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
+      }
+    }
+
     el.classList.toggle('open');
     bkOpenMenuId = el.classList.contains('open') ? id : null;
   }
@@ -2658,6 +2684,24 @@
     document.querySelectorAll('.bk-menu.open').forEach(m => m.classList.remove('open'));
     bkOpenMenuId = null;
   }
+  /* Close any open kebab when the user scrolls — the menu is fixed-
+     positioned so it would otherwise stay glued to the viewport
+     while the trigger scrolls away underneath it. Listen on both
+     window scroll AND .table-wrap (the inner scroller). Passive
+     listeners; we don't preventDefault. */
+  (function installBkMenuScrollClose() {
+    let installed = false;
+    function bind() {
+      if (installed) return;
+      installed = true;
+      window.addEventListener('scroll', bkCloseMenus, { passive: true });
+      document.addEventListener('scroll', (e) => {
+        if (e.target && e.target.classList && e.target.classList.contains('table-wrap')) bkCloseMenus();
+      }, { passive: true, capture: true });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+    else bind();
+  })();
 
   async function bkPostAndRefresh(action, body, label) {
     const result = await api('/api/admin?action=' + action, { method: 'POST', body: JSON.stringify(body) });
