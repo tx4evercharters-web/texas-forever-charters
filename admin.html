@@ -904,6 +904,7 @@
     <button class="tab-btn" onclick="switchTab('analytics')">📊 Analytics</button>
     <button class="tab-btn" onclick="switchTab('calendar')">📅 Calendar</button>
     <button class="tab-btn" onclick="switchTab('customers')">👥 Customers</button>
+    <button class="tab-btn" onclick="switchTab('waivers')">✍️ Waivers</button>
   </div>
 
   <main>
@@ -1042,6 +1043,65 @@
             <button class="btn-gray" onclick="closeLeadContactModalBtn()">Cancel</button>
             <button class="btn-red" onclick="confirmLeadContacted()">Save &amp; Mark Contacted</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ WAIVERS TAB ══ -->
+    <div class="tab-panel" id="tab-waivers">
+      <div class="section">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+          <div class="section-title">✍️ Signed Waivers</div>
+        </div>
+
+        <!-- Filter bar — wraps on mobile -->
+        <div style="padding:14px 18px 6px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;border-bottom:1px solid var(--gray-100);">
+          <!-- Date range -->
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Date range</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;" id="wv-date-bar">
+              <button class="period-btn active" data-wv-date="all"  onclick="setWaiversDate('all')">All time</button>
+              <button class="period-btn"        data-wv-date="30d"  onclick="setWaiversDate('30d')">30 days</button>
+              <button class="period-btn"        data-wv-date="7d"   onclick="setWaiversDate('7d')">7 days</button>
+              <button class="period-btn"        data-wv-date="custom" onclick="setWaiversDate('custom')">Custom</button>
+            </div>
+            <div id="wv-custom-range" style="display:none;gap:6px;align-items:center;margin-top:4px;">
+              <input type="date" id="wv-from" class="edit-input" style="padding:4px 8px;font-size:12px;width:auto;" onchange="renderWaivers()">
+              <span style="font-size:11px;color:var(--gray-600);">to</span>
+              <input type="date" id="wv-to"   class="edit-input" style="padding:4px 8px;font-size:12px;width:auto;" onchange="renderWaivers()">
+            </div>
+          </div>
+
+          <!-- Vessel -->
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Vessel</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;" id="wv-vessel-bar">
+              <button class="period-btn active" data-wv-vessel="all"     onclick="setWaiversVessel('all')">All</button>
+              <button class="period-btn"        data-wv-vessel="yacht"   onclick="setWaiversVessel('yacht')">🛥️ Yacht</button>
+              <button class="period-btn"        data-wv-vessel="pontoon" onclick="setWaiversVessel('pontoon')">⛵ Pontoon</button>
+            </div>
+          </div>
+
+          <!-- Link status -->
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Link status</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;" id="wv-link-bar">
+              <button class="period-btn active" data-wv-link="all"          onclick="setWaiversLink('all')">All</button>
+              <button class="period-btn"        data-wv-link="linked"       onclick="setWaiversLink('linked')">🔗 Linked</button>
+              <button class="period-btn"        data-wv-link="auto_linked"  onclick="setWaiversLink('auto_linked')">⚡ Auto-linked</button>
+              <button class="period-btn"        data-wv-link="orphan"       onclick="setWaiversLink('orphan')">❓ Orphan</button>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:200px;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Search signer / organizer</div>
+            <input type="text" class="edit-input" id="wv-search" placeholder="e.g. Andrew, Roberge…" oninput="renderWaivers()" style="padding:6px 10px;">
+          </div>
+        </div>
+
+        <div class="table-wrap" id="waivers-wrap">
+          <div class="loading">Loading...</div>
         </div>
       </div>
     </div>
@@ -2590,6 +2650,217 @@
     if (name === 'analytics') renderAnalytics();
     if (name === 'customers') loadCustomers();
     if (name === 'leads')     loadLeads();
+    if (name === 'waivers')   loadWaivers();
+  }
+
+  /* ── Waivers tab ── */
+  let allWaivers = [];
+  let wvFilters = { date: 'all', vessel: 'all', link: 'all', search: '' };
+
+  async function loadWaivers() {
+    const wrap = document.getElementById('waivers-wrap');
+    wrap.innerHTML = '<div class="loading">Loading waivers…</div>';
+    try {
+      const data = await api('/api/admin?action=waivers');
+      allWaivers = (data && data.waivers) || [];
+      renderWaivers();
+    } catch (err) {
+      wrap.innerHTML = '<div class="loading" style="color:var(--red);">Failed to load waivers: ' + esc(err.message || err) + '</div>';
+    }
+  }
+
+  function setWaiversDate(name) {
+    wvFilters.date = name;
+    document.querySelectorAll('#wv-date-bar .period-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-wv-date') === name);
+    });
+    document.getElementById('wv-custom-range').style.display = (name === 'custom') ? 'flex' : 'none';
+    renderWaivers();
+  }
+  function setWaiversVessel(v) {
+    wvFilters.vessel = v;
+    document.querySelectorAll('#wv-vessel-bar .period-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-wv-vessel') === v);
+    });
+    renderWaivers();
+  }
+  function setWaiversLink(s) {
+    wvFilters.link = s;
+    document.querySelectorAll('#wv-link-bar .period-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-wv-link') === s);
+    });
+    renderWaivers();
+  }
+
+  function wvLinkBadge(w) {
+    const s = w.link_status || 'orphan';
+    if (s === 'linked') {
+      return '<span class="badge" style="background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);font-weight:700;font-size:10px;">🔗 Linked</span>';
+    }
+    if (s === 'auto_linked') {
+      return '<span class="badge" style="background:#FEF3C7;color:#92400E;border:1px solid #F59E0B;font-weight:700;font-size:10px;">⚡ Auto-linked</span>';
+    }
+    return '<span class="badge" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red);font-weight:700;font-size:10px;">❓ Orphan</span>';
+  }
+
+  function wvAgeMs(w) { return w && w.signed_at ? (Date.now() - new Date(w.signed_at).getTime()) : 0; }
+  function fmtWvAge(ms) {
+    if (!ms || ms < 0) return '—';
+    const mins = Math.round(ms / 60000);
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    return Math.round(hrs / 24) + 'd ago';
+  }
+
+  function renderWaivers() {
+    const wrap = document.getElementById('waivers-wrap');
+    const search = (document.getElementById('wv-search').value || '').trim().toLowerCase();
+    wvFilters.search = search;
+
+    /* Date range filter */
+    let from = null, to = null;
+    const now = Date.now();
+    if (wvFilters.date === '7d')  from = now - 7  * 24 * 60 * 60 * 1000;
+    if (wvFilters.date === '30d') from = now - 30 * 24 * 60 * 60 * 1000;
+    if (wvFilters.date === 'custom') {
+      const f = document.getElementById('wv-from').value;
+      const t = document.getElementById('wv-to').value;
+      from = f ? new Date(f + 'T00:00:00').getTime() : null;
+      to   = t ? new Date(t + 'T23:59:59').getTime() : null;
+    }
+
+    const list = allWaivers.filter(function (w) {
+      const ts = w.signed_at ? new Date(w.signed_at).getTime() : 0;
+      if (from != null && ts < from) return false;
+      if (to   != null && ts > to)   return false;
+      if (wvFilters.vessel !== 'all' && w.vessel !== wvFilters.vessel) return false;
+      if (wvFilters.link   !== 'all' && w.link_status !== wvFilters.link) return false;
+      if (search) {
+        const signer    = ((w.signer_first_name || '') + ' ' + (w.signer_last_name || '')).toLowerCase();
+        const organizer = ((w.booking && w.booking.full_name) || w.organizer_name || '').toLowerCase();
+        if (!signer.includes(search) && !organizer.includes(search)) return false;
+      }
+      return true;
+    });
+
+    if (list.length === 0) {
+      wrap.innerHTML = '<div class="cust-detail-empty" style="padding:32px;text-align:center;">No waivers match these filters.</div>';
+      return;
+    }
+
+    const rows = list.map(function (w) {
+      const wid = esc(String(w.id));
+      const signerFull = ((w.signer_first_name || '') + ' ' + (w.signer_last_name || '')).trim() || '(no name)';
+      const tip = w.signed_at ? new Date(w.signed_at).toLocaleString() : '';
+      const organizer = (w.booking && w.booking.full_name) || w.organizer_name || '—';
+      const vesselCell = w.vessel
+        ? ('<span class="badge ' + (w.vessel === 'yacht' ? 'badge-navy' : 'badge-red') + '" style="font-size:10px;">' + esc(vesselLabel(w.vessel)) + '</span>')
+        : '<span style="color:var(--gray-400);">—</span>';
+
+      let bookingCell;
+      if (w.booking && w.booking.session_id) {
+        bookingCell = '<button class="btn-sm btn-navy" onclick="wvOpenBooking(\'' + esc(w.booking.session_id) + '\')">→ Open booking</button>';
+      } else {
+        bookingCell = '<span style="color:var(--gray-400);font-size:11px;font-style:italic;">⚠️ Unlinked</span>';
+      }
+
+      const main = '<tr class="wv-row" data-wv-id="' + wid + '">' +
+        '<td title="' + esc(tip) + '" style="white-space:nowrap;font-size:12px;">' + fmtWvAge(wvAgeMs(w)) + '</td>' +
+        '<td>' + wvLinkBadge(w) + '</td>' +
+        '<td><button class="btn-sm" style="background:transparent;border:none;color:var(--navy);font-weight:700;cursor:pointer;padding:0;text-decoration:underline;" onclick="wvToggleExpand(\'' + wid + '\')">' + esc(signerFull) + '</button></td>' +
+        '<td style="white-space:nowrap;font-size:12px;">' + esc(w.charter_date ? fmtDate(w.charter_date) : '—') + '</td>' +
+        '<td style="white-space:nowrap;font-size:12px;">' + esc(w.charter_time || '—') + '</td>' +
+        '<td>' + vesselCell + '</td>' +
+        '<td style="font-size:12px;">' + esc(organizer) + '</td>' +
+        '<td style="text-align:right;">' + bookingCell + '</td>' +
+      '</tr>';
+
+      /* Expansion row — initially display:none. Populated lazily on toggle. */
+      const expandId = 'wv-expand-' + wid;
+      const expand = '<tr id="' + expandId + '" style="display:none;background:var(--gray-50);"><td colspan="8" style="padding:14px 18px;">' +
+        wvExpandContent(w) +
+      '</td></tr>';
+
+      return main + expand;
+    }).join('');
+
+    wrap.innerHTML =
+      '<table>' +
+        '<thead><tr>' +
+          '<th>Signed</th>' +
+          '<th>Status</th>' +
+          '<th>Signer</th>' +
+          '<th>Charter date</th>' +
+          '<th>Time</th>' +
+          '<th>Vessel</th>' +
+          '<th>Organizer</th>' +
+          '<th style="text-align:right;">Booking</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>';
+  }
+
+  function wvExpandContent(w) {
+    function row(label, value) {
+      return '<div style="display:flex;gap:12px;padding:4px 0;font-size:13px;">' +
+        '<span style="color:var(--gray-600);min-width:160px;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:700;">' + label + '</span>' +
+        '<span style="color:var(--navy);">' + (value || '<span style="color:var(--gray-400);">—</span>') + '</span>' +
+      '</div>';
+    }
+    const sig = w.digital_signature
+      ? '<img src="' + esc(w.digital_signature) + '" alt="signature" style="max-width:280px;max-height:120px;background:#FFFFFF;border:1px solid var(--gray-200);border-radius:4px;padding:4px;">'
+      : '<em style="color:var(--gray-400);">no signature image stored</em>';
+    const minorBlock = w.is_minor
+      ? row('Minor signer', 'Yes') +
+        row('Guardian name', esc(w.guardian_name || ''))   +
+        row('Guardian relationship', esc(w.guardian_relationship || ''))
+      : '';
+    /* On mobile the table itself scrolls horizontally and the expand
+       row inherits the column width, so we keep grid 1fr 1fr but allow
+       the labels to wrap rather than reserve 160px. min-width:0 on the
+       grid lets long values shrink instead of forcing horizontal scroll
+       inside the expand row. */
+    return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;min-width:0;">' +
+      '<div>' +
+        row('Date of birth', esc(w.date_of_birth || '')) +
+        row('Age', w.age != null ? String(w.age) : '') +
+        row('Email', w.signer_email ? '<a href="mailto:' + esc(w.signer_email) + '" style="color:var(--navy);">' + esc(w.signer_email) + '</a>' : '') +
+        row('Phone',  w.signer_phone ? '<a href="tel:'    + esc(w.signer_phone) + '" style="color:var(--navy);">' + esc(w.signer_phone) + '</a>' : '') +
+        row('Emergency contact', esc(w.emergency_contact_name || '')) +
+        row('Emergency phone',   w.emergency_contact_phone ? '<a href="tel:' + esc(w.emergency_contact_phone) + '" style="color:var(--navy);">' + esc(w.emergency_contact_phone) + '</a>' : '') +
+        row('Relationship', esc(w.emergency_contact_relationship || '')) +
+        minorBlock +
+        row('Media release', w.media_release_accepted ? 'Accepted' : 'Declined') +
+      '</div>' +
+      '<div>' +
+        row('Signed at', w.signed_at ? new Date(w.signed_at).toLocaleString() : '') +
+        row('IP address', '<code style="font-family:monospace;font-size:12px;">' + esc(w.ip_address || '') + '</code>') +
+        row('User agent', '<code style="font-family:monospace;font-size:11px;word-break:break-all;">' + esc(w.user_agent || '') + '</code>') +
+        row('Waiver version', esc(w.waiver_text_version || '')) +
+        row('Waiver session_id', '<code style="font-family:monospace;font-size:11px;">' + esc(w.session_id || '') + '</code>') +
+        row('Signature', sig) +
+      '</div>' +
+    '</div>';
+  }
+
+  function wvToggleExpand(id) {
+    const row = document.getElementById('wv-expand-' + id);
+    if (!row) return;
+    row.style.display = (row.style.display === 'none' || !row.style.display) ? 'table-row' : 'none';
+  }
+
+  /* Cross-tab open from the Waivers row "→ Open booking" button.
+     openEditModal handles the upcoming/past cache lookup itself. */
+  function wvOpenBooking(sessionId) {
+    if (!sessionId) return;
+    const exists = (allBookings || []).find(x => x.session_id === sessionId)
+                || (allBookingsAll || []).find(x => x.session_id === sessionId);
+    if (!exists) {
+      showError('Booking not found in current cache. Reload the page.');
+      return;
+    }
+    openEditModal(sessionId);
   }
 
   /* ── Leads tab ── */
@@ -4042,7 +4313,11 @@
   let abEditingSessionId = null;
 
   function openEditModal(session_id) {
-    const b = allBookings.find(x => x.session_id === session_id);
+    /* allBookings is the upcoming subset; allBookingsAll is upcoming +
+       past. Search both so callers from the Waivers tab (which may link
+       to a concluded/cancelled booking) can still open the edit modal. */
+    const b = (allBookings || []).find(x => x.session_id === session_id)
+           || (allBookingsAll || []).find(x => x.session_id === session_id);
     if (!b) return;
     abEditingSessionId = session_id;
 

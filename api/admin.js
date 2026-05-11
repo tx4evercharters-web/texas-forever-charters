@@ -22,6 +22,7 @@ const {
   deleteBookingRow,
   listWaivers,
   getAllWaivers,
+  listAllWaiversEnriched,
   listLeads,
   patchLead,
 } = require('../lib/storage');
@@ -777,6 +778,19 @@ async function handleUpdatePayment(req, res) {
   }
 }
 
+/* ── Waivers (admin tab — all rows enriched with booking metadata) ─── */
+
+async function handleListAllWaivers(req, res) {
+  if (req.method !== 'GET') return res.status(405).end();
+  try {
+    const waivers = await listAllWaiversEnriched();
+    return res.status(200).json({ waivers });
+  } catch (err) {
+    console.error('[admin] waivers list failed:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 /* ── Leads ─────────────────────────────────────────────────────────── */
 
 async function handleListLeads(req, res) {
@@ -839,6 +853,7 @@ const ROUTES = {
   'capture-damage-charge':handleCaptureDamageCharge,
   'list-waivers':         handleListWaivers,
   'send-waiver-link':     handleSendWaiverLink,
+  'waivers':              handleListAllWaivers,
   'leads':                handleListLeads,
   'mark-lead-contacted':  handleMarkLeadContacted,
 };
