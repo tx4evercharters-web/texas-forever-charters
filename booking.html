@@ -2118,22 +2118,8 @@
           </div>
         </div>
 
-        <!-- EMERGENCY: Pay buttons replaced with a call-us notice while the
-             Stripe sandbox-vs-live issue is investigated. The original buttons
-             below are preserved as a commented block so they can be reinstated
-             with a single edit once a live test charge passes end-to-end. -->
-        <div class="payment-buttons" id="paymentButtons" style="display:block;">
-          <div style="background:#FEF2F2;border:2px solid #C8102E;border-radius:10px;padding:28px 24px;text-align:center;color:#1F2937;font-family:Arial,Helvetica,sans-serif;">
-            <div style="font-size:36px;line-height:1;margin-bottom:10px;">⚠️</div>
-            <h3 style="margin:0 0 12px;color:#C8102E;font-size:22px;font-weight:800;letter-spacing:0.5px;">Online Booking Temporarily Unavailable</h3>
-            <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#1F2937;">
-              We're not able to accept online payments right now. Please call or text us to book your charter — we'll get you on the calendar the same day. We apologize for the inconvenience.
-            </p>
-            <a href="tel:+17373681669" style="display:inline-block;background:#C8102E;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:18px;font-weight:800;letter-spacing:0.5px;box-shadow:0 2px 8px rgba(200,16,46,0.3);">📞 Call (737) 368-1669</a>
-          </div>
-        </div>
-        <!--
-        ORIGINAL PAY BUTTONS — DO NOT RESTORE UNTIL LIVE STRIPE TEST PASSES
+        <!-- Payment — buttons disabled until #termsCheck is ticked
+             (onTermsCheckChange toggles the disabled attribute) -->
         <div class="payment-buttons" id="paymentButtons">
           <button class="pay-btn pay-btn-deposit" onclick="handlePayment('deposit')" disabled>
             <div class="pay-btn-label">Pay Deposit</div>
@@ -2146,7 +2132,6 @@
             <div class="pay-btn-label">Total amount due today</div>
           </button>
         </div>
-        -->
 
 
         <!-- Duplicate booking warning (shown when /api/create-checkout returns 409) -->
@@ -3099,15 +3084,6 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     }
 
     async function handlePayment(type) {
-      /* EMERGENCY GUARD — defense in depth. The Pay buttons are removed
-         from the DOM (replaced with a "call us" notice), but if anything
-         programmatically reaches this function (browser extension, cached
-         JS, devtools, malicious form submission), refuse immediately.
-         Remove this block when the Pay buttons are restored. */
-      showToast('Online booking is temporarily unavailable. Please call (737) 368-1669.');
-      console.warn('[booking] handlePayment blocked by emergency guard');
-      return;
-
       if (!document.getElementById('termsCheck').checked) {
         showToast('Please agree to the terms and policies');
         return;
