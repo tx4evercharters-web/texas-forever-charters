@@ -372,58 +372,112 @@
     .volume-sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 
     /* ── Calendar (Google-style) ── */
-    .calendar-wrap { padding: 20px 24px; }
-    .calendar-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .calendar-title { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--navy); letter-spacing: 3px; }
-    .cal-nav-btn { background: var(--gray-100); border: 1px solid var(--gray-200); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 16px; color: var(--navy); transition: background 0.15s; }
-    .cal-nav-btn:hover { background: var(--gray-200); }
-    .cal-today-btn { background: var(--white); border: 1px solid var(--gray-200); border-radius: 6px; padding: 6px 14px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--navy); transition: background 0.15s; }
-    .cal-today-btn:hover { background: var(--gray-100); }
-    .cal-nav-group { display: flex; align-items: center; gap: 8px; }
+    /* ── Calendar tab — migrated to design tokens for visual parity with
+       the rest of the admin (Bookings, Leads, Waivers). Desktop layout
+       unchanged; mobile fixes live in the @media block at the bottom of
+       this file. */
+    .calendar-wrap { padding: var(--space-5) var(--space-6); }
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+    .calendar-title {
+      font-family: var(--font-display);
+      font-size: 32px;
+      color: var(--color-brand-primary);
+      letter-spacing: 3px;
+    }
+    .cal-nav-btn {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-1) var(--space-3);
+      cursor: pointer;
+      font-size: var(--font-size-lg);
+      color: var(--color-brand-primary);
+      transition: background var(--transition-fast), border-color var(--transition-fast);
+    }
+    .cal-nav-btn:hover { background: var(--color-bg-subtle); border-color: var(--color-brand-primary); }
+    .cal-today-btn {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-1) var(--space-3);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--color-brand-primary);
+      transition: background var(--transition-fast), border-color var(--transition-fast);
+    }
+    .cal-today-btn:hover { background: var(--color-bg-subtle); border-color: var(--color-brand-primary); }
+    .cal-nav-group { display: flex; align-items: center; gap: var(--space-2); }
 
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      border: 1px solid var(--gray-200);
-      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
       overflow: hidden;
-      background: var(--gray-200);
+      background: var(--color-border);
       gap: 1px;
     }
-    .cal-day-header { background: var(--gray-50); text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); padding: 8px 0; }
+    .cal-day-header {
+      background: var(--color-bg-subtle);
+      text-align: center;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--color-text-secondary);
+      padding: var(--space-2) 0;
+    }
 
     .cal-day {
-      background: var(--white);
+      background: var(--color-bg-card);
       min-height: 118px;
-      padding: 6px;
+      padding: var(--space-1);
       display: flex;
       flex-direction: column;
       gap: 2px;
       position: relative;
       cursor: pointer;
-      transition: background 0.1s;
+      transition: background var(--transition-fast);
       overflow: hidden;
     }
-    .cal-day:hover:not(.other-month) { background: var(--gray-50); }
-    .cal-day-num { font-size: 13px; font-weight: 700; color: var(--gray-700); align-self: flex-end; line-height: 1; padding: 2px 4px; border-radius: 100px; }
+    .cal-day:hover:not(.other-month) { background: var(--color-bg-subtle); }
+    .cal-day-num {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      align-self: flex-end;
+      line-height: 1;
+      padding: 2px var(--space-1);
+      border-radius: var(--radius-full);
+    }
 
-    .cal-day.other-month { background: var(--gray-50); cursor: default; }
-    .cal-day.other-month .cal-day-num { color: var(--gray-200); }
+    .cal-day.other-month { background: var(--color-bg-subtle); cursor: default; }
+    .cal-day.other-month .cal-day-num { color: var(--color-border); }
 
-    .cal-day.today { background: var(--gray-50); box-shadow: inset 0 0 0 2px var(--navy); }
-    .cal-day.today .cal-day-num { background: var(--navy); color: var(--white); min-width: 22px; text-align: center; }
+    .cal-day.today { background: var(--color-bg-subtle); box-shadow: inset 0 0 0 2px var(--color-brand-primary); }
+    .cal-day.today .cal-day-num { background: var(--color-brand-primary); color: var(--color-text-on-brand); min-width: 22px; text-align: center; }
 
-    .cal-day.blackout-both { background: var(--red-bg); }
+    .cal-day.blackout-both { background: var(--color-danger-bg); }
     .cal-day.blackout-both::before {
       content: 'BLACKOUT';
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%) rotate(-12deg);
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
+      font-family: var(--font-body);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
       letter-spacing: 2px;
-      color: var(--red);
+      color: var(--color-danger);
       opacity: 0.55;
       pointer-events: none;
       white-space: nowrap;
@@ -436,11 +490,11 @@
       content: '⛵ YACHT BLOCKED';
       position: absolute;
       top: 1px; left: 6px; right: 6px;
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: var(--font-body);
       font-size: 9px;
-      font-weight: 700;
+      font-weight: var(--font-weight-bold);
       letter-spacing: 1px;
-      color: var(--navy);
+      color: var(--color-brand-primary);
       text-align: center;
       pointer-events: none;
       line-height: 14px;
@@ -459,11 +513,11 @@
       content: '🛥 PONTOON BLOCKED';
       position: absolute;
       top: 1px; left: 6px; right: 6px;
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: var(--font-body);
       font-size: 9px;
-      font-weight: 700;
+      font-weight: var(--font-weight-bold);
       letter-spacing: 1px;
-      color: var(--red);
+      color: var(--color-brand-accent);
       text-align: center;
       pointer-events: none;
       line-height: 14px;
@@ -484,43 +538,43 @@
       width: 100%;
       text-align: left;
       border: none;
-      border-radius: 4px;
-      padding: 3px 6px;
-      font-family: 'Barlow', sans-serif;
-      font-size: 11px;
+      border-radius: var(--radius-sm);
+      padding: 3px var(--space-2);
+      font-family: var(--font-body);
+      font-size: var(--font-size-xs);
       line-height: 1.25;
-      color: var(--white);
+      color: var(--color-text-on-brand);
       cursor: pointer;
-      transition: filter 0.15s;
+      transition: filter var(--transition-fast);
       overflow: hidden;
     }
     .cal-chip:hover { filter: brightness(1.1); }
-    .cal-chip.yacht { background: #1B2A6B; }
-    .cal-chip.pontoon { background: #C8102E; }
-    .cal-chip-row { display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; }
-    .cal-chip-time { font-weight: 700; font-size: 10px; letter-spacing: 0.3px; flex-shrink: 0; }
+    .cal-chip.yacht { background: var(--color-brand-primary); }
+    .cal-chip.pontoon { background: var(--color-brand-accent); }
+    .cal-chip-row { display: flex; align-items: center; gap: var(--space-1); white-space: nowrap; overflow: hidden; }
+    .cal-chip-time { font-weight: var(--font-weight-bold); font-size: 10px; letter-spacing: 0.3px; flex-shrink: 0; }
     .cal-chip-party { font-size: 10px; opacity: 0.85; flex-shrink: 0; margin-left: auto; }
-    .cal-chip-name { font-weight: 600; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cal-chip-name { font-weight: var(--font-weight-semibold); font-size: var(--font-size-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .cal-more {
       font-size: 10px;
-      font-weight: 700;
-      color: var(--gray-600);
-      padding: 2px 4px;
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-secondary);
+      padding: 2px var(--space-1);
       cursor: pointer;
-      letter-spacing: 0.3px;
+      letter-spacing: 0;
     }
-    .cal-more:hover { color: var(--navy); }
+    .cal-more:hover { color: var(--color-brand-primary); }
 
     /* Context menu */
     .cal-ctx-menu {
       position: fixed;
       z-index: 300;
-      background: var(--white);
-      border: 1px solid var(--gray-200);
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-      padding: 6px;
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      padding: var(--space-1);
       display: none;
       min-width: 180px;
     }
@@ -531,23 +585,133 @@
       text-align: left;
       background: transparent;
       border: none;
-      padding: 8px 12px;
-      font-family: 'Barlow', sans-serif;
-      font-size: 13px;
-      color: var(--gray-700);
-      border-radius: 5px;
+      padding: var(--space-2) var(--space-3);
+      font-family: var(--font-body);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      border-radius: var(--radius-sm);
       cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast);
     }
-    .cal-ctx-item:hover { background: var(--gray-100); color: var(--navy); }
-    .cal-ctx-item.danger:hover { background: var(--red-bg); color: var(--red); }
-    .cal-ctx-date { padding: 6px 12px 8px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gray-400); border-bottom: 1px solid var(--gray-200); margin-bottom: 4px; }
-    .cal-ctx-section-label { padding: 8px 12px 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gray-400); }
+    .cal-ctx-item:hover { background: var(--color-bg-subtle); color: var(--color-brand-primary); }
+    .cal-ctx-item.danger:hover { background: var(--color-danger-bg); color: var(--color-danger); }
+    .cal-ctx-date {
+      padding: var(--space-1) var(--space-3) var(--space-2);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+      border-bottom: 1px solid var(--color-border-subtle);
+      margin-bottom: var(--space-1);
+    }
+    .cal-ctx-section-label {
+      padding: var(--space-2) var(--space-3) var(--space-1);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+    }
 
+    /* ── Calendar mobile overrides (≤700px) ───────────────────────────
+       Replaces the previous 4-rule mobile block with a full set of
+       layout fixes for 375px viewports:
+         - Header stacks vertically; Today + ‹ › on row 1, month/year
+           on row 2 (smaller font so it doesn't wrap).
+         - Inline legend hidden — navy=yacht / red=pontoon mapping is
+           intuitive once visible chips are on the grid.
+         - Booking chips hide the customer name, keep time + party
+           size (the bits that fit at 50px-wide cells).
+         - Diagonal "BLACKOUT" rotated text replaced with solid-fill
+           cells plus a small inline label that lives within the row
+           flow — the rotated treatment clipped at small cell sizes. */
     @media (max-width: 700px) {
-      .cal-day { min-height: 80px; padding: 4px; }
-      .cal-chip { font-size: 10px; padding: 2px 4px; }
-      .cal-chip-name { font-size: 10px; }
-      .calendar-title { font-size: 24px; }
+      .cal-day { min-height: 80px; padding: var(--space-1); }
+      .calendar-title { font-size: 22px; letter-spacing: 2px; }
+
+      /* Header: stack vertically. Today + arrows row 1, month/year row 2. */
+      .calendar-nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+      }
+      .calendar-nav > .cal-nav-group:first-child {
+        justify-content: space-between;  /* Today | ‹ › splits to the edges */
+      }
+      .calendar-title {
+        text-align: center;
+        order: 2;
+        width: 100%;
+      }
+      /* Legend is the 3rd child of .calendar-nav — hide on mobile. */
+      .calendar-nav > .cal-nav-group:nth-child(3) { display: none; }
+
+      /* Chips: hide the name, keep time + party-size. */
+      .cal-chip { font-size: 10px; padding: 2px var(--space-1); }
+      .cal-chip-name { display: none; }
+      .cal-chip-row { gap: 2px; }
+      .cal-chip-time { font-size: 10px; }
+      .cal-chip-party { font-size: 10px; }
+
+      /* Blackout overlays: the diagonal rotated text clips at small
+         cell sizes. Replace with solid-fill cells + small inline label. */
+      .cal-day.blackout-both,
+      .cal-day.blackout-yacht,
+      .cal-day.blackout-pontoon {
+        background-image: none;
+      }
+      .cal-day.blackout-both {
+        background: var(--color-danger-bg);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-danger) 30%, transparent);
+      }
+      .cal-day.blackout-yacht {
+        background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-bg-card));
+      }
+      .cal-day.blackout-pontoon {
+        background: color-mix(in srgb, var(--color-brand-accent) 12%, var(--color-bg-card));
+      }
+      .cal-day.blackout-both::before {
+        content: '🚫 Blocked';
+        position: static;
+        transform: none;
+        font-family: var(--font-body);
+        font-size: 9px;
+        font-weight: var(--font-weight-bold);
+        letter-spacing: 0;
+        color: var(--color-danger);
+        opacity: 1;
+        white-space: nowrap;
+        align-self: flex-start;
+        line-height: 1;
+        padding: 2px 0;
+      }
+      .cal-day.blackout-yacht::before {
+        content: '⛵ Yacht';
+        position: static;
+        top: auto; left: auto; right: auto;
+        font-family: var(--font-body);
+        font-size: 9px;
+        font-weight: var(--font-weight-bold);
+        letter-spacing: 0;
+        color: var(--color-brand-primary);
+        text-align: left;
+        line-height: 1;
+        padding: 2px 0;
+      }
+      .cal-day.blackout-pontoon::before {
+        content: '🛥 Pontoon';
+        position: static;
+        top: auto; left: auto; right: auto;
+        font-family: var(--font-body);
+        font-size: 9px;
+        font-weight: var(--font-weight-bold);
+        letter-spacing: 0;
+        color: var(--color-brand-accent);
+        text-align: left;
+        line-height: 1;
+        padding: 2px 0;
+      }
     }
 
     /* ── Booking detail modal ── */
@@ -927,7 +1091,7 @@
     .wv-detail-pair > strong { font-size: 13px; color: var(--gray-700); }
 
     /* Calendar chip variants for lifecycle status */
-    .cal-chip.cancelled { background: var(--red); opacity: 0.85; }
+    .cal-chip.cancelled { background: var(--color-danger); opacity: 0.85; }
     .cal-chip.cancelled .cal-chip-name,
     .cal-chip.cancelled .cal-chip-time,
     .cal-chip.cancelled .cal-chip-party { text-decoration: line-through; }
