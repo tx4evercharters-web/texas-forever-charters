@@ -614,104 +614,151 @@
       color: var(--color-text-tertiary);
     }
 
-    /* ── Calendar mobile overrides (≤700px) ───────────────────────────
-       Replaces the previous 4-rule mobile block with a full set of
-       layout fixes for 375px viewports:
-         - Header stacks vertically; Today + ‹ › on row 1, month/year
-           on row 2 (smaller font so it doesn't wrap).
-         - Inline legend hidden — navy=yacht / red=pontoon mapping is
-           intuitive once visible chips are on the grid.
-         - Booking chips hide the customer name, keep time + party
-           size (the bits that fit at 50px-wide cells).
-         - Diagonal "BLACKOUT" rotated text replaced with solid-fill
-           cells plus a small inline label that lives within the row
-           flow — the rotated treatment clipped at small cell sizes. */
-    @media (max-width: 700px) {
-      .cal-day { min-height: 80px; padding: var(--space-1); }
-      .calendar-title { font-size: 22px; letter-spacing: 2px; }
+    /* ── Calendar agenda (mobile-only list view) ──────────────────────
+       The 7-column grid is fundamentally broken at 375px (50px-wide
+       cells can't fit "10 AM" or "Blocked" without clipping). On
+       mobile we hide the grid entirely and render a chronological
+       list of bookings + blackouts for the visible month. Populated
+       by renderCalendarAgenda(), called from renderCalendar() so it
+       stays in sync as the admin navigates months.
+       Default: hidden. Desktop continues using the grid. */
+    .calendar-agenda { display: none; }
 
-      /* Header: stack vertically. Today + arrows row 1, month/year row 2. */
+    .cal-agenda-empty {
+      padding: var(--space-7) var(--space-5);
+      text-align: center;
+      color: var(--color-text-tertiary);
+      font-size: var(--font-size-sm);
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+    }
+
+    .cal-agenda-list {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .cal-agenda-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--color-border-subtle);
+      padding: var(--space-3) var(--space-4);
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: background var(--transition-fast);
+    }
+    .cal-agenda-item:last-child { border-bottom: none; }
+    .cal-agenda-item:hover { background: var(--color-bg-subtle); }
+
+    .cal-agenda-item.is-blocked {
+      cursor: default;
+      background: var(--color-danger-bg);
+    }
+    .cal-agenda-item.is-blocked:hover { background: var(--color-danger-bg); }
+
+    .cal-agenda-item.is-cancelled { opacity: 0.55; }
+    .cal-agenda-item.is-cancelled .cal-agenda-name { text-decoration: line-through; }
+
+    .cal-agenda-date {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-secondary);
+      margin-bottom: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .cal-agenda-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      flex-wrap: wrap;
+    }
+
+    .cal-agenda-time {
+      font-weight: var(--font-weight-bold);
+      flex-shrink: 0;
+      min-width: 52px;
+    }
+    .cal-agenda-dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+    }
+    .cal-agenda-dot.vessel-yacht   { background: var(--color-brand-primary); }
+    .cal-agenda-dot.vessel-pontoon { background: var(--color-brand-accent); }
+    .cal-agenda-vessel {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+    }
+    .cal-agenda-name {
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-semibold);
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cal-agenda-blocked-label {
+      font-weight: var(--font-weight-bold);
+      color: var(--color-danger);
+      font-size: var(--font-size-sm);
+    }
+
+    /* ── Calendar mobile overrides (≤768px) ───────────────────────────
+       Swap grid → agenda, and compact the header to a single row:
+       Today | ‹ | Month YYYY | › all inline, properly spaced.
+       display:contents flattens the first .cal-nav-group's children
+       into the .calendar-nav flex so we can interleave them with the
+       title via `order`. The legend (3rd child) stays hidden; color
+       coding is communicated inline by the navy/red dot in each
+       agenda row, so admins don't lose the vessel mapping. */
+    @media (max-width: 768px) {
+      .calendar-grid   { display: none; }
+      .calendar-agenda { display: block; }
+
       .calendar-nav {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
         gap: var(--space-2);
       }
+      /* Flatten the [‹, ›, Today] group so its children participate
+         in the parent flex with us setting `order` per child. */
       .calendar-nav > .cal-nav-group:first-child {
-        justify-content: space-between;  /* Today | ‹ › splits to the edges */
+        display: contents;
       }
+      .calendar-nav > .cal-nav-group:first-child > .cal-today-btn { order: 0; }
+      .calendar-nav > .cal-nav-group:first-child > .cal-nav-btn:nth-child(1) { order: 1; }  /* ‹ */
       .calendar-title {
-        text-align: center;
         order: 2;
-        width: 100%;
+        flex: 1;
+        text-align: center;
+        font-size: clamp(18px, 5vw, 22px);
+        letter-spacing: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
-      /* Legend is the 3rd child of .calendar-nav — hide on mobile. */
+      .calendar-nav > .cal-nav-group:first-child > .cal-nav-btn:nth-child(2) { order: 3; }  /* › */
+
+      /* Legend (3rd child of .calendar-nav) stays hidden — vessel
+         color is shown inline as a dot in each agenda row. */
       .calendar-nav > .cal-nav-group:nth-child(3) { display: none; }
 
-      /* Chips: hide the name, keep time + party-size. */
-      .cal-chip { font-size: 10px; padding: 2px var(--space-1); }
-      .cal-chip-name { display: none; }
-      .cal-chip-row { gap: 2px; }
-      .cal-chip-time { font-size: 10px; }
-      .cal-chip-party { font-size: 10px; }
-
-      /* Blackout overlays: the diagonal rotated text clips at small
-         cell sizes. Replace with solid-fill cells + small inline label. */
-      .cal-day.blackout-both,
-      .cal-day.blackout-yacht,
-      .cal-day.blackout-pontoon {
-        background-image: none;
-      }
-      .cal-day.blackout-both {
-        background: var(--color-danger-bg);
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-danger) 30%, transparent);
-      }
-      .cal-day.blackout-yacht {
-        background: color-mix(in srgb, var(--color-brand-primary) 12%, var(--color-bg-card));
-      }
-      .cal-day.blackout-pontoon {
-        background: color-mix(in srgb, var(--color-brand-accent) 12%, var(--color-bg-card));
-      }
-      .cal-day.blackout-both::before {
-        content: '🚫 Blocked';
-        position: static;
-        transform: none;
-        font-family: var(--font-body);
-        font-size: 9px;
-        font-weight: var(--font-weight-bold);
-        letter-spacing: 0;
-        color: var(--color-danger);
-        opacity: 1;
-        white-space: nowrap;
-        align-self: flex-start;
-        line-height: 1;
-        padding: 2px 0;
-      }
-      .cal-day.blackout-yacht::before {
-        content: '⛵ Yacht';
-        position: static;
-        top: auto; left: auto; right: auto;
-        font-family: var(--font-body);
-        font-size: 9px;
-        font-weight: var(--font-weight-bold);
-        letter-spacing: 0;
-        color: var(--color-brand-primary);
-        text-align: left;
-        line-height: 1;
-        padding: 2px 0;
-      }
-      .cal-day.blackout-pontoon::before {
-        content: '🛥 Pontoon';
-        position: static;
-        top: auto; left: auto; right: auto;
-        font-family: var(--font-body);
-        font-size: 9px;
-        font-weight: var(--font-weight-bold);
-        letter-spacing: 0;
-        color: var(--color-brand-accent);
-        text-align: left;
-        line-height: 1;
-        padding: 2px 0;
-      }
+      /* Tighter agenda items at narrow widths. */
+      .cal-agenda-meta { gap: var(--space-2); row-gap: var(--space-1); }
+      .cal-agenda-time { min-width: 48px; font-size: var(--font-size-sm); }
     }
 
     /* ── Booking detail modal ── */
@@ -1744,6 +1791,12 @@
             </div>
           </div>
           <div class="calendar-grid" id="calendar-grid"></div>
+          <!-- Mobile-only agenda view. Hidden by default; the
+               @media (max-width: 768px) block shows it AND hides the
+               grid. Populated by renderCalendarAgenda() on every
+               calendar render so the two views stay in sync as the
+               admin navigates months. -->
+          <div class="calendar-agenda" id="calendar-agenda"></div>
         </div>
       </div>
     </div>
@@ -4034,6 +4087,86 @@
     }
 
     grid.innerHTML = html;
+    /* Keep the mobile agenda view in sync with grid navigation. The
+       agenda is hidden on desktop via CSS so this is essentially free
+       there (innerHTML on an off-screen element). */
+    renderCalendarAgenda(bookingMap, blackoutMap);
+  }
+
+  /* Mobile-only chronological list view for the calendar. Reads the
+     same bookingMap + blackoutMap that renderCalendar already built,
+     then walks day-by-day through the visible month and emits one
+     row per blackout-day or booking. Sorted chronologically. */
+  function renderCalendarAgenda(bookingMap, blackoutMap) {
+    const agenda = document.getElementById('calendar-agenda');
+    if (!agenda) return;
+
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const lastDay = new Date(calYear, calMonth + 1, 0).getDate();
+    const items = [];
+
+    for (let d = 1; d <= lastDay; d++) {
+      const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      const dayDate = new Date(calYear, calMonth, d);
+      const dayBookings = bookingMap[dateStr] || [];
+      const dayBlackouts = blackoutMap[dateStr] || [];
+      const scope = dayBlackoutScope(dayBlackouts);
+
+      if (dayBookings.length === 0 && !scope) continue;
+
+      const dateLabel = dayNames[dayDate.getDay()] + ' ' + monthShort[calMonth] + ' ' + d;
+
+      /* Blackout row first (above the day's bookings, if any). */
+      if (scope === 'both') {
+        items.push(
+          '<div class="cal-agenda-item is-blocked">' +
+            '<div class="cal-agenda-date">' + esc(dateLabel) + '</div>' +
+            '<div class="cal-agenda-meta"><span class="cal-agenda-blocked-label">🚫 Blocked (both vessels)</span></div>' +
+          '</div>'
+        );
+      } else if (scope === 'yacht') {
+        items.push(
+          '<div class="cal-agenda-item is-blocked">' +
+            '<div class="cal-agenda-date">' + esc(dateLabel) + '</div>' +
+            '<div class="cal-agenda-meta"><span class="cal-agenda-blocked-label">⛵ Yacht blocked</span></div>' +
+          '</div>'
+        );
+      } else if (scope === 'pontoon') {
+        items.push(
+          '<div class="cal-agenda-item is-blocked">' +
+            '<div class="cal-agenda-date">' + esc(dateLabel) + '</div>' +
+            '<div class="cal-agenda-meta"><span class="cal-agenda-blocked-label">🛥 Pontoon blocked</span></div>' +
+          '</div>'
+        );
+      }
+
+      for (const b of dayBookings) {
+        const status = bkStatus(b);
+        const time = timeShort(b.time_slot) || '—';
+        const vesselDot = b.vessel === 'yacht' ? 'vessel-yacht' : 'vessel-pontoon';
+        const vesselTxt = vesselLabel(b.vessel);
+        const name = chipName(b);
+        const cancelledClass = (status === 'cancelled') ? ' is-cancelled' : '';
+        items.push(
+          '<button type="button" class="cal-agenda-item' + cancelledClass + '" onclick="openEditModal(\'' + esc(b.session_id) + '\')">' +
+            '<div class="cal-agenda-date">' + esc(dateLabel) + '</div>' +
+            '<div class="cal-agenda-meta">' +
+              '<span class="cal-agenda-time">' + esc(time) + '</span>' +
+              '<span class="cal-agenda-dot ' + vesselDot + '"></span>' +
+              '<span class="cal-agenda-vessel">' + esc(vesselTxt) + '</span>' +
+              '<span class="cal-agenda-name">' + esc(name) + '</span>' +
+            '</div>' +
+          '</button>'
+        );
+      }
+    }
+
+    if (items.length === 0) {
+      agenda.innerHTML = '<div class="cal-agenda-empty">No bookings or blackouts this month.</div>';
+    } else {
+      agenda.innerHTML = '<div class="cal-agenda-list">' + items.join('') + '</div>';
+    }
   }
 
   function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
