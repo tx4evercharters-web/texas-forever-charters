@@ -3533,154 +3533,156 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     // Skip resume when a deep-link ?vessel= param is in play (the customer
     // explicitly clicked into a vessel-specific path; honor that intent).
     if (!preselect) checkForResumeBooking();
-  </script>
 
-  <!-- ── EXIT-INTENT LEAD CAPTURE — wiring ──────────────────────────────
-       Self-contained IIFE. Reads `booking` / `calGrandTotal` /
-       `calDepositAmount` from the main wizard script above. Only POSTs
-       to /api/capture-lead when the user explicitly clicks YES. ─────── -->
-  <script>
-  (function () {
-    'use strict';
+    /* ── EXIT-INTENT LEAD CAPTURE ─────────────────────────────────────
+       Inline at the end of the main wizard script so it shares closure
+       scope with `booking` (const) and `calGrandTotal` / `calDepositAmount`
+       (let). Reading them directly = reading the same state the existing
+       handlePayment() submits to /api/create-checkout. No new globals. */
+    (function () {
+      'use strict';
 
-    const SS_KEY  = 'tfcLeadModalShownV1';
-    const MOB_KEY = 'tfcLeadMobileBannerShownV1';
-    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const SS_KEY  = 'tfcLeadModalShownV1';
+      const MOB_KEY = 'tfcLeadMobileBannerShownV1';
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    function hasMinimumContact() {
-      const b = window.booking || {};
-      return typeof b.fullName === 'string' && b.fullName.trim().length >= 2 &&
-             typeof b.email === 'string' && EMAIL_RE.test(b.email.trim());
-    }
-
-    /* Build the POST body from the current wizard state. Mirrors the
-       shape that /api/create-checkout posts, minus the server-trusted
-       pricing — capture-lead recomputes nothing, just stores what the
-       client says. */
-    function gatherFormState(source) {
-      const b = window.booking || {};
-      const gt  = (typeof window.calGrandTotal   === 'number') ? window.calGrandTotal   : null;
-      const dep = (typeof window.calDepositAmount === 'number') ? window.calDepositAmount : null;
-      let cancelledSid = null;
-      try {
-        cancelledSid = new URL(window.location.href).searchParams.get('cancelled_session_id');
-      } catch (e) {}
-      return {
-        full_name:         b.fullName || '',
-        customer_email:    b.email    || '',
-        phone:             b.phone    || '',
-        vessel:            b.vessel || null,
-        experience:        b.experience || null,
-        date:              b.date || null,
-        time_slot:         b.timeSlot || null,
-        duration:          b.duration != null ? String(b.duration) : null,
-        party_size:        b.partySize || null,
-        add_ons:           b.addOns || null,
-        special_requests:  b.specialRequests || null,
-        grand_total:       gt,
-        deposit_amount:    dep,
-        stripe_session_id: cancelledSid || null,
-        source:            cancelledSid ? 'website_stripe_cancel_return' : source,
-      };
-    }
-
-    async function postLead(source) {
-      try {
-        const res = await fetch('/api/capture-lead', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(gatherFormState(source)),
-        });
-        if (!res.ok) console.warn('[lead-capture] POST failed', res.status);
-      } catch (err) {
-        console.warn('[lead-capture] POST error', err && err.message);
+      function hasMinimumContact() {
+        return typeof booking.fullName === 'string' && booking.fullName.trim().length >= 2 &&
+               typeof booking.email    === 'string' && EMAIL_RE.test(booking.email.trim());
       }
-    }
 
-    /* ── Modal (desktop) ── */
-    const overlay = document.getElementById('lead-modal-overlay');
-    const modal   = document.getElementById('lead-modal');
+      /* Build the POST body from the current wizard state. Reads the
+         closure-scoped `booking`, `calGrandTotal`, `calDepositAmount` —
+         same source of truth as handlePayment(). The console.log is
+         intentional: it lets us verify in DevTools what actually gets
+         captured at consent time. Safe to leave on in prod (no PII
+         beyond what the user just consented to share). */
+      function gatherFormState(source) {
+        const gt  = (typeof calGrandTotal    === 'number') ? calGrandTotal    : null;
+        const dep = (typeof calDepositAmount === 'number') ? calDepositAmount : null;
+        let cancelledSid = null;
+        try {
+          cancelledSid = new URL(window.location.href).searchParams.get('cancelled_session_id');
+        } catch (e) {}
+        const payload = {
+          full_name:         booking.fullName || '',
+          customer_email:    booking.email    || '',
+          phone:             booking.phone    || '',
+          vessel:            booking.vessel || null,
+          experience:        booking.experience || null,
+          date:              booking.date || null,
+          time_slot:         booking.timeSlot || null,
+          duration:          booking.duration != null ? String(booking.duration) : null,
+          party_size:        booking.partySize || null,
+          add_ons:           booking.addOns || null,
+          special_requests:  booking.specialRequests || null,
+          grand_total:       gt,
+          deposit_amount:    dep,
+          stripe_session_id: cancelledSid || null,
+          source:            cancelledSid ? 'website_stripe_cancel_return' : source,
+        };
+        console.log('[lead-capture] gatherFormState ->', payload);
+        return payload;
+      }
 
-    function openModal() {
-      if (sessionStorage.getItem(SS_KEY) === '1') return;
-      if (!hasMinimumContact()) return;
-      if (overlay.classList.contains('open')) return;
-      /* If the customer reached the confirmation page they've already
-         converted — don't pester. booking-confirmation.html is a
-         different file, but a misfire on resume could still land here. */
-      if (/booking-confirmation/.test(location.pathname)) return;
-      sessionStorage.setItem(SS_KEY, '1');
-      modal.setAttribute('data-state', 'initial');
-      overlay.classList.add('open');
-    }
-    function closeModal() { overlay.classList.remove('open'); }
-
-    document.getElementById('lead-btn-yes').addEventListener('click', function () {
-      modal.setAttribute('data-state', 'sent');
-      postLead('website_exit_intent');
-      setTimeout(closeModal, 1200);
-    });
-    document.getElementById('lead-btn-no').addEventListener('click', closeModal);
-    document.getElementById('lead-modal-close').addEventListener('click', closeModal);
-    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
-    });
-
-    /* Desktop exit-intent: skip on touch devices (the bottom banner
-       handles mobile). Fire when cursor exits via the top edge. */
-    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
-    if (!isTouchDevice) {
-      document.documentElement.addEventListener('mouseleave', function (e) {
-        if (e.clientY > 50) return;
-        openModal();
-      });
-    }
-
-    /* ── Mobile bottom banner (visible while on Step 8) ── */
-    const banner = document.getElementById('lead-banner-mobile');
-    function showMobileBanner() {
-      if (sessionStorage.getItem(MOB_KEY) === '1') return;
-      if (!hasMinimumContact()) return;
-      sessionStorage.setItem(MOB_KEY, '1');
-      banner.classList.add('open');
-    }
-    function hideMobileBanner() { banner.classList.remove('open'); }
-
-    document.getElementById('lead-mob-yes').addEventListener('click', function () {
-      postLead('website_exit_intent_mobile');
-      hideMobileBanner();
-      if (typeof showToast === 'function') showToast("Got it — we'll be in touch if needed");
-    });
-    document.getElementById('lead-mob-no').addEventListener('click', hideMobileBanner);
-
-    if (isTouchDevice) {
-      /* Poll for Step 8 becoming visible; avoids monkey-patching showStep.
-         Stops as soon as we surface the banner once. */
-      const bannerTimer = setInterval(function () {
-        const step8 = document.getElementById('step8');
-        if (step8 && step8.classList.contains('active') && hasMinimumContact()) {
-          showMobileBanner();
-          clearInterval(bannerTimer);
+      async function postLead(source) {
+        try {
+          const res = await fetch('/api/capture-lead', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(gatherFormState(source)),
+          });
+          if (!res.ok) console.warn('[lead-capture] POST failed', res.status);
+          else        console.log('[lead-capture] POST OK', res.status);
+        } catch (err) {
+          console.warn('[lead-capture] POST error', err && err.message);
         }
-      }, 500);
-    }
-
-    /* Return-from-Stripe-cancel: auto-fire the modal if we land here with
-       ?cancelled_session_id=cs_*. Delay slightly so the wizard's
-       checkForResumeBooking() can rehydrate `booking` from localStorage. */
-    try {
-      const cancelledSid = new URL(window.location.href).searchParams.get('cancelled_session_id');
-      if (cancelledSid && /^cs_/.test(cancelledSid)) {
-        setTimeout(function () {
-          if (hasMinimumContact()) {
-            sessionStorage.removeItem(SS_KEY); // override the once-per-session gate
-            openModal();
-          }
-        }, 800);
       }
-    } catch (e) { /* ignore */ }
-  })();
+
+      /* ── Modal (desktop) ── */
+      const overlay = document.getElementById('lead-modal-overlay');
+      const modal   = document.getElementById('lead-modal');
+
+      function openModal() {
+        if (sessionStorage.getItem(SS_KEY) === '1') return;
+        if (!hasMinimumContact()) return;
+        if (overlay.classList.contains('open')) return;
+        /* If the customer reached the confirmation page they've already
+           converted — don't pester. booking-confirmation.html is a
+           different file, but a misfire on resume could still land here. */
+        if (/booking-confirmation/.test(location.pathname)) return;
+        sessionStorage.setItem(SS_KEY, '1');
+        modal.setAttribute('data-state', 'initial');
+        overlay.classList.add('open');
+      }
+      function closeModal() { overlay.classList.remove('open'); }
+
+      document.getElementById('lead-btn-yes').addEventListener('click', function () {
+        modal.setAttribute('data-state', 'sent');
+        postLead('website_exit_intent');
+        setTimeout(closeModal, 1200);
+      });
+      document.getElementById('lead-btn-no').addEventListener('click', closeModal);
+      document.getElementById('lead-modal-close').addEventListener('click', closeModal);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
+      });
+
+      /* Desktop exit-intent: skip on touch devices (the bottom banner
+         handles mobile). Fire when cursor exits via the top edge. */
+      const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
+      if (!isTouchDevice) {
+        document.documentElement.addEventListener('mouseleave', function (e) {
+          if (e.clientY > 50) return;
+          openModal();
+        });
+      }
+
+      /* ── Mobile bottom banner (visible while on Step 8) ── */
+      const banner = document.getElementById('lead-banner-mobile');
+      function showMobileBanner() {
+        if (sessionStorage.getItem(MOB_KEY) === '1') return;
+        if (!hasMinimumContact()) return;
+        sessionStorage.setItem(MOB_KEY, '1');
+        banner.classList.add('open');
+      }
+      function hideMobileBanner() { banner.classList.remove('open'); }
+
+      document.getElementById('lead-mob-yes').addEventListener('click', function () {
+        postLead('website_exit_intent_mobile');
+        hideMobileBanner();
+        if (typeof showToast === 'function') showToast("Got it — we'll be in touch if needed");
+      });
+      document.getElementById('lead-mob-no').addEventListener('click', hideMobileBanner);
+
+      if (isTouchDevice) {
+        /* Poll for Step 8 becoming visible; avoids monkey-patching showStep.
+           Stops as soon as we surface the banner once. */
+        const bannerTimer = setInterval(function () {
+          const step8 = document.getElementById('step8');
+          if (step8 && step8.classList.contains('active') && hasMinimumContact()) {
+            showMobileBanner();
+            clearInterval(bannerTimer);
+          }
+        }, 500);
+      }
+
+      /* Return-from-Stripe-cancel: auto-fire the modal if we land here with
+         ?cancelled_session_id=cs_*. Delay slightly so the wizard's
+         checkForResumeBooking() can rehydrate `booking` from localStorage. */
+      try {
+        const cancelledSid = new URL(window.location.href).searchParams.get('cancelled_session_id');
+        if (cancelledSid && /^cs_/.test(cancelledSid)) {
+          setTimeout(function () {
+            if (hasMinimumContact()) {
+              sessionStorage.removeItem(SS_KEY); // override the once-per-session gate
+              openModal();
+            }
+          }, 800);
+        }
+      } catch (e) { /* ignore */ }
+    })();
   </script>
 
 </body>
