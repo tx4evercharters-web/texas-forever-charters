@@ -9,6 +9,13 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
+      /* ─────────────────────────────────────────────────────────────
+         LEGACY TOKENS (currently in use)
+         These remain so the file renders identically while Commit 2
+         migrates each existing usage onto the new semantic tokens
+         below. Once nothing references --navy / --red / --gray-N,
+         this block can be deleted.
+         ───────────────────────────────────────────────────────────── */
       --navy:        #1B2A6B;
       --navy-dark:   #0F1A45;
       --navy-mid:    #243580;
@@ -32,6 +39,101 @@
       --teal-bg:     #ECFEFF;
       --purple:      #7C3AED;
       --purple-bg:   #F5F3FF;
+
+      /* ═════════════════════════════════════════════════════════════
+         DESIGN TOKEN FOUNDATION (Commit 1 — defined, not yet applied)
+         ─────────────────────────────────────────────────────────────
+         Semantic names so future white-label themes only have to
+         override these, not chase down hex literals across the file.
+         Commit 2 migrates existing CSS to reference these tokens.
+         Until then, every rule in the file continues to use the
+         legacy --navy / --red / --gray-N tokens above. File renders
+         identically pre-deploy and post-deploy.
+         ═════════════════════════════════════════════════════════════ */
+
+      /* ── 1. COLORS — brand ── */
+      --color-brand-primary:        #1B2A6B;  /* same as --navy */
+      --color-brand-primary-hover:  #243580;  /* same as --navy-mid */
+      --color-brand-accent:         #C8102E;  /* same as --red */
+      --color-brand-accent-hover:   #A30D26;  /* darker red for hover/active */
+
+      /* ── 1. COLORS — semantic status ── */
+      --color-success:    #047857;   /* deeper green for text/icons */
+      --color-success-bg: #ECFDF5;
+      --color-warning:    #B45309;
+      --color-warning-bg: #FEF3C7;
+      --color-danger:     #C8102E;   /* aligned with brand-accent */
+      --color-danger-bg:  #FEF2F2;
+
+      /* ── 1. COLORS — surfaces ── */
+      --color-bg-app:      #F8F9FC;  /* outer page / app shell */
+      --color-bg-card:     #FFFFFF;  /* cards, panels */
+      --color-bg-elevated: #FFFFFF;  /* modals, popovers (paired with --shadow-lg) */
+      --color-bg-subtle:   #F0F2F8;  /* hover states, subtle fills */
+
+      /* ── 1. COLORS — borders ── */
+      --color-border:        #E5E7EB;
+      --color-border-subtle: #F0F2F8;
+
+      /* ── 1. COLORS — text ── */
+      --color-text-primary:   #111827;  /* headings + body text */
+      --color-text-secondary: #4B5563;  /* secondary copy, labels */
+      --color-text-tertiary:  #9CA3AF;  /* hints, placeholders */
+      --color-text-on-brand:  #FFFFFF;  /* text on brand-colored bg */
+
+      /* ── 2. TYPOGRAPHY — families ──
+         --font-display: brand moments only (modal titles, big numbers).
+         --font-body:    everything else; Inter loaded in Commit 2.
+         --font-mono:    code, IDs, monospace UI. */
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --font-mono:    ui-monospace, 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+
+      /* ── 2. TYPOGRAPHY — sizes ── */
+      --font-size-xs:   11px;
+      --font-size-sm:   12px;
+      --font-size-base: 14px;
+      --font-size-lg:   16px;
+      --font-size-xl:   20px;
+      --font-size-2xl:  24px;
+
+      /* ── 2. TYPOGRAPHY — weights ── */
+      --font-weight-normal:   400;
+      --font-weight-medium:   500;
+      --font-weight-semibold: 600;
+      --font-weight-bold:     700;
+
+      /* ── 3. SPACING (4px base, multiples of 4) ── */
+      --space-1:   4px;
+      --space-2:   8px;
+      --space-3:  12px;
+      --space-4:  16px;
+      --space-5:  20px;
+      --space-6:  24px;
+      --space-7:  32px;
+      --space-8:  40px;
+      --space-9:  48px;
+      --space-10: 64px;
+      --space-11: 80px;
+      --space-12: 96px;
+
+      /* ── 4. BORDER RADIUS ── */
+      --radius-sm:    4px;    /* tight controls — inputs, small badges */
+      --radius-md:    8px;    /* buttons, table cells with rounded corners */
+      --radius-lg:   12px;    /* cards, panels, modals */
+      --radius-full: 9999px;  /* pills, status badges */
+
+      /* ── 5. SHADOWS ── */
+      --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.10),
+                   0 2px 4px -1px rgba(15, 23, 42, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.10),
+                   0 4px 6px -2px rgba(15, 23, 42, 0.05);
+
+      /* ── 6. TRANSITIONS ── */
+      --transition-fast: 100ms ease-out;   /* hovers, focus rings */
+      --transition-base: 150ms ease-out;   /* most state changes */
+      --transition-slow: 250ms ease-out;   /* tab switches, modal entrance */
     }
 
     body {
