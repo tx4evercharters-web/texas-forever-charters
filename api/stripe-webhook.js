@@ -2,6 +2,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const {
   sendConfirmationEmails,
   sendDamageHoldFailedAlert,
+  sendDamageHoldFailedCustomerNotice,
   sendStripeRefundReconciledAlert,
   sendChargebackAlert,
 } = require('../lib/send-emails');
@@ -426,19 +427,6 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  /* Damage-hold alert — fire after the booking is safely persisted so the
-     owner has the full context. Best-effort; an alert send failure must
-     not undo the booking. */
-  if (damageHoldError) {
-    try {
-      await sendDamageHoldFailedAlert(bookingRow, damageHoldError);
-      console.log('[stripe-webhook] damage-hold failure alert sent for', session.id);
-    } catch (alertErr) {
-      console.error('[stripe-webhook] damage-hold alert send FAILED (booking still saved):',
-        session.id, '|', alertErr.message);
-    }
-  }
-
   const emailData = {
     // From Stripe session
     customer_email: session.customer_email,
@@ -477,6 +465,30 @@ module.exports = async function handler(req, res) {
        sends failed. Stripe has already charged — return 200 anyway so it
        doesn't enter the retry loop, but the error is loud in logs. */
     console.error('[stripe-webhook] BOTH confirmation emails failed', session.id, '|', err.message, '\n', err.stack);
+  }
+
+  /* Damage-hold alerts — fire AFTER the standard confirmation emails so
+     the routine "New Booking" notification reaches the owner's inbox
+     before the urgent "⚠️ Damage hold FAILED" alert. This ordering keeps
+     Gmail from threading/filtering the two business emails together and
+     also surfaces the right context first (booking exists, then hold
+     needs attention). Each send is independent and best-effort — a
+     failure here must not unwind the booking. */
+  if (damageHoldError) {
+    try {
+      await sendDamageHoldFailedAlert(bookingRow, damageHoldError);
+      console.log('[stripe-webhook] damage-hold owner alert sent for', session.id);
+    } catch (alertErr) {
+      console.error('[stripe-webhook] damage-hold owner alert FAILED (booking still saved):',
+        session.id, '|', alertErr.message);
+    }
+    try {
+      await sendDamageHoldFailedCustomerNotice(emailData);
+      console.log('[stripe-webhook] damage-hold customer notice sent for', session.id);
+    } catch (noticeErr) {
+      console.error('[stripe-webhook] damage-hold customer notice FAILED (booking still saved):',
+        session.id, '|', noticeErr.message);
+    }
   }
 
   /* Track delivery success so the confirmation page and admin can detect
