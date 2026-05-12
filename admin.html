@@ -1181,6 +1181,53 @@
 
     .modal-body { padding: 24px; }
 
+    /* ── Modal responsive overrides (≤768px) ─────────────────────────
+       Every admin modal (Add/Edit Booking, Edit Payment, Waivers,
+       Blackout Slot, Block Dates, Damage Charge, Refund, Customer
+       Edit, Import, Lead Contact, Booking Detail) shares the `.modal`
+       + `.edit-form-grid` + `.edit-input` classes. On mobile the
+       two-column grid let inputs with long intrinsic min-widths
+       (e.g. <select> with "Bachelorette Party") force the grid past
+       the viewport, causing horizontal page scroll and clipped
+       labels. Fix is one-place: cap modal width, collapse the grid
+       to one column, force inputs to honor their cell width. */
+    @media (max-width: 768px) {
+      /* Tighter overlay padding so the modal has more usable width. */
+      .modal-overlay { padding: var(--space-3); }
+
+      /* Cap modal at the viewport. !important to beat the per-modal
+         inline max-width values (760px Add Booking, 920px Import,
+         etc.) that exist for desktop sizing. */
+      .modal {
+        max-width: calc(100vw - 24px) !important;
+        max-height: calc(100vh - 24px);
+      }
+
+      /* Tighter chrome so labels + ✕ fit on narrow screens. */
+      .modal-header { padding: var(--space-3) var(--space-4); }
+      .modal-body   { padding: var(--space-4); }
+
+      /* Collapse the two-column form grid to a single column —
+         every field full width, label above input. */
+      .edit-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      /* Grid items default to min-width: auto (= min-content), which
+         is what was pushing inputs past the cell. min-width: 0 +
+         width: 100% + box-sizing: border-box fits any input/select
+         inside its cell regardless of intrinsic content width. */
+      .edit-form-group { min-width: 0; }
+      .edit-input {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+
+      /* Save/Cancel footer — allow wrapping if labels are long. */
+      .edit-modal-footer { flex-wrap: wrap; }
+    }
+
     .modal-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
     .modal-row:last-child { border-bottom: none; }
     .modal-row-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); flex-shrink: 0; margin-right: 16px; }
