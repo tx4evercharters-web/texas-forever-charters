@@ -16,6 +16,11 @@
       ],
       "destination": "https://texasforevercharters.com/$1",
       "permanent": true
+    },
+    {
+      "source": "/austin-texas-boat-tours.html",
+      "destination": "/austin-texas-boat-rentals.html",
+      "permanent": true
     }
   ]
 }
