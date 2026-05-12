@@ -3118,15 +3118,16 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       add('Charter (' + p.duration + ' hrs × $' + p.effectiveHourlyRate + '/hr · ' + dayLabel + ')', '$' + p.charterSubtotal.toLocaleString());
       if (p.holidaySurcharge)   add('Bank Holiday Surcharge (+$100/hr)', '+$' + (p.holidaySurcharge * p.duration));
       if (p.longCharterPremium) add('Long Charter Premium (5+ hrs · +$100/hr)', '+$' + (p.longCharterPremium * p.duration));
+      if (p.promoDiscount > 0) add('LAKELIFE10 (10% off charter rate)', bkFmtMoney(-p.promoDiscount), 'discount');
+      add('Admin Fee (5%)', '+' + bkFmtMoney(p.adminFee));
       if (booking.addOns.drone)      add('Drone Footage', '$200');
       if (booking.addOns.towels > 0) add('Towels (' + booking.addOns.towels + ' × $8)', '$' + booking.addOns.towels * 8);
       if (booking.addOns.water)      add('Water Bottles', '$25');
       if (booking.addOns.ice)        add('Ice', '$25');
       if (booking.addOns.beerpong)   add('Beer Pong Setup', '$50');
-      add('Admin Fee (10%)', '+' + bkFmtMoney(p.adminFee));
+      add('Subtotal', bkFmtMoney(p.subtotalAfterDiscount));
       add('Sales Tax (8.5%)', '+' + bkFmtMoney(p.salesTax), 'tax-row');
       add('Credit Card Processing (2.9%)', '+' + bkFmtMoney(p.processingFee), 'tax-row');
-      if (p.promoDiscount > 0) add('Promo Discount (10%)', bkFmtMoney(-p.promoDiscount), 'discount');
       add('Total', bkFmtMoney(p.grandTotal), 'total');
       add('Deposit (10%)', bkFmtMoney(p.depositAmount), 'deposit');
 
@@ -3178,7 +3179,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
           document.getElementById('nl-unlock-banner').innerHTML = `
             <div style="text-align:center;padding:8px 0;">
               <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#C8102E;letter-spacing:4px;">LAKELIFE10</div>
-              <div style="font-family:'Barlow',sans-serif;font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px;">Code sent to your email too! Enter it below for 10% off.</div>
+              <div style="font-family:'Barlow',sans-serif;font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px;">Code sent to your email too! Enter it below for 10% off your charter rate.</div>
             </div>
           `;
           document.getElementById('promoInput').value = 'LAKELIFE10';

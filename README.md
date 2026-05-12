@@ -154,8 +154,8 @@ Lives in `booking.html` (`getCharterBaseTotal`, `buildPriceBreakdown`) and mirro
 - **Base rates** — Yacht: $250/$300/$350 (Mon-Thu/Fri-Sun/Sat). Pontoon: $100 weekday, $150 weekend.
 - **Holiday surcharge** — +$100/hr on any day in the surrounding Fri-Mon bracket of a US federal holiday.
 - **Long charter premium** — +$100/hr for 5+ hour charters.
-- **Fee stack** — 10% admin fee → 8.5% sales tax → 2.9% credit-card processing.
-- **Promo codes** — `LAKELIFE10`, `FOREVER10`, `TXF10` (10% off post-fee total).
+- **Fee stack** — 5% admin fee → 8.5% sales tax → 2.9% credit-card processing.
+- **Promo codes** — `LAKELIFE10`, `FOREVER10`, `TXF10` (10% off charter rate).
 - **Damage deposit** — $250 refundable manual-capture hold authorized by the Stripe webhook.
 - **Payment options** — 10% non-refundable deposit (balance due 14 days before) OR pay-in-full.
 

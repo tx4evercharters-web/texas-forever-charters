@@ -52,8 +52,12 @@ const oldHolidayPricingDays = (() => {
 function oldIsHoliday(d) { return oldHolidayPricingDays.has(oldDateKey(d)); }
 
 /* Mirror of buildPriceBreakdown's math (post-5+hr-fix, pre-consolidation).
-   Customer keys: drone, water, ice, beerpong, towels. Always adds 2.9%
-   processing fee (customer flow has no admin-style external option). */
+   Customer keys: drone, water, ice, beerpong, towels.
+   Math model (post-2026-05-12):
+     - 5% admin fee on (charter + addOns)
+     - 10% promo off charter rate only (not addOns)
+     - tax + processing apply to post-promo subtotal (charter_after_promo + addOns + admin)
+     - processing 2.9% only, no flat fee */
 function oldBuildPriceBreakdown({ vessel, dateStr, duration, addOns, promoApplied }) {
   const [y,m,d] = dateStr.split('-').map(Number);
   const date = new Date(y, m-1, d);
@@ -77,14 +81,14 @@ function oldBuildPriceBreakdown({ vessel, dateStr, duration, addOns, promoApplie
   if (addOns.beerpong) addOnsTotal += 50;
 
   const subtotal = charterBase + addOnsTotal;
-  const adminFee = Math.round(subtotal * 0.10 * 100) / 100;
-  const afterAdmin = subtotal + adminFee;
-  const tax = Math.round(afterAdmin * 0.085 * 100) / 100;
-  const afterTax = afterAdmin + tax;
+  const discount = promoApplied ? Math.round(charterBase * 0.10 * 100) / 100 : 0;
+  const charterAfterPromo = Math.round((charterBase - discount) * 100) / 100;
+  const adminFee = Math.round(subtotal * 0.05 * 100) / 100;
+  const taxable = Math.round((charterAfterPromo + addOnsTotal + adminFee) * 100) / 100;
+  const tax = Math.round(taxable * 0.085 * 100) / 100;
+  const afterTax = taxable + tax;
   const processingFee = Math.round(afterTax * 0.029 * 100) / 100;
-  const beforeDiscount = afterTax + processingFee;
-  const discount = promoApplied ? Math.round(beforeDiscount * 0.10 * 100) / 100 : 0;
-  const grandTotal = Math.round((beforeDiscount - discount) * 100) / 100;
+  const grandTotal = Math.round((afterTax + processingFee) * 100) / 100;
   const depositAmount = Math.round(grandTotal * 0.10 * 100) / 100;
 
   return {
@@ -104,8 +108,8 @@ function oldBuildPriceBreakdown({ vessel, dateStr, duration, addOns, promoApplie
   };
 }
 
-/* Mirror of admin's abComputePricing (pre-consolidation), with the
-   external-payment processing-fee gate. Snake_case add-on keys. */
+/* Mirror of admin's abComputePricing with the external-payment
+   processing-fee gate. Snake_case add-on keys. Post-2026-05-12 math. */
 function oldAdminCompute({ vessel, dateStr, duration, addOns, paymentMethod }) {
   const [y,m,d] = dateStr.split('-').map(Number);
   const date = new Date(y, m-1, d);
@@ -128,10 +132,12 @@ function oldAdminCompute({ vessel, dateStr, duration, addOns, paymentMethod }) {
   if (addOns.beer_pong)     addOnsTotal += 50;
 
   const subtotal = charterBase + addOnsTotal;
-  const adminFee = Math.round(subtotal * 0.10 * 100) / 100;
-  const afterAdmin = subtotal + adminFee;
-  const tax = Math.round(afterAdmin * 0.085 * 100) / 100;
-  const afterTax = afterAdmin + tax;
+  /* admin (no promo path in this mirror — used only for the
+     external-payment case which doesn't apply LAKELIFE10) */
+  const adminFee = Math.round(subtotal * 0.05 * 100) / 100;
+  const taxable = Math.round((charterBase + addOnsTotal + adminFee) * 100) / 100;
+  const tax = Math.round(taxable * 0.085 * 100) / 100;
+  const afterTax = taxable + tax;
   const processingFee = paymentMethod === 'external' ? 0 : Math.round(afterTax * 0.029 * 100) / 100;
   const total = Math.round((afterTax + processingFee) * 100) / 100;
 

@@ -2548,7 +2548,7 @@
               <input class="edit-input" id="ab-charter-subtotal" type="number" step="0.01" min="0" oninput="abFieldEdited('subtotal')">
             </div>
             <div class="edit-form-group">
-              <label class="edit-label">Admin Fee (10% default) <span class="ab-edited-flag" id="ab-edited-admin">edited</span></label>
+              <label class="edit-label">Admin Fee (5% default) <span class="ab-edited-flag" id="ab-edited-admin">edited</span></label>
               <input class="edit-input" id="ab-admin-fee" type="number" step="0.01" min="0" oninput="abFieldEdited('adminFee')">
             </div>
             <div class="edit-form-group">
@@ -5531,13 +5531,16 @@
       return;
     }
     if (AB_VALID_PROMO_CODES.includes(raw)) {
-      const subtotal = parseFloat(document.getElementById('ab-charter-subtotal').value) || 0;
-      const discount = Math.round(subtotal * 0.10 * 100) / 100;
+      /* New pricing: discount is 10% of CHARTER ONLY (not charter+addOns).
+         abComputePricing() returns charterBase separately so we can
+         compute against it instead of the lumped subtotal field. */
+      const p = abComputePricing();
+      const discount = Math.round(p.charterBase * 0.10 * 100) / 100;
       document.getElementById('ab-promo-discount').value = discount.toFixed(2);
       abFieldEdited('promo');
       status.style.color = 'var(--green)';
       status.style.display = 'block';
-      status.textContent = '✓ ' + raw + ' applied — 10% off subtotal (' + fmtMoney(discount) + ')';
+      status.textContent = '✓ ' + raw + ' applied — 10% off charter rate (' + fmtMoney(discount) + ')';
     } else {
       status.style.color = 'var(--red)';
       status.style.display = 'block';
@@ -5715,28 +5718,32 @@
     const subtotal = parseFloat(subtotalField.value) || 0;
 
     if (!abFieldOverrides.adminFee) {
-      adminField.value = round2(subtotal * 0.10).toFixed(2);
+      adminField.value = round2(subtotal * 0.05).toFixed(2);
     }
     const adminFee = parseFloat(adminField.value) || 0;
 
+    /* Promo is read BEFORE tax/processing in the new model: discount
+       reduces the taxable subtotal (charter rate part), so tax and
+       processing are computed on (subtotal + admin - promo). Promo
+       itself defaults to 0 unless the admin set it via the promo-code
+       helper or typed a custom dollar value. */
+    if (!abFieldOverrides.promo) {
+      if (promoField.value === '') promoField.value = '0.00';
+    }
+    const promo = parseFloat(promoField.value) || 0;
+
     if (!abFieldOverrides.tax) {
-      taxField.value = round2((subtotal + adminFee) * 0.085).toFixed(2);
+      taxField.value = round2((subtotal + adminFee - promo) * 0.085).toFixed(2);
     }
     const tax = parseFloat(taxField.value) || 0;
 
     if (!abFieldOverrides.processing) {
       const usesStripe = document.querySelector('input[name="ab-payment"]:checked')?.value === 'stripe-link';
       procField.value = usesStripe
-        ? round2((subtotal + adminFee + tax) * 0.029).toFixed(2)
+        ? round2((subtotal + adminFee - promo + tax) * 0.029).toFixed(2)
         : '0.00';
     }
     const processing = parseFloat(procField.value) || 0;
-
-    if (!abFieldOverrides.promo) {
-      // Default 0; promo is only set by the promo-code helper or admin override.
-      if (promoField.value === '') promoField.value = '0.00';
-    }
-    const promo = parseFloat(promoField.value) || 0;
 
     if (!abFieldOverrides.total) {
       totalField.value = round2(subtotal + adminFee + tax + processing - promo).toFixed(2);
