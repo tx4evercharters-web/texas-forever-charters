@@ -575,12 +575,18 @@
     <button class="gallery-book-cta" id="galleryBookCta" type="button" onclick="bookCurrentBoat()">Book Now</button>
   </div>
 
-  <!-- ── NEWSLETTER POPUP ── -->
+  <!-- ── NEWSLETTER POPUP ──
+       Trigger logic lives in js/main.js (exit-intent on desktop, scroll+time
+       on mobile). When this page loads, js/main.js detects the existing
+       #nlPopup markup and uses it directly; on the other allowlisted pages
+       the same HTML is injected from JS so there's a single source of truth
+       for behavior, two sources for markup. -->
   <div id="nlPopup" class="nl-popup-overlay" role="dialog" aria-modal="true" aria-label="Newsletter signup">
-    <div class="nl-popup-box">
+    <div class="nl-popup-box" style="position:relative;">
+      <button id="nlPopupX" aria-label="Close" onclick="closeNewsletterPopup()" style="position:absolute;top:10px;right:12px;width:34px;height:34px;border:none;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:20px;line-height:1;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:2;">✕</button>
       <div class="nl-popup-anchor">⚓</div>
       <h2 class="nl-popup-title">Get 10% Off<br><span class="nl-popup-red">Your Charter Rate</span></h2>
-      <p class="nl-popup-desc">Sign up for our newsletter — it's that simple.</p>
+      <p class="nl-popup-desc">Join our insider list for your LAKELIFE10 code plus future deals.</p>
       <div class="nl-popup-form" id="nlPopupForm">
         <input class="nl-popup-input" type="email" id="nlPopupEmail" placeholder="Your email address" aria-label="Email address">
         <button class="nl-popup-btn" id="nlPopupBtn" onclick="handlePopupSubscribe()">Claim My Discount</button>
