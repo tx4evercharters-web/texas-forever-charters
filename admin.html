@@ -1415,6 +1415,17 @@
     #bookings-wrap table thead th:last-child { background: var(--gray-50); }
     #bookings-wrap table tbody tr:hover td:last-child { background: var(--gray-50); }
 
+    /* When a row's kebab menu is open, promote that row's sticky actions
+       <td> above all other rows' sticky cells. position: fixed on
+       .bk-menu doesn't escape the sticky cell's stacking context (fixed
+       escapes the containing block, not stacking-context hierarchy), so
+       without this, later rows' sticky cells paint on top of the menu
+       due to DOM-order ties at z-index 1. Sits between the sticky tab
+       bar (99) and the modal layer (200). */
+    #bookings-wrap table tbody tr.bk-menu-row-open td:last-child {
+      z-index: 190;
+    }
+
     /* Badges — soft fills with darker text, mixed case, small Inter
        weight-semibold. Previously: solid fills with white text, ALL-CAPS,
        letter-spaced — too shouty. The new look reads as state-tags
@@ -3207,6 +3218,11 @@
   function bkToggleMenu(id, ev) {
     if (ev) ev.stopPropagation();
     document.querySelectorAll('.bk-menu.open').forEach(m => { if (m.id !== 'bk-menu-' + id) m.classList.remove('open'); });
+    /* Strip .bk-menu-row-open from any row that has it. Covers both
+       "another row's menu is closing because this one is opening" and
+       "this same menu is toggling closed." The current row gets the
+       class back below if we're opening. */
+    document.querySelectorAll('tr.bk-menu-row-open').forEach(tr => tr.classList.remove('bk-menu-row-open'));
     const el = document.getElementById('bk-menu-' + id);
     if (!el) return;
 
@@ -3225,6 +3241,12 @@
         el.style.left = 'auto';
         el.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
       }
+      /* Promote the open row's sticky <td>:last-child above all other
+         rows' sticky cells by tagging the parent <tr>. Defeats the
+         stacking-context trap from position: sticky on the actions
+         column. See the .bk-menu-row-open CSS rule for the math. */
+      const tr = el.closest('tr');
+      if (tr) tr.classList.add('bk-menu-row-open');
     }
 
     el.classList.toggle('open');
@@ -3232,6 +3254,7 @@
   }
   function bkCloseMenus() {
     document.querySelectorAll('.bk-menu.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('tr.bk-menu-row-open').forEach(tr => tr.classList.remove('bk-menu-row-open'));
     bkOpenMenuId = null;
   }
   /* Close any open kebab when the user scrolls — the menu is fixed-
