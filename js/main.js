@@ -254,20 +254,51 @@ document.addEventListener('DOMContentLoaded', () => {
   const navLinks = document.querySelector('.nav-links');
 
   if (navToggle && navLinks) {
-    navToggle.addEventListener('click', () => {
-      const isOpen = navLinks.classList.toggle('active');
-      navToggle.classList.toggle('active', isOpen);
-      navToggle.setAttribute('aria-expanded', String(isOpen));
+    /* Centralized open/close so toggle, nav links, outside taps, and
+       Escape all converge on one place. No body scroll lock — the
+       menu is a 220px dropdown anchored to the nav, not a full-screen
+       sheet, so locking page scroll would feel wrong. */
+    function closeNavMenu() {
+      if (!navLinks.classList.contains('active')) return;
+      navLinks.classList.remove('active');
+      navToggle.classList.remove('active');
+      navToggle.setAttribute('aria-expanded', 'false');
+    }
+    function openNavMenu() {
+      navLinks.classList.add('active');
+      navToggle.classList.add('active');
+      navToggle.setAttribute('aria-expanded', 'true');
+    }
+
+    navToggle.addEventListener('click', (e) => {
+      /* Stop propagation so the same click doesn't bubble to the
+         document outside-tap listener below and immediately reverse
+         what we just toggled. */
+      e.stopPropagation();
+      if (navLinks.classList.contains('active')) closeNavMenu();
+      else openNavMenu();
     });
 
     navLinks.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        if (navLinks.classList.contains('active')) {
-          navLinks.classList.remove('active');
-          navToggle.classList.remove('active');
-          navToggle.setAttribute('aria-expanded', 'false');
-        }
-      });
+      link.addEventListener('click', closeNavMenu);
+    });
+
+    /* Outside-tap close — any click that isn't on the toggle and
+       isn't inside the menu dismisses it. Registered once globally
+       since the menu shares a single instance per page. Skips when
+       menu is already closed (fast no-op). */
+    document.addEventListener('click', (e) => {
+      if (!navLinks.classList.contains('active')) return;
+      if (navToggle.contains(e.target)) return; // handled by toggle's own listener
+      if (navLinks.contains(e.target))  return; // taps inside the menu shouldn't close (links handle their own close)
+      closeNavMenu();
+    });
+
+    /* Escape closes the menu (desktop keyboard users + screen readers). */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && navLinks.classList.contains('active')) {
+        closeNavMenu();
+      }
     });
   }
 
