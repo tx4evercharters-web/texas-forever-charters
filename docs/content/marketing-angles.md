@@ -82,8 +82,12 @@ charter can do 3-4 stops. Don't market traversal of the whole lake.
 
 ## Trust Signals (use across pages)
 
-- Licensed commercial captains (Texas state-licensed for passenger
-  operations on inland waters)
+- **Only PBO Certified Captains** — every TFC captain holds the Texas
+  Parks & Wildlife Party Boat Operator (PBO) credential, the Texas
+  state license required to legally operate a charter with paying
+  passengers on inland waters. Most operators on Lake Travis run trips
+  with non-certified contractors or guides — we don't. The "Only" is
+  the differentiator.
 - Commercially insured
 - Owner-operated by brothers Captain DJ Kilpatrick and Captain Dane
   Kilpatrick (no rotating crew, no contractors)
@@ -92,8 +96,14 @@ charter can do 3-4 stops. Don't market traversal of the whole lake.
 - 4.9+ star rating across all booking platforms
 - Direct booking (no marketplace fees, no surprise charges)
 
+Marketing phrasing options for the PBO differentiator:
+- "Only PBO Certified Captains on Lake Travis"
+- "Every charter, a PBO Certified Captain — every time"
+- "Texas-licensed PBO Certified Captains (the legal credential most
+  operators don't bother with)"
+
 DO NOT CLAIM:
-- USCG licensure (TFC captains are Texas state-licensed, not USCG)
+- USCG licensure (TFC captains are Texas state-licensed PBO, not USCG)
 - "Coast Guard certified" or any federal merchant marine credential
 - Any safety certification not actually held
 
@@ -143,7 +153,7 @@ DO NOT CLAIM:
   experience, yacht-vs-party-bus framing
 - austin-texas-boat-rentals.html → Already strong; could add Villa Del
   Lago and Mansfield Dam history to landmark section if depth needed
-- index.html → Trust signals (Texas state-licensed captains, commercially
+- index.html → Trust signals (Only PBO Certified Captains, commercially
   insured, owner-operated brothers) in About/Fleet section
 - Future /lake-travis-yacht-charter/ cornerstone page → All of the above
 
