@@ -1932,26 +1932,34 @@
 
     <!-- Mark-lead-contacted modal -->
     <div class="modal-overlay" id="lead-contact-overlay" onclick="closeLeadContactModal(event)">
-      <div class="modal" style="max-width:520px;">
+      <div class="modal" style="max-width:480px;">
         <div class="modal-header" style="background:var(--navy);">
           <div style="color:#fff;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;">Mark Lead Contacted</div>
           <button class="modal-close" onclick="closeLeadContactModalBtn()">×</button>
         </div>
         <div style="padding:20px 24px;">
           <div id="lc-customer" style="margin-bottom:14px;color:var(--navy);font-weight:700;"></div>
-          <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Reason they didn't book (optional but encouraged)</label>
-          <select class="edit-input" id="lc-bounce-reason" style="margin-bottom:14px;">
-            <option value="">— Select a reason… —</option>
-            <option value="price">Price too high</option>
-            <option value="dates">Dates didn't work</option>
-            <option value="group">Group decision needed</option>
-            <option value="distracted">Just got distracted</option>
-            <option value="comparing">Comparing competitors</option>
-            <option value="info">Needed more info</option>
-            <option value="other">Other</option>
-          </select>
-          <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Contact notes (optional)</label>
-          <textarea class="edit-input" id="lc-notes" rows="5" placeholder="e.g. Called at 2:30pm Tuesday — left voicemail. Texted afterwards."></textarea>
+          <!-- Each field wrapped in .edit-form-group (flex column with
+               stretch alignment) so the label stacks above its input
+               and the input fills the full modal-body width. Same
+               primitive used by every other admin modal. -->
+          <div class="edit-form-group" style="margin-bottom:var(--space-4);">
+            <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Reason they didn't book (optional but encouraged)</label>
+            <select class="edit-input" id="lc-bounce-reason">
+              <option value="">— Select a reason… —</option>
+              <option value="price">Price too high</option>
+              <option value="dates">Dates didn't work</option>
+              <option value="group">Group decision needed</option>
+              <option value="distracted">Just got distracted</option>
+              <option value="comparing">Comparing competitors</option>
+              <option value="info">Needed more info</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="edit-form-group">
+            <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Contact notes (optional)</label>
+            <textarea class="edit-input" id="lc-notes" rows="5" placeholder="e.g. Called at 2:30pm Tuesday — left voicemail. Texted afterwards."></textarea>
+          </div>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
             <button class="btn-gray" onclick="closeLeadContactModalBtn()">Cancel</button>
             <button class="btn-red" onclick="confirmLeadContacted()">Save &amp; Mark Contacted</button>
