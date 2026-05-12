@@ -116,6 +116,30 @@ DO NOT CLAIM:
 - AC inside the cabin
 - Yacht vs party-barge framing: 6-12 guest intimate experience vs 20-person blowouts
 
+## Onboard Amenities (per vessel)
+
+### 40ft Carver Aft Cabin yacht
+- 14 ft jump platform
+- 2 floating docks
+- Sun chill float
+- Full interior cabin (kitchen, bedroom, bathroom)
+- BYOB friendly
+- Up to 20 guests
+
+### 24ft Bentley Navigator 243 pontoon
+- Lily pad
+- Premium sound system
+- Tubing setup
+- Up to 13 guests
+- Family friendly
+- BYOB friendly
+
+### Marketing notes
+- Both boats are BYOB friendly. Vaping allowed on deck. No ash-producing smoking.
+- Paddle board is physically on the Carver but is intentionally not marketed (yacht-tier positioning decision). Keep available as an onboard amenity for guests, do not lead with it in copy.
+- These amenities come standard on every charter, not as add-ons.
+- Drone footage ($200) remains the only paid add-on currently promoted.
+
 ## Voice Decisions
 
 ### What to lean into
