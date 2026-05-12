@@ -82,14 +82,20 @@ charter can do 3-4 stops. Don't market traversal of the whole lake.
 
 ## Trust Signals (use across pages)
 
-- Commercial insurance for hospitality / charter operations
-- USCG licensed captains (DJ + Dane)
-- Texas Parks & Wildlife PBO (Passenger Boats for Hire / Party Boat
-  Operator) credential
-- Volente Beach Waterpark on the COI as additional insured
-- Owner-operated (Captain DJ + Captain Dane, no rotating crew)
+- Licensed commercial captains (Texas state-licensed for passenger
+  operations on inland waters)
+- Commercially insured
+- Owner-operated by brothers Captain DJ Kilpatrick and Captain Dane
+  Kilpatrick (no rotating crew, no contractors)
+- Volente Beach Waterpark partnership — free wristband access for all
+  charter customers
 - 4.9+ star rating across all booking platforms
 - Direct booking (no marketplace fees, no surprise charges)
+
+DO NOT CLAIM:
+- USCG licensure (TFC captains are Texas state-licensed, not USCG)
+- "Coast Guard certified" or any federal merchant marine credential
+- Any safety certification not actually held
 
 ## Comfort Claims (yacht-specific)
 
@@ -137,8 +143,8 @@ charter can do 3-4 stops. Don't market traversal of the whole lake.
   experience, yacht-vs-party-bus framing
 - austin-texas-boat-rentals.html → Already strong; could add Villa Del
   Lago and Mansfield Dam history to landmark section if depth needed
-- index.html → Trust signals (commercial insurance, PBO captains) in
-  About/Fleet section
+- index.html → Trust signals (Texas state-licensed captains, commercially
+  insured, owner-operated brothers) in About/Fleet section
 - Future /lake-travis-yacht-charter/ cornerstone page → All of the above
 
 ## Verification Status
