@@ -1952,6 +1952,11 @@ section {
 }
 
 .inner-breadcrumb {
+  /* Clears the position:fixed nav above (~96px tall: 16px padding +
+     64px logo + 16px padding). Without this top margin the breadcrumb
+     sits behind the transparent (unscrolled) nav and the breadcrumb
+     text bleeds through behind the logo / Call Now button. */
+  margin-top: 96px;
   background: var(--navy-deeper);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding: 14px 32px;
