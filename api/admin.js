@@ -826,15 +826,32 @@ async function handleListLeads(req, res) {
   }
 }
 
+// Allowed bounce_reason values — must match the dropdown options in
+// admin.html. Anything else is rejected (or silently nulled if blank).
+const ALLOWED_BOUNCE_REASONS = new Set([
+  'price', 'dates', 'group', 'distracted', 'comparing', 'info', 'other',
+]);
+
 async function handleMarkLeadContacted(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  const { id, notes } = req.body || {};
+  const { id, notes, bounce_reason } = req.body || {};
   if (!id) return res.status(400).json({ error: 'id required' });
+  // Validate the optional bounce_reason. Empty/null is fine (admin chose
+  // not to tag). Unknown values are rejected so a typoed client payload
+  // doesn't pollute the column.
+  let reason = null;
+  if (bounce_reason != null && bounce_reason !== '') {
+    if (!ALLOWED_BOUNCE_REASONS.has(bounce_reason)) {
+      return res.status(400).json({ error: 'invalid bounce_reason' });
+    }
+    reason = bounce_reason;
+  }
   try {
     const updated = await patchLead(id, {
       status:        'contacted',
       contacted_at:  new Date().toISOString(),
       contact_notes: notes ? String(notes).slice(0, 2000) : null,
+      bounce_reason: reason,
     });
     if (!updated) return res.status(404).json({ error: 'Lead not found' });
     return res.status(200).json({ ok: true, lead: updated });

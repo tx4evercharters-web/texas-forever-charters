@@ -1439,6 +1439,7 @@
     .badge-navy   { background: var(--color-brand-primary); color: var(--color-text-on-brand); }
     .badge-teal   { background: var(--teal-bg);   color: var(--teal);   border: 1px solid #A5F3FC; }
     .badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid #DDD6FE; }
+    .badge-gray   { background: var(--color-bg-subtle); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
 
     /* ── Booking actions dropdown ── */
     /* Kebab menu — popover that holds the row's secondary actions.
@@ -1898,13 +1899,29 @@
       <div class="section">
         <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div class="section-title">🎯 Leads (Exit-Intent Captures)</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;" id="leads-filter-bar">
-            <button class="period-btn active" data-leads-filter="all"      onclick="setLeadsFilter('all')">All</button>
-            <button class="period-btn"        data-leads-filter="hot"      onclick="setLeadsFilter('hot')">🔥 Hot (last 24h, uncontacted)</button>
-            <button class="period-btn"        data-leads-filter="stale"    onclick="setLeadsFilter('stale')">⏳ Stale (&gt;24h, uncontacted)</button>
-            <button class="period-btn"        data-leads-filter="converted" onclick="setLeadsFilter('converted')">✓ Converted</button>
-            <button class="period-btn"        data-leads-filter="contacted" onclick="setLeadsFilter('contacted')">📞 Contacted</button>
-            <button class="period-btn"        data-leads-filter="by_total" onclick="setLeadsFilter('by_total')">💰 By total ↓</button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="leads-filter-bar">
+              <button class="period-btn active" data-leads-filter="all"      onclick="setLeadsFilter('all')">All</button>
+              <button class="period-btn"        data-leads-filter="hot"      onclick="setLeadsFilter('hot')">🔥 Hot (last 24h, uncontacted)</button>
+              <button class="period-btn"        data-leads-filter="stale"    onclick="setLeadsFilter('stale')">⏳ Stale (&gt;24h, uncontacted)</button>
+              <button class="period-btn"        data-leads-filter="converted" onclick="setLeadsFilter('converted')">✓ Converted</button>
+              <button class="period-btn"        data-leads-filter="contacted" onclick="setLeadsFilter('contacted')">📞 Contacted</button>
+              <button class="period-btn"        data-leads-filter="by_total" onclick="setLeadsFilter('by_total')">💰 By total ↓</button>
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:var(--font-size-xs);color:var(--color-text-secondary);font-weight:var(--font-weight-semibold);">
+              Bounce reason:
+              <select id="leads-bounce-filter" onchange="setLeadsBounceFilter(this.value)" style="padding:4px 10px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--font-size-sm);background:var(--color-bg-card);color:var(--color-text-primary);cursor:pointer;">
+                <option value="all">All</option>
+                <option value="price">Price</option>
+                <option value="dates">Dates</option>
+                <option value="group">Group</option>
+                <option value="distracted">Distracted</option>
+                <option value="comparing">Comparing</option>
+                <option value="info">Info</option>
+                <option value="other">Other</option>
+                <option value="untagged">Not tagged</option>
+              </select>
+            </label>
           </div>
         </div>
         <div class="table-wrap" id="leads-wrap">
@@ -1922,6 +1939,17 @@
         </div>
         <div style="padding:20px 24px;">
           <div id="lc-customer" style="margin-bottom:14px;color:var(--navy);font-weight:700;"></div>
+          <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Reason they didn't book (optional but encouraged)</label>
+          <select class="edit-input" id="lc-bounce-reason" style="margin-bottom:14px;">
+            <option value="">— Select a reason… —</option>
+            <option value="price">Price too high</option>
+            <option value="dates">Dates didn't work</option>
+            <option value="group">Group decision needed</option>
+            <option value="distracted">Just got distracted</option>
+            <option value="comparing">Comparing competitors</option>
+            <option value="info">Needed more info</option>
+            <option value="other">Other</option>
+          </select>
           <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Contact notes (optional)</label>
           <textarea class="edit-input" id="lc-notes" rows="5" placeholder="e.g. Called at 2:30pm Tuesday — left voicemail. Texted afterwards."></textarea>
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
@@ -3904,7 +3932,28 @@
   /* ── Leads tab ── */
   let allLeads = [];
   let leadsFilter = 'all';
+  let leadsBounceFilter = 'all';
   let leadContactingId = null;
+
+  /* Bounce-reason taxonomy. Single source of truth — used by the
+     Mark Contacted modal, the row pill renderer, the filter
+     dropdown, and the 7-day digest section. Adding a new reason =
+     one entry here + one <option> each in the modal and filter
+     selects. Color maps to existing badge-* CSS classes. */
+  const LEAD_BOUNCE_REASONS = {
+    price:      { label: 'Price',      badgeClass: 'badge-red' },
+    dates:      { label: 'Dates',      badgeClass: 'badge-amber' },
+    group:      { label: 'Group',      badgeClass: 'badge-navy' },
+    distracted: { label: 'Distracted', badgeClass: 'badge-gray' },
+    comparing:  { label: 'Comparing',  badgeClass: 'badge-purple' },
+    info:       { label: 'Info',       badgeClass: 'badge-teal' },
+    other:      { label: 'Other',      badgeClass: 'badge-gray' },
+  };
+  function leadBouncePill(reason) {
+    const r = LEAD_BOUNCE_REASONS[reason];
+    if (!r) return '';
+    return '<span class="badge ' + r.badgeClass + '" style="margin-left:6px;">' + r.label + '</span>';
+  }
 
   async function loadLeads() {
     const wrap = document.getElementById('leads-wrap');
@@ -3923,6 +3972,13 @@
     document.querySelectorAll('#leads-filter-bar .period-btn').forEach(b => {
       b.classList.toggle('active', b.getAttribute('data-leads-filter') === name);
     });
+    renderLeads();
+  }
+  /* Bounce-reason filter is independent of the chip filter and
+     combines with it (intersection). 'all' is no-op, 'untagged'
+     matches rows with no reason set yet. */
+  function setLeadsBounceFilter(value) {
+    leadsBounceFilter = value || 'all';
     renderLeads();
   }
 
@@ -3965,6 +4021,14 @@
       list = list.slice().sort((a, b) => parseFloat(b.grand_total || 0) - parseFloat(a.grand_total || 0));
     }
 
+    /* Intersect with bounce-reason filter so combinations like
+       "Contacted + Price" return only contacted-AND-price rows. */
+    if (leadsBounceFilter === 'untagged') {
+      list = list.filter(l => !l.bounce_reason);
+    } else if (leadsBounceFilter !== 'all') {
+      list = list.filter(l => l.bounce_reason === leadsBounceFilter);
+    }
+
     if (list.length === 0) {
       wrap.innerHTML = '<div class="cust-detail-empty" style="padding:32px;text-align:center;">No leads match this filter.</div>';
       return;
@@ -3983,7 +4047,7 @@
       const tip = l.captured_at ? new Date(l.captured_at).toLocaleString() : '';
       return '<tr>' +
         '<td title="' + esc(tip) + '" style="white-space:nowrap;">' + fmtAge(leadAgeMs(l)) + '</td>' +
-        '<td>' + leadStatusBadge(l) + '</td>' +
+        '<td>' + leadStatusBadge(l) + leadBouncePill(l.bounce_reason) + '</td>' +
         '<td style="font-weight:700;color:var(--navy);">' + esc(l.full_name || '—') + '</td>' +
         '<td><a href="mailto:' + esc(l.customer_email || '') + '" style="color:var(--navy);text-decoration:none;">' + esc(l.customer_email || '—') + '</a></td>' +
         '<td>' + phoneCell + '</td>' +
@@ -4015,6 +4079,9 @@
     leadContactingId = id;
     document.getElementById('lc-customer').textContent =
       (lead.full_name || '(no name)') + ' · ' + (lead.customer_email || '');
+    /* Preselect the existing reason if this lead already had one
+       set (e.g. admin reopens to re-edit notes). Blank otherwise. */
+    document.getElementById('lc-bounce-reason').value = lead.bounce_reason || '';
     document.getElementById('lc-notes').value = lead.contact_notes || '';
     document.getElementById('lead-contact-overlay').classList.add('open');
   }
@@ -4029,11 +4096,12 @@
   async function confirmLeadContacted() {
     if (!leadContactingId) return;
     const notes = document.getElementById('lc-notes').value.trim();
+    const bounce_reason = document.getElementById('lc-bounce-reason').value || null;
     try {
       await api('/api/admin?action=mark-lead-contacted', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: leadContactingId, notes }),
+        body: JSON.stringify({ id: leadContactingId, notes, bounce_reason }),
       });
       closeLeadContactModalBtn();
       await loadLeads();

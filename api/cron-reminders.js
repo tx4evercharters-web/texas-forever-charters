@@ -409,10 +409,27 @@ module.exports = async function handler(req, res) {
     if (recent.length === 0) {
       console.log('[cron-reminders] leads digest: 0 leads in last', LEAD_DIGEST_WINDOW_HOURS, 'h — skipping email');
     } else {
+      /* 7-day bounce-reason breakdown — queried separately because the
+         main digest window is 24h but bounce reasons need a longer
+         window to surface meaningful trends. Counts every lead in the
+         last 7 days bucketed by bounce_reason. Untagged leads roll up
+         under 'untagged' so the admin can see how many contacted-
+         leads still need categorization. */
+      const bounceReasonCounts = {};
       try {
-        await sendDailyLeadDigest(grouped, { dateLabel: today });
+        const weekRecent = await listRecentLeads(24 * 7);
+        for (const l of weekRecent) {
+          const key = l.bounce_reason || 'untagged';
+          bounceReasonCounts[key] = (bounceReasonCounts[key] || 0) + 1;
+        }
+        leadsDigest.bounce_reasons_7d = bounceReasonCounts;
+      } catch (err) {
+        console.error('[cron-reminders] bounce-reason 7d query failed (non-fatal):', err.message);
+      }
+      try {
+        await sendDailyLeadDigest(grouped, { dateLabel: today, bounceReasonCounts });
         leadsDigest.digest_sent = true;
-        console.log('[cron-reminders] leads digest sent | total:', recent.length, '| by_status:', leadsDigest.by_status);
+        console.log('[cron-reminders] leads digest sent | total:', recent.length, '| by_status:', leadsDigest.by_status, '| bounce_7d:', bounceReasonCounts);
       } catch (err) {
         leadsDigest.digest_error = err.message;
         console.error('[cron-reminders] leads digest send failed:', err.message);
