@@ -92,8 +92,14 @@ function hasSnakeStyleKeys(addOns) {
   return SNAKE_KEYS.some(k => k in addOns);
 }
 
+const _moneyFmt = new Intl.NumberFormat('en-US', {
+  style: 'currency', currency: 'USD',
+  minimumFractionDigits: 2, maximumFractionDigits: 2,
+});
 function fmt$(n) {
-  return '$' + Number(n || 0).toFixed(2);
+  let v = (typeof n === 'string') ? parseFloat(n) : n;
+  if (v == null || isNaN(v)) v = 0;
+  return _moneyFmt.format(v).replace(/^-/, '−');
 }
 
 (async function main() {

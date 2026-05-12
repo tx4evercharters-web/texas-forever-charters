@@ -673,8 +673,21 @@
     }
 
     // ── Helpers ──
+    /* US currency formatter with thousands separators. fmt() takes
+       cents (Stripe convention); fmtDollars() takes dollars. Both
+       use Intl.NumberFormat and convert ASCII minus to U+2212. */
+    const _moneyFmt = new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: 'USD',
+      minimumFractionDigits: 2, maximumFractionDigits: 2,
+    });
+    function fmtDollars(v) {
+      let n = (typeof v === 'string') ? parseFloat(v) : v;
+      if (n == null || isNaN(n)) n = 0;
+      return _moneyFmt.format(n).replace(/^-/, '−');
+    }
     function fmt(cents) {
-      return '$' + (cents / 100).toFixed(2);
+      if (cents == null || isNaN(cents)) cents = 0;
+      return fmtDollars(cents / 100);
     }
 
     function addRow(container, label, value) {
@@ -790,13 +803,13 @@
         const balCell = document.createElement('div');
         balCell.className = 'payment-cell balance';
         balCell.innerHTML = '<div class="payment-cell-label">Remaining Balance</div>' +
-          '<div class="payment-cell-amount">$' + remaining.toFixed(2) + '</div>' +
+          '<div class="payment-cell-amount">' + fmtDollars(remaining) + '</div>' +
           '<div class="payment-cell-note">Due 14 days before charter</div>';
         paymentGrid.appendChild(balCell);
 
         const alert = document.getElementById('balanceAlert');
         alert.style.display = 'flex';
-        document.getElementById('balanceAlertAmount').textContent = '$' + remaining.toFixed(2);
+        document.getElementById('balanceAlertAmount').textContent = fmtDollars(remaining);
       } else {
         const clearedCell = document.createElement('div');
         clearedCell.className = 'payment-cell cleared';

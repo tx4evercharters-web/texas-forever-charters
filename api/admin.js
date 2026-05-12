@@ -28,7 +28,7 @@ const {
   findBookingsForLead,
   findBookingDatesBySessionIds,
 } = require('../lib/storage');
-const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail } = require('../lib/send-emails');
+const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, formatMoneyDollars } = require('../lib/send-emails');
 
 /* The previous inline supabasePatch helper has been removed — booking edits
    now route through lib/storage.js patchBooking so they use the same
@@ -288,10 +288,10 @@ async function handleSendPaymentLink(req, res) {
           </div>
           <div style="padding:32px 24px;">
             <p>Hi ${booking.full_name || 'there'},</p>
-            <p>Your charter is coming up on <strong>${booking.date}</strong> and you have a remaining balance of <strong>$${remaining.toFixed(2)}</strong>.</p>
+            <p>Your charter is coming up on <strong>${booking.date}</strong> and you have a remaining balance of <strong>${formatMoneyDollars(remaining)}</strong>.</p>
             <p>Click below to pay securely:</p>
             <div style="text-align:center;margin:32px 0;">
-              <a href="${paymentLink.url}" style="background:#C8102E;color:#fff;padding:14px 32px;border-radius:6px;text-decoration:none;font-weight:700;font-size:16px;">Pay $${remaining.toFixed(2)}</a>
+              <a href="${paymentLink.url}" style="background:#C8102E;color:#fff;padding:14px 32px;border-radius:6px;text-decoration:none;font-weight:700;font-size:16px;">Pay ${formatMoneyDollars(remaining)}</a>
             </div>
             <p style="font-size:13px;color:#666;">Questions? Call or text us at (737) 368-1669</p>
           </div>
@@ -370,7 +370,7 @@ async function handleRefundBooking(req, res) {
     const alreadyRefunded = parseFloat(booking.refund_amount || 0);
     const refundable = Math.max(0, amountPaid - alreadyRefunded);
     if (amount > refundable + 0.001) {
-      return res.status(400).json({ error: `Refund $${amount.toFixed(2)} exceeds refundable balance $${refundable.toFixed(2)}` });
+      return res.status(400).json({ error: `Refund ${formatMoneyDollars(amount)} exceeds refundable balance ${formatMoneyDollars(refundable)}` });
     }
 
     const refund = await stripe.refunds.create({
@@ -473,7 +473,7 @@ async function handleCaptureDamageCharge(req, res) {
     let overflowChargeId = null;
     if (overflowCents > 0) {
       if (!booking.payment_method_id || !booking.stripe_customer_id) {
-        return res.status(400).json({ error: `Captured the $250 hold but no saved payment method for the overflow charge of $${(overflowCents / 100).toFixed(2)}. Charge manually.` });
+        return res.status(400).json({ error: `Captured the $250 hold but no saved payment method for the overflow charge of ${formatMoneyDollars(overflowCents / 100)}. Charge manually.` });
       }
       const overflowPI = await stripe.paymentIntents.create({
         amount:         overflowCents,

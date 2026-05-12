@@ -3025,12 +3025,32 @@
     return days[d.getDay()] + ' ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
   }
 
-  function fmtMoney(v) {
-    return '$' + parseFloat(v || 0).toFixed(2);
+  /* Canonical money formatter — US currency with thousands separators.
+     Always use this for display strings; for <input type="number">
+     values use .toFixed(2) directly since number inputs reject commas.
+     Options:
+       showCents: false → "$2,706" (no cents, for headline displays)
+       negative:  true  → "−$X.XX" with proper Unicode minus
+     Edge cases: null/undefined/NaN → "$0.00". String input is parsed. */
+  const _moneyFmt2 = new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD',
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
+  const _moneyFmt0 = new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD',
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
+  });
+  function fmtMoney(v, opts) {
+    opts = opts || {};
+    let n = (typeof v === 'string') ? parseFloat(v) : v;
+    if (n == null || isNaN(n)) n = 0;
+    if (opts.negative) n = -Math.abs(n);
+    const s = (opts.showCents === false ? _moneyFmt0 : _moneyFmt2).format(n);
+    return s.replace(/^-/, '−'); // ASCII hyphen-minus → Unicode minus
   }
 
   function fmtCents(cents) {
-    return '$' + (cents / 100).toFixed(2);
+    return fmtMoney((cents || 0) / 100);
   }
 
   function vesselLabel(v) {
@@ -3524,7 +3544,7 @@
     const overflowEl = document.getElementById('dc-overflow');
     if (amount > 250) {
       overflowEl.style.display = '';
-      overflowEl.textContent = `$${(amount - 250).toFixed(2)} above the $250 hold will be charged separately on the saved card.`;
+      overflowEl.textContent = fmtMoney(amount - 250) + ' above the $250 hold will be charged separately on the saved card.';
     } else {
       overflowEl.style.display = 'none';
     }
@@ -3536,8 +3556,8 @@
     const b = bkFindBooking(id); if (!b) return;
     if (!isFinite(amount) || amount <= 0) { showError('Enter a positive damage charge amount.'); return; }
     const name = b.full_name || b.customer_email || 'customer';
-    const overflowNote = amount > 250 ? ` ($250 captured from the hold + $${(amount - 250).toFixed(2)} new charge)` : '';
-    if (!confirm(`Charge ${name} $${amount.toFixed(2)} for damages?${overflowNote} An email notification will be sent. This cannot be undone.`)) return;
+    const overflowNote = amount > 250 ? ` ($250 captured from the hold + ${fmtMoney(amount - 250)} new charge)` : '';
+    if (!confirm(`Charge ${name} ${fmtMoney(amount)} for damages?${overflowNote} An email notification will be sent. This cannot be undone.`)) return;
     document.getElementById('damage-charge-overlay').classList.remove('open');
     await bkPostAndRefresh('capture-damage-charge', { session_id: id, amount }, 'Capture damage charge');
   }
@@ -4267,7 +4287,7 @@
         const opts = ['<option value="">— Select a booking —</option>'];
         for (const b of bookings) {
           const dateLabel = b.date ? fmtDate(b.date) : '(no date)';
-          const totalStr  = b.grand_total != null ? '$' + parseFloat(b.grand_total).toFixed(2) : '—';
+          const totalStr  = b.grand_total != null ? fmtMoney(b.grand_total) : '—';
           const label = dateLabel + ' · ' + vesselLabel(b.vessel) + ' · ' + (b.full_name || '(no name)') + ' · ' + totalStr;
           opts.push('<option value="' + esc(b.session_id) + '">' + esc(label) + '</option>');
         }
@@ -5517,7 +5537,7 @@
       abFieldEdited('promo');
       status.style.color = 'var(--green)';
       status.style.display = 'block';
-      status.textContent = '✓ ' + raw + ' applied — 10% off subtotal ($' + discount.toFixed(2) + ')';
+      status.textContent = '✓ ' + raw + ' applied — 10% off subtotal (' + fmtMoney(discount) + ')';
     } else {
       status.style.color = 'var(--red)';
       status.style.display = 'block';
@@ -5605,7 +5625,7 @@
     } else {
       const remaining = total - paid;
       status.style.color = 'var(--amber)';
-      status.textContent = 'Partial payment — $' + remaining.toFixed(2) + ' remaining';
+      status.textContent = 'Partial payment — ' + fmtMoney(remaining) + ' remaining';
     }
   }
 
@@ -5771,7 +5791,7 @@
     document.getElementById('ab-phone').value = c.phone || '';
     document.getElementById('ab-customer-suggestions').style.display = 'none';
     const match = document.getElementById('ab-customer-match');
-    match.innerHTML = `✓ Linked to existing customer: <strong>${esc(c.full_name || c.email)}</strong> (${c.total_bookings || 0} prior booking${c.total_bookings === 1 ? '' : 's'}, $${parseFloat(c.total_spent || 0).toFixed(2)} lifetime)`;
+    match.innerHTML = `✓ Linked to existing customer: <strong>${esc(c.full_name || c.email)}</strong> (${c.total_bookings || 0} prior booking${c.total_bookings === 1 ? '' : 's'}, ${fmtMoney(c.total_spent || 0)} lifetime)`;
     match.style.display = 'block';
   }
 
@@ -5938,7 +5958,7 @@
           });
         }
         const warn = result.email_warning ? ' (email failed: ' + result.email_warning + ')' : '';
-        showError('✅ Booking saved for ' + booking.full_name + ' on ' + booking.date + ' — $' + grandTotal.toFixed(2) + warn);
+        showError('✅ Booking saved for ' + booking.full_name + ' on ' + booking.date + ' — ' + fmtMoney(grandTotal) + warn);
         closeAddBookingBtn();
         loadData();
       } else {
@@ -5969,7 +5989,7 @@
     document.getElementById('ep-method').value =
       (m && ['cash','venmo','zelle','check','external_platform'].includes(m)) ? m : 'stripe';
     document.getElementById('ep-meta').textContent =
-      'Charter total: $' + total.toFixed(2) + ' · ' + (b.full_name || b.charter_name || '');
+      'Charter total: ' + fmtMoney(total) + ' · ' + (b.full_name || b.charter_name || '');
     document.getElementById('edit-payment-overlay').classList.add('open');
   }
 

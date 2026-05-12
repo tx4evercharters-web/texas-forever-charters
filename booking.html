@@ -2418,6 +2418,20 @@
     /* Holiday list and pricing math live in lib/pricing.js (loaded above as
        window.TFCPricing). dateKey() and isHoliday() here are thin wrappers
        so calendar/UI code that already passes Date objects keeps working. */
+    /* US currency formatter for the wizard's price displays.
+       Identical semantics to admin.html's fmtMoney — duplicated
+       here because there's no shared client module. Always uses
+       2-decimal "$X,XXX.XX". Negatives use Unicode minus. */
+    const _bkMoneyFmt = new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: 'USD',
+      minimumFractionDigits: 2, maximumFractionDigits: 2,
+    });
+    function bkFmtMoney(v) {
+      let n = (typeof v === 'string') ? parseFloat(v) : v;
+      if (n == null || isNaN(n)) n = 0;
+      return _bkMoneyFmt.format(n).replace(/^-/, '−');
+    }
+
     function dateKey(d) {
       return d.getFullYear() + '-' +
         String(d.getMonth()+1).padStart(2,'0') + '-' +
@@ -3031,7 +3045,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       }
 
       const p = TFCPricing.calculatePricing(buildPricingInput());
-      const formatted = '$' + p.grandTotal.toFixed(2);
+      const formatted = bkFmtMoney(p.grandTotal);
       if (inlineEl) inlineEl.textContent = formatted;
       if (stickyEl) {
         stickyEl.textContent = formatted;
@@ -3105,15 +3119,15 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       if (booking.addOns.water)      add('Water Bottles', '$25');
       if (booking.addOns.ice)        add('Ice', '$25');
       if (booking.addOns.beerpong)   add('Beer Pong Setup', '$50');
-      add('Admin Fee (10%)', '+$' + p.adminFee.toFixed(2));
-      add('Sales Tax (8.5%)', '+$' + p.salesTax.toFixed(2), 'tax-row');
-      add('Credit Card Processing (2.9%)', '+$' + p.processingFee.toFixed(2), 'tax-row');
-      if (p.promoDiscount > 0) add('Promo Discount (10%)', '−$' + p.promoDiscount.toFixed(2), 'discount');
-      add('Total', '$' + p.grandTotal.toFixed(2), 'total');
-      add('Deposit (10%)', '$' + p.depositAmount.toFixed(2), 'deposit');
+      add('Admin Fee (10%)', '+' + bkFmtMoney(p.adminFee));
+      add('Sales Tax (8.5%)', '+' + bkFmtMoney(p.salesTax), 'tax-row');
+      add('Credit Card Processing (2.9%)', '+' + bkFmtMoney(p.processingFee), 'tax-row');
+      if (p.promoDiscount > 0) add('Promo Discount (10%)', bkFmtMoney(-p.promoDiscount), 'discount');
+      add('Total', bkFmtMoney(p.grandTotal), 'total');
+      add('Deposit (10%)', bkFmtMoney(p.depositAmount), 'deposit');
 
-      document.getElementById('depositAmountBtn').textContent = '$' + p.depositAmount.toFixed(2);
-      document.getElementById('fullAmountBtn').textContent    = '$' + p.grandTotal.toFixed(2);
+      document.getElementById('depositAmountBtn').textContent = bkFmtMoney(p.depositAmount);
+      document.getElementById('fullAmountBtn').textContent    = bkFmtMoney(p.grandTotal);
 
       // Silently auto-apply promo for newsletter subscribers
       if (localStorage.getItem('nl_subscribed') && !booking.promoApplied) {

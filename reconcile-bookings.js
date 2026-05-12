@@ -36,6 +36,16 @@
 
 const https = require('https');
 
+const _moneyFmt = new Intl.NumberFormat('en-US', {
+  style: 'currency', currency: 'USD',
+  minimumFractionDigits: 2, maximumFractionDigits: 2,
+});
+function fmt$(dollars) {
+  let v = (typeof dollars === 'string') ? parseFloat(dollars) : dollars;
+  if (v == null || isNaN(v)) v = 0;
+  return _moneyFmt.format(v).replace(/^-/, '−');
+}
+
 const HOURS = parseInt(process.env.HOURS, 10) || 72;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY;
@@ -188,10 +198,10 @@ async function fetchSupabaseBookingsBySessionId(sessionIds) {
       console.log('  Experience:        ' + (meta.experience || '?'));
       console.log('  Phone:             ' + (meta.phone || '?'));
       console.log('  Party size:        ' + (meta.party_size || '?'));
-      console.log('  Amount paid:       $' + ((s.amount_total || 0) / 100).toFixed(2) +
+      console.log('  Amount paid:       ' + fmt$((s.amount_total || 0) / 100) +
         ' ' + (s.currency || 'usd').toUpperCase() + '  (payment_type: ' + (meta.payment_type || '?') + ')');
-      console.log('  Grand total meta:  $' + (meta.grand_total || '?'));
-      console.log('  Deposit meta:      $' + (meta.deposit_amount || '?'));
+      console.log('  Grand total meta:  ' + (meta.grand_total != null ? fmt$(meta.grand_total) : '?'));
+      console.log('  Deposit meta:      ' + (meta.deposit_amount != null ? fmt$(meta.deposit_amount) : '?'));
       console.log('  Add-ons meta:      ' + (meta.add_ons || '{}'));
       console.log('  Promo applied:     ' + (meta.promo_applied || 'false') +
         (meta.promo_code ? ' (code: ' + meta.promo_code + ')' : ''));
