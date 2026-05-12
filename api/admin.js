@@ -25,6 +25,8 @@ const {
   listAllWaiversEnriched,
   listLeads,
   patchLead,
+  findBookingsForLead,
+  findBookingDatesBySessionIds,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail } = require('../lib/send-emails');
 
@@ -814,14 +816,85 @@ async function handleListAllWaivers(req, res) {
 
 /* ── Leads ─────────────────────────────────────────────────────────── */
 
+/* Outcome → status mapping (single source of truth — modal/save handler
+   reads this; the leads-list editability check uses LEAD_AGE_LOCK_DAYS).
+   Outcome values that don't appear here are rejected at save time. */
+const OUTCOME_TO_STATUS = {
+  booked:      'converted',
+  hard_no:     'declined',
+  maybe:       'following_up',
+  no_response: 'unreachable',
+  quoted:      'quoted',
+  other:       'contacted',
+};
+const ALLOWED_OUTCOMES = new Set(Object.keys(OUTCOME_TO_STATUS));
+const LEAD_AGE_LOCK_DAYS = 90;
+
+/* Compute whether the outcome/booking-link/bounce-reason fields on a
+   lead are still editable. Mirrors STEP 8 of the spec. The lead's
+   notes are ALWAYS editable — that's enforced separately in the save
+   handler. `bookingDatesMap[session_id] = { date, status }` is passed
+   in so we can decide booked-with-linkage cases without per-row
+   round-trips. */
+function computeOutcomeEditable(lead, bookingDatesMap) {
+  if (!lead) return false;
+  const outcome = lead.contact_outcome || null;
+  if (outcome === 'booked') {
+    // Edge case: booked but no linked session_id yet → editable until linked.
+    if (!lead.linked_booking_session_id) return true;
+    const b = bookingDatesMap && bookingDatesMap[lead.linked_booking_session_id];
+    if (!b || !b.date) return true; // booking row missing or no date → treat as still pending
+    const charterDay = new Date(b.date + 'T23:59:59Z'); // end of charter day, UTC
+    return Date.now() < charterDay.getTime();
+  }
+  // Non-booked outcomes (or no outcome logged yet) → editable until 90d after captured_at.
+  const capturedAt = lead.captured_at ? new Date(lead.captured_at).getTime() : 0;
+  if (!capturedAt) return true;
+  const lockAt = capturedAt + LEAD_AGE_LOCK_DAYS * 24 * 60 * 60 * 1000;
+  return Date.now() < lockAt;
+}
+
 async function handleListLeads(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
   const status = req.query.status; // optional filter — 'captured' | 'abandoned_stripe' | ...
   try {
     const leads = await listLeads({ status: status || undefined, limit: 500 });
+    /* Enrich with outcome_editable so the client can disable fields in
+       the modal without making a per-lead round-trip. One batched
+       lookup grabs every linked booking's date in a single query. */
+    const linkedIds = leads
+      .map(l => l.linked_booking_session_id)
+      .filter(Boolean);
+    const bookingDates = linkedIds.length
+      ? await findBookingDatesBySessionIds(linkedIds)
+      : {};
+    for (const l of leads) {
+      l.outcome_editable = computeOutcomeEditable(l, bookingDates);
+    }
     return res.status(200).json({ leads });
   } catch (err) {
     console.error('[admin] list-leads failed:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleFindBookingsForLead(req, res) {
+  if (req.method !== 'GET') return res.status(405).end();
+  const lead_id = req.query.lead_id;
+  if (!lead_id) return res.status(400).json({ error: 'lead_id required' });
+  try {
+    // Fetch the lead first so we can match by email/phone/name. listLeads
+    // returns the whole table; for one-shot fetch the PostgREST API is
+    // fastest via patchLead semantics, but there's no findLeadById helper.
+    // Reuse listLeads with limit 500 + filter is overkill — call /leads?id=eq.X
+    // through the request helper. Simpler: fetch all and pick.
+    const leads = await listLeads({ limit: 500 });
+    const lead = leads.find(l => l.id === lead_id);
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+    const bookings = await findBookingsForLead(lead, { days: 30, limit: 20 });
+    return res.status(200).json({ bookings });
+  } catch (err) {
+    console.error('[admin] find-bookings-for-lead failed:', err.message);
     return res.status(500).json({ error: err.message });
   }
 }
@@ -834,11 +907,18 @@ const ALLOWED_BOUNCE_REASONS = new Set([
 
 async function handleMarkLeadContacted(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  const { id, notes, bounce_reason } = req.body || {};
+  const { id, notes, bounce_reason, outcome, linked_booking_session_id } = req.body || {};
   if (!id) return res.status(400).json({ error: 'id required' });
-  // Validate the optional bounce_reason. Empty/null is fine (admin chose
-  // not to tag). Unknown values are rejected so a typoed client payload
-  // doesn't pollute the column.
+
+  /* Validate outcome — required for any new logged contact, but the
+     client can also send a notes-only update (locked leads). Detect
+     by checking whether outcome was supplied. */
+  const outcomeSupplied = outcome != null && outcome !== '';
+  if (outcomeSupplied && !ALLOWED_OUTCOMES.has(outcome)) {
+    return res.status(400).json({ error: 'invalid outcome' });
+  }
+
+  /* Validate optional bounce_reason. */
   let reason = null;
   if (bounce_reason != null && bounce_reason !== '') {
     if (!ALLOWED_BOUNCE_REASONS.has(bounce_reason)) {
@@ -846,13 +926,66 @@ async function handleMarkLeadContacted(req, res) {
     }
     reason = bounce_reason;
   }
+
+  /* Booked outcome requires a linked booking. Verify the booking exists. */
+  let linkedSid = null;
+  if (outcome === 'booked') {
+    if (!linked_booking_session_id) {
+      return res.status(400).json({ error: 'must link a booking when outcome is \'booked\'' });
+    }
+    const booking = await findBookingBySessionId(linked_booking_session_id);
+    if (!booking) {
+      return res.status(400).json({ error: 'linked booking session_id not found' });
+    }
+    linkedSid = linked_booking_session_id;
+  }
+
   try {
-    const updated = await patchLead(id, {
-      status:        'contacted',
-      contacted_at:  new Date().toISOString(),
-      contact_notes: notes ? String(notes).slice(0, 2000) : null,
-      bounce_reason: reason,
-    });
+    /* Server-side editability enforcement (STEP 8). Fetch current lead
+       + linked booking date map to recompute, then reject changes to
+       locked fields. Notes are always allowed through. */
+    const allLeads = await listLeads({ limit: 500 });
+    const current = allLeads.find(l => l.id === id);
+    if (!current) return res.status(404).json({ error: 'Lead not found' });
+    const linkedIds = [current.linked_booking_session_id, linkedSid].filter(Boolean);
+    const bookingDates = linkedIds.length ? await findBookingDatesBySessionIds(linkedIds) : {};
+    const editable = computeOutcomeEditable(current, bookingDates);
+
+    /* If locked, only allow notes update; reject any change to outcome /
+       bounce_reason / linked booking. */
+    if (!editable) {
+      const wantsOutcomeChange     = outcomeSupplied && outcome !== current.contact_outcome;
+      const wantsBounceChange      = (reason || null) !== (current.bounce_reason || null);
+      const wantsLinkedChange      = (linkedSid || null) !== (current.linked_booking_session_id || null);
+      if (wantsOutcomeChange || wantsBounceChange || wantsLinkedChange) {
+        return res.status(403).json({ error: 'This lead is locked. Only notes can be updated.' });
+      }
+      const updated = await patchLead(id, {
+        contact_notes: notes != null ? String(notes).slice(0, 2000) : null,
+      });
+      return res.status(200).json({ ok: true, lead: updated });
+    }
+
+    /* Editable — build the full update set. Outcome maps to status; the
+       'booked' outcome also bumps converted_at. If the admin is editing
+       an existing log (outcome unchanged), still re-stamp contacted_at
+       so timeline reflects the most recent admin touch. */
+    const patch = {
+      contact_notes:             notes != null ? String(notes).slice(0, 2000) : null,
+      bounce_reason:             reason,
+      linked_booking_session_id: linkedSid,
+      contacted_at:              new Date().toISOString(),
+    };
+    if (outcomeSupplied) {
+      patch.contact_outcome = outcome;
+      patch.status          = OUTCOME_TO_STATUS[outcome];
+      if (outcome === 'booked') patch.converted_at = new Date().toISOString();
+    } else {
+      // First-time save without outcome shouldn't reach here (UI requires
+      // it), but if a client somehow omits it, fall back to 'contacted'.
+      patch.status = 'contacted';
+    }
+    const updated = await patchLead(id, patch);
     if (!updated) return res.status(404).json({ error: 'Lead not found' });
     return res.status(200).json({ ok: true, lead: updated });
   } catch (err) {
@@ -892,8 +1025,9 @@ const ROUTES = {
   'list-waivers':         handleListWaivers,
   'send-waiver-link':     handleSendWaiverLink,
   'waivers':              handleListAllWaivers,
-  'leads':                handleListLeads,
-  'mark-lead-contacted':  handleMarkLeadContacted,
+  'leads':                  handleListLeads,
+  'mark-lead-contacted':    handleMarkLeadContacted,
+  'find-bookings-for-lead': handleFindBookingsForLead,
 };
 
 module.exports = async function handler(req, res) {

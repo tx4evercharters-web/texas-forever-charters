@@ -1899,29 +1899,45 @@
       <div class="section">
         <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
           <div class="section-title">🎯 Leads (Exit-Intent Captures)</div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="leads-filter-bar">
-              <button class="period-btn active" data-leads-filter="all"      onclick="setLeadsFilter('all')">All</button>
-              <button class="period-btn"        data-leads-filter="hot"      onclick="setLeadsFilter('hot')">🔥 Hot (last 24h, uncontacted)</button>
-              <button class="period-btn"        data-leads-filter="stale"    onclick="setLeadsFilter('stale')">⏳ Stale (&gt;24h, uncontacted)</button>
-              <button class="period-btn"        data-leads-filter="converted" onclick="setLeadsFilter('converted')">✓ Converted</button>
-              <button class="period-btn"        data-leads-filter="contacted" onclick="setLeadsFilter('contacted')">📞 Contacted</button>
-              <button class="period-btn"        data-leads-filter="by_total" onclick="setLeadsFilter('by_total')">💰 By total ↓</button>
+          <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;" id="leads-filter-bar">
+                <button class="period-btn active" data-leads-filter="all"      onclick="setLeadsFilter('all')">All</button>
+                <button class="period-btn"        data-leads-filter="hot"      onclick="setLeadsFilter('hot')">🔥 Hot (last 24h, uncontacted)</button>
+                <button class="period-btn"        data-leads-filter="stale"    onclick="setLeadsFilter('stale')">⏳ Stale (&gt;24h, uncontacted)</button>
+                <button class="period-btn"        data-leads-filter="converted" onclick="setLeadsFilter('converted')">✓ Converted</button>
+                <button class="period-btn"        data-leads-filter="contacted" onclick="setLeadsFilter('contacted')">📞 Contacted (any logged)</button>
+                <button class="period-btn"        data-leads-filter="by_total" onclick="setLeadsFilter('by_total')">💰 By total ↓</button>
+              </div>
             </div>
-            <label style="display:flex;align-items:center;gap:6px;font-size:var(--font-size-xs);color:var(--color-text-secondary);font-weight:var(--font-weight-semibold);">
-              Bounce reason:
-              <select id="leads-bounce-filter" onchange="setLeadsBounceFilter(this.value)" style="padding:4px 10px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--font-size-sm);background:var(--color-bg-card);color:var(--color-text-primary);cursor:pointer;">
-                <option value="all">All</option>
-                <option value="price">Price</option>
-                <option value="dates">Dates</option>
-                <option value="group">Group</option>
-                <option value="distracted">Distracted</option>
-                <option value="comparing">Comparing</option>
-                <option value="info">Info</option>
-                <option value="other">Other</option>
-                <option value="untagged">Not tagged</option>
-              </select>
-            </label>
+            <!-- Outcome sub-row — chips for the specific outcomes admins
+                 log via the "Log Contact" modal. Each chip filters by
+                 status, since outcome maps 1:1 to a status value. The
+                 bounce-reason dropdown shares this row. -->
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;" id="leads-outcome-bar">
+                <span style="font-size:11px;color:var(--color-text-secondary);font-weight:600;letter-spacing:0.5px;padding:0 2px;">Outcomes:</span>
+                <button class="period-btn" data-leads-filter="outcome:booked"       onclick="setLeadsFilter('outcome:booked')">✓ Booked</button>
+                <button class="period-btn" data-leads-filter="outcome:following_up" onclick="setLeadsFilter('outcome:following_up')">↻ Following up</button>
+                <button class="period-btn" data-leads-filter="outcome:quoted"       onclick="setLeadsFilter('outcome:quoted')">📝 Quoted</button>
+                <button class="period-btn" data-leads-filter="outcome:declined"     onclick="setLeadsFilter('outcome:declined')">✗ Declined</button>
+                <button class="period-btn" data-leads-filter="outcome:unreachable"  onclick="setLeadsFilter('outcome:unreachable')">— Unreachable</button>
+              </div>
+              <label style="display:flex;align-items:center;gap:6px;font-size:var(--font-size-xs);color:var(--color-text-secondary);font-weight:var(--font-weight-semibold);">
+                Bounce reason:
+                <select id="leads-bounce-filter" onchange="setLeadsBounceFilter(this.value)" style="padding:4px 10px;border:1px solid var(--color-border);border-radius:var(--radius-md);font-family:var(--font-body);font-size:var(--font-size-sm);background:var(--color-bg-card);color:var(--color-text-primary);cursor:pointer;">
+                  <option value="all">All</option>
+                  <option value="price">Price</option>
+                  <option value="dates">Dates</option>
+                  <option value="group">Group</option>
+                  <option value="distracted">Distracted</option>
+                  <option value="comparing">Comparing</option>
+                  <option value="info">Info</option>
+                  <option value="other">Other</option>
+                  <option value="untagged">Not tagged</option>
+                </select>
+              </label>
+            </div>
           </div>
         </div>
         <div class="table-wrap" id="leads-wrap">
@@ -1930,19 +1946,23 @@
       </div>
     </div>
 
-    <!-- Mark-lead-contacted modal -->
+    <!-- Log-contact modal — outcome-based lead lifecycle logging. -->
     <div class="modal-overlay" id="lead-contact-overlay" onclick="closeLeadContactModal(event)">
-      <div class="modal" style="max-width:480px;">
+      <div class="modal" style="max-width:520px;">
         <div class="modal-header" style="background:var(--navy);">
-          <div style="color:#fff;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;">Mark Lead Contacted</div>
+          <div id="lc-title" style="color:#fff;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;">Log Contact</div>
           <button class="modal-close" onclick="closeLeadContactModalBtn()">×</button>
         </div>
         <div style="padding:20px 24px;">
           <div id="lc-customer" style="margin-bottom:14px;color:var(--navy);font-weight:700;"></div>
-          <!-- Each field wrapped in .edit-form-group (flex column with
-               stretch alignment) so the label stacks above its input
-               and the input fills the full modal-body width. Same
-               primitive used by every other admin modal. -->
+          <!-- Locked banner — shown when outcome_editable === false.
+               Admin can still update notes but not the structured fields. -->
+          <div id="lc-locked-banner" style="display:none;margin-bottom:14px;padding:10px 12px;background:var(--color-warning-bg);border:1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);border-radius:var(--radius-md);color:var(--color-warning);font-size:12px;font-weight:600;">
+            🔒 Outcome locked. Only notes can be updated.
+          </div>
+
+          <!-- Bounce reason (existing field, kept above outcome since it's
+               the "why" before we know "what happened"). -->
           <div class="edit-form-group" style="margin-bottom:var(--space-4);">
             <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Reason they didn't book (optional but encouraged)</label>
             <select class="edit-input" id="lc-bounce-reason">
@@ -1956,13 +1976,51 @@
               <option value="other">Other</option>
             </select>
           </div>
+
+          <!-- Outcome radio group (required). Save is disabled until one
+               is selected. Radio values must match ALLOWED_OUTCOMES on the
+               server (api/admin.js → OUTCOME_TO_STATUS). -->
+          <div class="edit-form-group" style="margin-bottom:var(--space-4);">
+            <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Outcome — what happened? (required)</label>
+            <div id="lc-outcome-group" style="display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-bg-card);font-size:13px;">
+              <label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="radio" name="lc-outcome" value="booked" onchange="lcOnOutcomeChange()"><span><strong>Booked</strong> — they converted to a paying customer</span></label>
+              <label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="radio" name="lc-outcome" value="hard_no" onchange="lcOnOutcomeChange()"><span><strong>Hard no</strong> — declined, not interested</span></label>
+              <label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="radio" name="lc-outcome" value="maybe" onchange="lcOnOutcomeChange()"><span><strong>Maybe</strong> — interested, needs more time / follow up later</span></label>
+              <label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="radio" name="lc-outcome" value="no_response" onchange="lcOnOutcomeChange()"><span><strong>No response</strong> — couldn't reach them</span></label>
+              <label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="radio" name="lc-outcome" value="quoted" onchange="lcOnOutcomeChange()"><span><strong>Quoted</strong> — sent custom quote, awaiting reply</span></label>
+              <label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="radio" name="lc-outcome" value="other" onchange="lcOnOutcomeChange()"><span><strong>Other</strong></span></label>
+            </div>
+            <div id="lc-outcome-error" style="display:none;color:var(--color-danger);font-size:12px;margin-top:4px;font-weight:600;">Please pick an outcome before saving.</div>
+          </div>
+
+          <!-- Booking picker — visible only when outcome === 'booked'.
+               Populated by lcLoadBookingMatches() via the find-bookings-
+               for-lead endpoint. Includes a "+ Search by session ID"
+               escape hatch for cases where the fuzzy match misses. -->
+          <div class="edit-form-group" id="lc-booking-picker-wrap" style="display:none;margin-bottom:var(--space-4);">
+            <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Which booking? (required)</label>
+            <select class="edit-input" id="lc-booking-picker" onchange="lcOnBookingChange()">
+              <option value="">— Loading matches… —</option>
+            </select>
+            <div id="lc-booking-empty" style="display:none;font-size:11px;color:var(--color-text-tertiary);margin-top:6px;">No recent bookings found for this customer. Booking can be linked later from the Bookings tab.</div>
+            <div id="lc-session-id-toggle" style="margin-top:6px;font-size:12px;">
+              <a href="#" onclick="lcToggleSessionIdSearch(event)" style="color:var(--color-brand-primary);text-decoration:none;font-weight:600;">+ Search by session ID</a>
+            </div>
+            <div id="lc-session-id-wrap" style="display:none;margin-top:8px;">
+              <input class="edit-input" id="lc-session-id-input" type="text" placeholder="cs_test_… or cs_live_…" oninput="lcOnBookingChange()">
+              <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px;">Booking will be validated on save.</div>
+            </div>
+          </div>
+
+          <!-- Notes (always editable, even on locked leads). -->
           <div class="edit-form-group">
             <label class="edit-label" style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-600);">Contact notes (optional)</label>
-            <textarea class="edit-input" id="lc-notes" rows="5" placeholder="e.g. Called at 2:30pm Tuesday — left voicemail. Texted afterwards."></textarea>
+            <textarea class="edit-input" id="lc-notes" rows="4" placeholder="e.g. Called at 2:30pm Tuesday — left voicemail. Texted afterwards."></textarea>
           </div>
+
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
             <button class="btn-gray" onclick="closeLeadContactModalBtn()">Cancel</button>
-            <button class="btn-red" onclick="confirmLeadContacted()">Save &amp; Mark Contacted</button>
+            <button class="btn-red" id="lc-save-btn" onclick="confirmLeadContacted()">Save</button>
           </div>
         </div>
       </div>
@@ -3944,10 +4002,8 @@
   let leadContactingId = null;
 
   /* Bounce-reason taxonomy. Single source of truth — used by the
-     Mark Contacted modal, the row pill renderer, the filter
-     dropdown, and the 7-day digest section. Adding a new reason =
-     one entry here + one <option> each in the modal and filter
-     selects. Color maps to existing badge-* CSS classes. */
+     Log Contact modal, the row pill renderer, the filter dropdown,
+     and the 7-day digest section. */
   const LEAD_BOUNCE_REASONS = {
     price:      { label: 'Price',      badgeClass: 'badge-red' },
     dates:      { label: 'Dates',      badgeClass: 'badge-amber' },
@@ -3961,6 +4017,29 @@
     const r = LEAD_BOUNCE_REASONS[reason];
     if (!r) return '';
     return '<span class="badge ' + r.badgeClass + '" style="margin-left:6px;">' + r.label + '</span>';
+  }
+
+  /* Contact-outcome taxonomy. Outcome → display pill + (implied)
+     status. Outcome values mirror OUTCOME_TO_STATUS in api/admin.js;
+     keep these in sync if either changes. */
+  const LEAD_OUTCOMES = {
+    booked:       { label: '✓ Booked',       badgeClass: 'badge-green',  status: 'converted' },
+    hard_no:      { label: '✗ Declined',     badgeClass: 'badge-red',    status: 'declined' },
+    maybe:        { label: '↻ Following up', badgeClass: 'badge-amber',  status: 'following_up' },
+    no_response:  { label: '— Unreachable',  badgeClass: 'badge-gray',   status: 'unreachable' },
+    quoted:       { label: '📝 Quoted',      badgeClass: 'badge-purple', status: 'quoted' },
+    other:        { label: '📞 Contacted',   badgeClass: 'badge-navy',   status: 'contacted' },
+  };
+  function leadOutcomePill(outcome) {
+    const o = LEAD_OUTCOMES[outcome];
+    if (!o) return '';
+    return '<span class="badge ' + o.badgeClass + '">' + o.label + '</span>';
+  }
+  /* Legacy fallback — for leads logged before contact_outcome existed
+     (status='contacted' with no outcome value). Per STEP 7, render
+     them as the generic 'Contacted' pill. */
+  function isLoggedContact(l) {
+    return !!(l && (l.contact_outcome || l.contacted_at));
   }
 
   async function loadLeads() {
@@ -4001,12 +4080,20 @@
   }
   function leadStatusBadge(l) {
     const s = (l && l.status) || 'captured';
+    /* New outcome-derived statuses (declined / following_up /
+       unreachable / quoted) inherit the corresponding outcome's pill
+       style. Pre-contact statuses (captured / abandoned_stripe /
+       payment_failed) keep their original look. */
     const map = {
       captured:         { color: 'var(--navy)',   bg: 'var(--gray-100)', label: 'Captured' },
       abandoned_stripe: { color: '#B45309',       bg: '#FEF3C7',          label: 'Abandoned Stripe' },
       payment_failed:   { color: 'var(--red)',    bg: 'var(--red-bg)',    label: 'Payment Failed' },
       converted:        { color: 'var(--green)',  bg: 'var(--green-bg)',  label: '✓ Converted' },
       contacted:        { color: '#6B7280',       bg: 'var(--gray-100)',  label: '📞 Contacted' },
+      declined:         { color: 'var(--red)',    bg: 'var(--red-bg)',    label: '✗ Declined' },
+      following_up:     { color: '#B45309',       bg: '#FEF3C7',          label: '↻ Following up' },
+      unreachable:      { color: '#6B7280',       bg: 'var(--gray-100)',  label: '— Unreachable' },
+      quoted:           { color: 'var(--purple)', bg: 'var(--purple-bg)', label: '📝 Quoted' },
     };
     const m = map[s] || map.captured;
     return '<span class="badge" style="background:' + m.bg + ';color:' + m.color + ';border:1px solid ' + m.color + ';font-weight:700">' + m.label + '</span>';
@@ -4017,6 +4104,13 @@
     let list = allLeads.slice();
     const HOT_MS = 24 * 60 * 60 * 1000;
 
+    /* "Contacted" now matches every status that implies a logged
+       contact (any outcome → status mapping in OUTCOME_TO_STATUS
+       on the server, plus legacy 'contacted'). Status-specific
+       chips ('outcome:foo') narrow into individual outcomes. */
+    const LOGGED_CONTACT_STATUSES = new Set([
+      'contacted', 'declined', 'following_up', 'unreachable', 'quoted', 'converted',
+    ]);
     if (leadsFilter === 'hot') {
       list = list.filter(l => !l.contacted_at && l.status !== 'converted' && leadAgeMs(l) <= HOT_MS);
     } else if (leadsFilter === 'stale') {
@@ -4024,9 +4118,12 @@
     } else if (leadsFilter === 'converted') {
       list = list.filter(l => l.status === 'converted');
     } else if (leadsFilter === 'contacted') {
-      list = list.filter(l => l.status === 'contacted' || l.contacted_at);
+      list = list.filter(l => LOGGED_CONTACT_STATUSES.has(l.status) || l.contacted_at);
     } else if (leadsFilter === 'by_total') {
       list = list.slice().sort((a, b) => parseFloat(b.grand_total || 0) - parseFloat(a.grand_total || 0));
+    } else if (leadsFilter.indexOf('outcome:') === 0) {
+      const targetStatus = leadsFilter.slice('outcome:'.length);
+      list = list.filter(l => l.status === targetStatus);
     }
 
     /* Intersect with bounce-reason filter so combinations like
@@ -4049,13 +4146,26 @@
       const phoneCell = l.phone
         ? '<a href="tel:' + esc(l.phone) + '" style="color:var(--navy);text-decoration:none;font-weight:600;">' + esc(l.phone) + '</a>'
         : '<span style="color:var(--gray-400);font-style:italic;font-size:11px;">not provided</span>';
-      const actionCell = (l.status === 'contacted' || l.status === 'converted')
-        ? '<span style="color:var(--gray-400);font-size:11px;">—</span>'
-        : '<button class="btn-sm btn-red" onclick="openLeadContactModal(\'' + esc(l.id) + '\')">Mark contacted</button>';
+      /* Every lead gets an action button. Locked leads still open the
+         modal — admin can still update notes. The button label reflects
+         whether this is a first log or an edit. */
+      const hasLog = !!l.contacted_at;
+      const actionLabel = hasLog ? 'View / edit' : 'Log contact';
+      const actionCell = '<button class="btn-sm btn-red" onclick="openLeadContactModal(\'' + esc(l.id) + '\')">' + actionLabel + '</button>';
       const tip = l.captured_at ? new Date(l.captured_at).toLocaleString() : '';
+      /* Status cell: prefer the outcome pill when set, fall back to
+         the legacy status badge for leads with no logged outcome
+         yet (or pre-redesign rows). Bounce pill + linked-booking
+         link always come after. */
+      const statusContent = l.contact_outcome
+        ? leadOutcomePill(l.contact_outcome)
+        : leadStatusBadge(l);
+      const linkedBookingChip = l.linked_booking_session_id
+        ? '<a href="#" onclick="event.preventDefault();openEditModal(\'' + esc(l.linked_booking_session_id) + '\')" style="margin-left:6px;font-size:11px;color:var(--color-brand-primary);text-decoration:none;font-weight:600;white-space:nowrap;">→ View booking</a>'
+        : '';
       return '<tr>' +
         '<td title="' + esc(tip) + '" style="white-space:nowrap;">' + fmtAge(leadAgeMs(l)) + '</td>' +
-        '<td>' + leadStatusBadge(l) + leadBouncePill(l.bounce_reason) + '</td>' +
+        '<td>' + statusContent + leadBouncePill(l.bounce_reason) + linkedBookingChip + '</td>' +
         '<td style="font-weight:700;color:var(--navy);">' + esc(l.full_name || '—') + '</td>' +
         '<td><a href="mailto:' + esc(l.customer_email || '') + '" style="color:var(--navy);text-decoration:none;">' + esc(l.customer_email || '—') + '</a></td>' +
         '<td>' + phoneCell + '</td>' +
@@ -4081,18 +4191,139 @@
       '</table>';
   }
 
-  function openLeadContactModal(id) {
+  /* Cache the editability flag for the currently-open lead so save
+     can short-circuit if locked. */
+  let leadContactingEditable = true;
+
+  async function openLeadContactModal(id) {
     const lead = allLeads.find(l => l.id === id);
     if (!lead) return;
     leadContactingId = id;
+    leadContactingEditable = lead.outcome_editable !== false; // default true on missing field
+
     document.getElementById('lc-customer').textContent =
       (lead.full_name || '(no name)') + ' · ' + (lead.customer_email || '');
-    /* Preselect the existing reason if this lead already had one
-       set (e.g. admin reopens to re-edit notes). Blank otherwise. */
     document.getElementById('lc-bounce-reason').value = lead.bounce_reason || '';
     document.getElementById('lc-notes').value = lead.contact_notes || '';
+
+    // Reset outcome radios then preselect current value.
+    document.querySelectorAll('input[name="lc-outcome"]').forEach(r => {
+      r.checked = (r.value === lead.contact_outcome);
+    });
+    document.getElementById('lc-outcome-error').style.display = 'none';
+
+    // Reset booking picker state.
+    const pickerWrap = document.getElementById('lc-booking-picker-wrap');
+    const picker     = document.getElementById('lc-booking-picker');
+    picker.innerHTML = '<option value="">— Loading matches… —</option>';
+    document.getElementById('lc-booking-empty').style.display = 'none';
+    document.getElementById('lc-session-id-wrap').style.display = 'none';
+    document.getElementById('lc-session-id-input').value = '';
+    pickerWrap.style.display = (lead.contact_outcome === 'booked') ? '' : 'none';
+
+    /* Lock-aware UI:
+       - title: "Update Notes" if locked, otherwise "Log Contact"
+         (or "Update Contact" when editing a prior log). */
+    const titleEl  = document.getElementById('lc-title');
+    const banner   = document.getElementById('lc-locked-banner');
+    const hasPrior = !!lead.contact_outcome;
+    if (!leadContactingEditable) {
+      titleEl.textContent = 'Update Notes';
+      banner.style.display = '';
+    } else {
+      titleEl.textContent = hasPrior ? 'Update Contact' : 'Log Contact';
+      banner.style.display = 'none';
+    }
+
+    // Disable locked fields. Notes textarea always stays enabled.
+    document.querySelectorAll('input[name="lc-outcome"]').forEach(r => { r.disabled = !leadContactingEditable; });
+    document.getElementById('lc-bounce-reason').disabled = !leadContactingEditable;
+    document.getElementById('lc-booking-picker').disabled = !leadContactingEditable;
+    document.getElementById('lc-session-id-input').disabled = !leadContactingEditable;
+
     document.getElementById('lead-contact-overlay').classList.add('open');
+
+    // If outcome is already 'booked', load matches so the picker can preselect.
+    if (lead.contact_outcome === 'booked') {
+      await lcLoadBookingMatches(lead.linked_booking_session_id);
+    }
+    lcUpdateSaveButton();
   }
+
+  /* Fetch the last-30-day booking matches for the current lead and
+     populate the picker. If `preselectSid` is given, mark that option
+     as selected (used when reopening an already-booked lead). */
+  async function lcLoadBookingMatches(preselectSid) {
+    const picker = document.getElementById('lc-booking-picker');
+    const emptyMsg = document.getElementById('lc-booking-empty');
+    try {
+      const data = await api('/api/admin?action=find-bookings-for-lead&lead_id=' + encodeURIComponent(leadContactingId));
+      const bookings = (data && data.bookings) || [];
+      if (bookings.length === 0) {
+        picker.innerHTML = '<option value="">— No matches —</option>';
+        emptyMsg.style.display = '';
+      } else {
+        emptyMsg.style.display = 'none';
+        const opts = ['<option value="">— Select a booking —</option>'];
+        for (const b of bookings) {
+          const dateLabel = b.date ? fmtDate(b.date) : '(no date)';
+          const totalStr  = b.grand_total != null ? '$' + parseFloat(b.grand_total).toFixed(2) : '—';
+          const label = dateLabel + ' · ' + vesselLabel(b.vessel) + ' · ' + (b.full_name || '(no name)') + ' · ' + totalStr;
+          opts.push('<option value="' + esc(b.session_id) + '">' + esc(label) + '</option>');
+        }
+        picker.innerHTML = opts.join('');
+        if (preselectSid) picker.value = preselectSid;
+      }
+    } catch (err) {
+      picker.innerHTML = '<option value="">— Error loading —</option>';
+      console.error('lcLoadBookingMatches failed', err);
+    }
+    lcUpdateSaveButton();
+  }
+
+  function lcOnOutcomeChange() {
+    const selected = document.querySelector('input[name="lc-outcome"]:checked');
+    const outcome = selected ? selected.value : '';
+    document.getElementById('lc-outcome-error').style.display = 'none';
+    const pickerWrap = document.getElementById('lc-booking-picker-wrap');
+    if (outcome === 'booked') {
+      pickerWrap.style.display = '';
+      // Only fetch matches the first time the user picks booked.
+      const picker = document.getElementById('lc-booking-picker');
+      if (picker.options.length <= 1 || picker.options[0].textContent.indexOf('Loading') !== -1) {
+        lcLoadBookingMatches();
+      }
+    } else {
+      pickerWrap.style.display = 'none';
+    }
+    lcUpdateSaveButton();
+  }
+  function lcOnBookingChange() { lcUpdateSaveButton(); }
+
+  function lcToggleSessionIdSearch(e) {
+    if (e) e.preventDefault();
+    const wrap = document.getElementById('lc-session-id-wrap');
+    wrap.style.display = wrap.style.display === 'none' ? '' : 'none';
+  }
+
+  /* Enable Save when:
+     - notes-only mode (locked lead): always
+     - editable mode: outcome selected, AND if outcome=booked then either
+       a picker option OR a manual session_id is provided. */
+  function lcUpdateSaveButton() {
+    const btn = document.getElementById('lc-save-btn');
+    if (!leadContactingEditable) { btn.disabled = false; return; }
+    const selected = document.querySelector('input[name="lc-outcome"]:checked');
+    if (!selected) { btn.disabled = true; return; }
+    if (selected.value === 'booked') {
+      const picked  = document.getElementById('lc-booking-picker').value;
+      const manual  = document.getElementById('lc-session-id-input').value.trim();
+      btn.disabled = !(picked || manual);
+      return;
+    }
+    btn.disabled = false;
+  }
+
   function closeLeadContactModal(e) {
     if (e && e.target !== document.getElementById('lead-contact-overlay')) return;
     closeLeadContactModalBtn();
@@ -4101,15 +4332,56 @@
     document.getElementById('lead-contact-overlay').classList.remove('open');
     leadContactingId = null;
   }
+
   async function confirmLeadContacted() {
     if (!leadContactingId) return;
-    const notes = document.getElementById('lc-notes').value.trim();
+    const notes         = document.getElementById('lc-notes').value.trim();
     const bounce_reason = document.getElementById('lc-bounce-reason').value || null;
+
+    // Locked lead → notes-only update. Outcome/bounce sent as null since
+    // the server ignores them in locked mode (and rejects if changed).
+    if (!leadContactingEditable) {
+      try {
+        await api('/api/admin?action=mark-lead-contacted', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: leadContactingId, notes }),
+        });
+        closeLeadContactModalBtn();
+        await loadLeads();
+      } catch (err) {
+        showError('Could not save: ' + (err.message || err));
+      }
+      return;
+    }
+
+    const selected = document.querySelector('input[name="lc-outcome"]:checked');
+    if (!selected) {
+      document.getElementById('lc-outcome-error').style.display = '';
+      return;
+    }
+    const outcome = selected.value;
+    let linked_booking_session_id = null;
+    if (outcome === 'booked') {
+      const picked = document.getElementById('lc-booking-picker').value;
+      const manual = document.getElementById('lc-session-id-input').value.trim();
+      linked_booking_session_id = picked || manual || null;
+      if (!linked_booking_session_id) {
+        showError('Pick a booking or enter a session ID before saving.');
+        return;
+      }
+    }
     try {
       await api('/api/admin?action=mark-lead-contacted', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: leadContactingId, notes, bounce_reason }),
+        body: JSON.stringify({
+          id: leadContactingId,
+          notes,
+          bounce_reason,
+          outcome,
+          linked_booking_session_id,
+        }),
       });
       closeLeadContactModalBtn();
       await loadLeads();

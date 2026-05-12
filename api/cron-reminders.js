@@ -409,27 +409,33 @@ module.exports = async function handler(req, res) {
     if (recent.length === 0) {
       console.log('[cron-reminders] leads digest: 0 leads in last', LEAD_DIGEST_WINDOW_HOURS, 'h — skipping email');
     } else {
-      /* 7-day bounce-reason breakdown — queried separately because the
-         main digest window is 24h but bounce reasons need a longer
-         window to surface meaningful trends. Counts every lead in the
-         last 7 days bucketed by bounce_reason. Untagged leads roll up
-         under 'untagged' so the admin can see how many contacted-
-         leads still need categorization. */
+      /* 7-day bounce-reason + outcome breakdowns — queried separately
+         because the main digest window is 24h but these need a longer
+         window to surface meaningful trends. Uses ONE 7-day query and
+         buckets it two ways. Outcome counts include only leads that
+         have a contact_outcome set within the last 7 days (i.e. admin
+         actually logged a contact). */
       const bounceReasonCounts = {};
+      const outcomeCounts = {};
       try {
         const weekRecent = await listRecentLeads(24 * 7);
         for (const l of weekRecent) {
-          const key = l.bounce_reason || 'untagged';
-          bounceReasonCounts[key] = (bounceReasonCounts[key] || 0) + 1;
+          const bkey = l.bounce_reason || 'untagged';
+          bounceReasonCounts[bkey] = (bounceReasonCounts[bkey] || 0) + 1;
+          if (l.contact_outcome) {
+            const okey = l.contact_outcome;
+            outcomeCounts[okey] = (outcomeCounts[okey] || 0) + 1;
+          }
         }
         leadsDigest.bounce_reasons_7d = bounceReasonCounts;
+        leadsDigest.outcomes_7d       = outcomeCounts;
       } catch (err) {
-        console.error('[cron-reminders] bounce-reason 7d query failed (non-fatal):', err.message);
+        console.error('[cron-reminders] 7d breakdown query failed (non-fatal):', err.message);
       }
       try {
-        await sendDailyLeadDigest(grouped, { dateLabel: today, bounceReasonCounts });
+        await sendDailyLeadDigest(grouped, { dateLabel: today, bounceReasonCounts, outcomeCounts });
         leadsDigest.digest_sent = true;
-        console.log('[cron-reminders] leads digest sent | total:', recent.length, '| by_status:', leadsDigest.by_status, '| bounce_7d:', bounceReasonCounts);
+        console.log('[cron-reminders] leads digest sent | total:', recent.length, '| by_status:', leadsDigest.by_status, '| bounce_7d:', bounceReasonCounts, '| outcomes_7d:', outcomeCounts);
       } catch (err) {
         leadsDigest.digest_error = err.message;
         console.error('[cron-reminders] leads digest send failed:', err.message);
