@@ -551,6 +551,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const trustBar = document.querySelector('.trust-bar');
   if (trustBar) {
     const extraItems = [
+      { icon: '🌊', text: 'Free Volente Beach Waterpark Access' },
       { icon: '🎬', text: 'ADD-ON: Drone Footage — $200' },
       { icon: '🏖️', text: 'ADD-ON: Towels — $8' },
       { icon: '🧊', text: 'ADD-ON: Ice — $25' },
