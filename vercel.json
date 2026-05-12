@@ -21,6 +21,11 @@
       "source": "/austin-texas-boat-tours.html",
       "destination": "/austin-texas-boat-rentals.html",
       "permanent": true
+    },
+    {
+      "source": "/austin-lake-tour.html",
+      "destination": "/austin-texas-boat-rentals.html",
+      "permanent": true
     }
   ]
 }

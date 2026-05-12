@@ -178,7 +178,6 @@ async function handleSubscribe() {
 // people mid-checkout or after they've already converted.
 const TFC_EXIT_POPUP_ALLOWED_PAGES = new Set([
   '/index.html',
-  '/austin-lake-tour.html',
   '/austin-texas-boat-rentals.html',
   '/lake-travis-boat-rentals.html',
   '/lake-travis-family-boat-tours.html',
