@@ -4,5 +4,18 @@
       "path": "/api/cron-reminders",
       "schedule": "0 14 * * *"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "(?<host>.*\\.vercel\\.app)"
+        }
+      ],
+      "destination": "https://texasforevercharters.com/$1",
+      "permanent": true
+    }
   ]
 }
