@@ -1078,6 +1078,16 @@ section {
   color: var(--white);
 }
 
+.crew-credential {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 14px;
+}
+
 .crew-bio {
   font-family: 'Bebas Neue', sans-serif;
   font-weight: 400;
