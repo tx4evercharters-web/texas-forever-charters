@@ -278,7 +278,7 @@ async function handleSendPaymentLink(req, res) {
       }],
       after_completion: {
         type: 'redirect',
-        redirect: { url: 'https://www.texasforevercharters.com/booking-confirmation.html' },
+        redirect: { url: 'https://www.texasforevercharters.com/booking-confirmation.html?session_id={CHECKOUT_SESSION_ID}' },
       },
       // Top-level metadata is copied by Stripe onto every checkout session
       // that this payment link generates. The webhook reads session.metadata
