@@ -6042,9 +6042,14 @@
         body: JSON.stringify({ booking, send_confirmation: sendConfirmation }),
       });
       if (result && result.ok) {
-        // If Stripe link selected, fire it after the booking is saved
+        // If Stripe link selected, fire it after the booking is saved.
+        // Capture the chained result so we can surface email_warning if the
+        // link's delivery email failed (G8/G23 — the chained call used to
+        // silently swallow its response, leaving the customer without the
+        // link AND admin unaware).
+        let linkResult = null;
         if (payment === 'stripe-link') {
-          await api('/api/admin?action=send-payment-link', {
+          linkResult = await api('/api/admin?action=send-payment-link', {
             method: 'POST',
             body: JSON.stringify({ session_id: result.session_id }),
           });
@@ -6053,6 +6058,14 @@
         // G15 — surface email_warning separately as a persistent warning toast
         // instead of concatenating into the success message (cleaner separation).
         bkShowEmailWarning(result, 'Add Booking');
+        // G8/G23 — handle the chained send-payment-link's outcome.
+        if (linkResult) {
+          if (!linkResult.ok) {
+            showError('⚠ Payment link not sent: ' + (linkResult.error || 'unknown error'));
+          } else {
+            bkShowEmailWarning(linkResult, 'Send Payment Link');
+          }
+        }
         closeAddBookingBtn();
         loadData();
       } else {
@@ -6263,7 +6276,11 @@
     btn.disabled = true; btn.textContent = 'Sending...';
     const result = await api('/api/admin?action=send-payment-link', { method: 'POST', body: JSON.stringify({ session_id }) });
     if (result && result.ok) {
-      showError('✅ Payment link sent!');
+      // Neutralized wording — the Stripe link IS created on result.ok;
+      // whether the customer email actually reached them is reported
+      // separately via bkShowEmailWarning when result.email_warning fires.
+      showError('✅ Payment link created!');
+      bkShowEmailWarning(result, 'Send Payment Link');
     } else {
       showError(result?.error || 'Failed to send link.');
     }

@@ -343,8 +343,16 @@ async function handleSendPaymentLink(req, res) {
   // truncate() so the webhook sees identically-shaped values.
   const s = (v, max = 500) => (v == null ? '' : String(v).slice(0, max));
 
+  /* G23 / G8-closing restructure — separate the Stripe-create failure
+     path from the email-send failure path so the email-only failure
+     doesn't bury the side effect that the Stripe payment link DOES
+     exist. Stripe-create failure → 500 (no link, retry-safe). Email-send
+     failure → 200 with email_warning so G15's UI toast + defensive alert
+     plumbing both fire while the response carries the link URL admin can
+     copy / resend. */
+  let paymentLink;
   try {
-    const paymentLink = await stripe.paymentLinks.create({
+    paymentLink = await stripe.paymentLinks.create({
       line_items: [{
         price_data: {
           currency: 'usd',
@@ -397,7 +405,15 @@ async function handleSendPaymentLink(req, res) {
         original_session_id: s(booking.session_id),
       },
     });
+  } catch (err) {
+    console.error('Payment link create error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
 
+  /* At this point the Stripe link exists. From here, any failure must
+     keep the link URL in the response so admin can still recover. */
+  let email_warning = null;
+  try {
     await postToResend({
       from: 'Texas Forever Charters <bookings@texasforevercharters.com>',
       to: booking.customer_email,
@@ -419,12 +435,27 @@ async function handleSendPaymentLink(req, res) {
         </div>
       `,
     });
-
-    return res.status(200).json({ ok: true, url: paymentLink.url });
   } catch (err) {
-    console.error('Payment link error:', err.message);
-    return res.status(500).json({ error: err.message });
+    console.error('Payment link email failed (link still exists in Stripe):',
+      'session:', session_id, '| link:', paymentLink.id, '|', err.message);
+    email_warning = err.message;
   }
+
+  /* G15 defensive alert — see handleChargeRemaining for the pattern. */
+  if (email_warning) {
+    try {
+      await sendAdminActionEmailFailureAlert('send-payment-link', booking, booking.customer_email, email_warning);
+    } catch (alertErr) {
+      console.error('[send-payment-link] defensive alert send FAILED (link still exists):',
+        session_id, '|', alertErr.message);
+    }
+  }
+
+  return res.status(200).json({
+    ok: true,
+    url: paymentLink.url,
+    ...(email_warning ? { email_warning } : {}),
+  });
 }
 
 async function handleMarkConcluded(req, res) {
