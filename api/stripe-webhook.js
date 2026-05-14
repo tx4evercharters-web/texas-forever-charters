@@ -10,6 +10,7 @@ const {
 const {
   saveBooking,
   patchBooking,
+  findBookingBySessionId,
   findBookingByPaymentIntent,
   findActiveLeadByEmail,
   findLeadByStripeSession,
@@ -349,79 +350,129 @@ module.exports = async function handler(req, res) {
      were already handled at the original deposit. The confirmation email
      still fires so the customer knows their balance landed. */
   if (meta.original_session_id) {
-    let updated;
+    /* Read the existing row BEFORE patching so we can preserve any
+       non-null payment data from a prior write (the deposit's PI,
+       customer, payment method, amount_total) instead of overwriting
+       it with the balance-payment's values. State flags below
+       (paid_in_full / remaining_balance / payment_type) still flip
+       unconditionally. Interim safety until G7 (Phase 2) adds a
+       dedicated balance_payment_intent_id column to track multi-PI
+       bookings properly. A lookup failure falls through to the
+       legacy insert-new-row path (same as "row not found" below). */
+    let existing = null;
     try {
-      updated = await patchBooking(meta.original_session_id, {
+      existing = await findBookingBySessionId(meta.original_session_id);
+    } catch (err) {
+      console.error('[stripe-webhook] existing-row lookup failed for remaining-balance',
+        meta.original_session_id, '|', err.message);
+      existing = null;
+    }
+
+    if (existing) {
+      /* Retrieve payment method from the new payment intent so the patched
+         row carries it forward — needed for future refunds and Charge Card
+         actions against this booking. Mirrors the legacy path below at
+         line ~436; best-effort: a Stripe lookup failure must NOT abort the
+         patch because the money has already moved. Falls back to null. */
+      let paymentMethodId = null;
+      if (paymentIntentId) {
+        try {
+          const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+          paymentMethodId = paymentIntent.payment_method || null;
+        } catch (err) {
+          console.error('[stripe-webhook] PI retrieve failed for remaining-balance',
+            meta.original_session_id, '|', err.message);
+        }
+      }
+
+      /* Conditional overwrites — write the new transaction data ONLY
+         when the existing column is empty. Empty = 0 for amount_total,
+         null/undefined for the three ID fields. This preserves deposit-
+         flow data (where the deposit's webhook already populated these
+         columns) while still healing the empty-row state caused by the
+         original f10c429 bug. */
+      const patchObj = {
         paid_in_full:      true,
         remaining_balance: 0,
         payment_type:      'full',
-      });
-    } catch (err) {
-      /* Transient Supabase error — return 5xx so Stripe retries the webhook
-         per its standard schedule. Do NOT fall through (would create an
-         orphan row that complicates a future retry). */
-      console.error('[stripe-webhook] patch original booking',
-        meta.original_session_id, 'FAILED:', err.message);
-      return res.status(500).json({ error: 'patch_failed', detail: err.message });
-    }
-
-    if (updated) {
-      console.log('[stripe-webhook] remaining balance applied to original booking',
-        meta.original_session_id,
-        '| amount_paid_cents:', session.amount_total,
-        '| new_payment_intent:', paymentIntentId,
-        '| stripe_session:', session.id);
-
-      /* Build the confirmation email from the (now-patched) original row
-         so the customer who originally booked is the one notified, not
-         whoever happened to type an email at Stripe's hosted page.
-         payment_type: 'full' makes the email render "Paid in Full". */
-      const emailData = {
-        customer_email:   updated.customer_email,
-        amount_total:     session.amount_total,
-        session_id:       meta.original_session_id,
-        charter_name:     updated.charter_name,
-        vessel:           updated.vessel,
-        experience:       updated.experience,
-        date:             updated.date,
-        time_slot:        updated.time_slot,
-        duration:         updated.duration,
-        full_name:        updated.full_name,
-        party_size:       updated.party_size,
-        phone:            updated.phone,
-        payment_type:     'full',
-        grand_total:      updated.grand_total,
-        deposit_amount:   updated.deposit_amount,
-        add_ons:          updated.add_ons,
-        special_requests: updated.special_requests,
-        promo_applied:    updated.promo_applied,
-        newsletter:       updated.newsletter,
       };
+      if (!existing.amount_total)       patchObj.amount_total       = session.amount_total;
+      if (!existing.payment_intent_id)  patchObj.payment_intent_id  = paymentIntentId;
+      if (!existing.stripe_customer_id) patchObj.stripe_customer_id = stripeCustomerId;
+      if (!existing.payment_method_id)  patchObj.payment_method_id  = paymentMethodId;
 
-      let customerEmailOk = false;
+      let updated;
       try {
-        const result = await sendConfirmationEmails(emailData);
-        customerEmailOk = !result.customerError;
-        console.log('[stripe-webhook] remaining-balance email dispatch',
+        updated = await patchBooking(meta.original_session_id, patchObj);
+      } catch (err) {
+        /* Transient Supabase error — return 5xx so Stripe retries the webhook
+           per its standard schedule. Do NOT fall through (would create an
+           orphan row that complicates a future retry). */
+        console.error('[stripe-webhook] patch original booking',
+          meta.original_session_id, 'FAILED:', err.message);
+        return res.status(500).json({ error: 'patch_failed', detail: err.message });
+      }
+
+      if (updated) {
+        console.log('[stripe-webhook] remaining balance applied to original booking',
           meta.original_session_id,
-          '| customer:', result.customerError ? 'FAILED (' + result.customerError.message + ')' : 'ok',
-          '| business:', result.businessError ? 'FAILED (' + result.businessError.message + ')' : 'ok');
-      } catch (err) {
-        console.error('[stripe-webhook] both emails failed for remaining-balance',
-          meta.original_session_id, '|', err.message);
-      }
+          '| amount_paid_cents:', session.amount_total,
+          '| new_payment_intent:', paymentIntentId,
+          '| stripe_session:', session.id,
+          '| fields_written:', Object.keys(patchObj).join(','));
 
-      try {
-        await patchBooking(meta.original_session_id, { confirmation_email_sent: customerEmailOk });
-      } catch (err) {
-        console.error('[stripe-webhook] failed to set confirmation_email_sent for',
-          meta.original_session_id, '|', err.message);
-      }
+        /* Build the confirmation email from the (now-patched) original row
+           so the customer who originally booked is the one notified, not
+           whoever happened to type an email at Stripe's hosted page.
+           payment_type: 'full' makes the email render "Paid in Full". */
+        const emailData = {
+          customer_email:   updated.customer_email,
+          amount_total:     session.amount_total,
+          session_id:       meta.original_session_id,
+          charter_name:     updated.charter_name,
+          vessel:           updated.vessel,
+          experience:       updated.experience,
+          date:             updated.date,
+          time_slot:        updated.time_slot,
+          duration:         updated.duration,
+          full_name:        updated.full_name,
+          party_size:       updated.party_size,
+          phone:            updated.phone,
+          payment_type:     'full',
+          grand_total:      updated.grand_total,
+          deposit_amount:   updated.deposit_amount,
+          add_ons:          updated.add_ons,
+          special_requests: updated.special_requests,
+          promo_applied:    updated.promo_applied,
+          newsletter:       updated.newsletter,
+        };
 
-      return res.status(200).json({ received: true, applied_to: meta.original_session_id });
+        let customerEmailOk = false;
+        try {
+          const result = await sendConfirmationEmails(emailData);
+          customerEmailOk = !result.customerError;
+          console.log('[stripe-webhook] remaining-balance email dispatch',
+            meta.original_session_id,
+            '| customer:', result.customerError ? 'FAILED (' + result.customerError.message + ')' : 'ok',
+            '| business:', result.businessError ? 'FAILED (' + result.businessError.message + ')' : 'ok');
+        } catch (err) {
+          console.error('[stripe-webhook] both emails failed for remaining-balance',
+            meta.original_session_id, '|', err.message);
+        }
+
+        try {
+          await patchBooking(meta.original_session_id, { confirmation_email_sent: customerEmailOk });
+        } catch (err) {
+          console.error('[stripe-webhook] failed to set confirmation_email_sent for',
+            meta.original_session_id, '|', err.message);
+        }
+
+        return res.status(200).json({ received: true, applied_to: meta.original_session_id });
+      }
     }
 
-    /* Original row not found (deleted, or stale link with bad id). Don't
+    /* Original row not found (deleted, stale link with bad id, OR the
+       existing-row pre-patch lookup failed). Don't
        return — fall through to the legacy insert-new-row flow so we still
        persist SOMETHING and the customer still gets a confirmation email.
        The defensive alert email will fire if metadata is genuinely missing
