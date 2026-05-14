@@ -1760,6 +1760,34 @@
       color: var(--color-success);
       display: none;
     }
+    /* G15 warning bar — amber, no auto-hide, manual dismiss via X.
+       Used for "action succeeded BUT customer email failed" cases so
+       admin can consciously acknowledge the partial-failure state. */
+    .warning-bar {
+      background: var(--color-warning-bg);
+      border: 1px solid color-mix(in srgb, var(--color-warning) 25%, transparent);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      margin-bottom: var(--space-4);
+      font-size: var(--font-size-sm);
+      color: var(--color-warning);
+      display: none;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
+    .warning-bar .warning-msg { flex: 1; }
+    .warning-bar .warning-dismiss {
+      background: transparent;
+      border: none;
+      color: var(--color-warning);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 0 var(--space-2);
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .warning-bar .warning-dismiss:hover { opacity: 0.7; }
 
     @media (max-width: 700px) {
       .vessel-split { grid-template-columns: 1fr; }
@@ -1807,6 +1835,7 @@
   <main>
     <div class="error-bar" id="error-bar"></div>
     <div class="success-bar" id="success-bar"></div>
+    <div class="warning-bar" id="warning-bar"></div>
 
     <!-- ══ BOOKINGS TAB ══ -->
     <div class="tab-panel active" id="tab-bookings">
@@ -3291,6 +3320,8 @@
       showError(result?.error || (label + ' failed.'));
       return false;
     }
+    // G15 — surface email_warning if the customer email failed alongside the success.
+    bkShowEmailWarning(result, label);
     // Refresh top-level cache + open surfaces
     await loadData();
     if (custLoaded && document.getElementById('tab-customers').classList.contains('active')) await loadCustomers();
@@ -3609,6 +3640,28 @@
     bar.textContent = msg;
     bar.style.display = 'block';
     setTimeout(() => { bar.style.display = 'none'; }, 6000);
+  }
+
+  /* G15 — persistent warning bar for "action succeeded BUT customer
+     email failed" cases. No auto-hide; admin clicks X to acknowledge.
+     textContent (not innerHTML) on the msg span so backend error
+     strings can't inject markup. */
+  function showWarning(msg) {
+    const bar = document.getElementById('warning-bar');
+    bar.innerHTML = '<span class="warning-msg"></span><button class="warning-dismiss" onclick="dismissWarning()" aria-label="Dismiss">&#10005;</button>';
+    bar.querySelector('.warning-msg').textContent = msg;
+    bar.style.display = 'flex';
+  }
+  function dismissWarning() {
+    document.getElementById('warning-bar').style.display = 'none';
+  }
+  /* DRY helper — every admin POST that can fail the customer email
+     ends up returning result.email_warning. Callers route through
+     here after the success path to surface the warning consistently. */
+  function bkShowEmailWarning(result, actionLabel) {
+    if (result && result.email_warning) {
+      showWarning(actionLabel + ' succeeded, but the customer email did not send. Reach out to the customer directly. (Error: ' + result.email_warning + ')');
+    }
   }
 
   /* Single source of truth for the payment-status badge.
@@ -5996,8 +6049,10 @@
             body: JSON.stringify({ session_id: result.session_id }),
           });
         }
-        const warn = result.email_warning ? ' (email failed: ' + result.email_warning + ')' : '';
-        showError('✅ Booking saved for ' + booking.full_name + ' on ' + booking.date + ' — ' + fmtMoney(grandTotal) + warn);
+        showError('✅ Booking saved for ' + booking.full_name + ' on ' + booking.date + ' — ' + fmtMoney(grandTotal));
+        // G15 — surface email_warning separately as a persistent warning toast
+        // instead of concatenating into the success message (cleaner separation).
+        bkShowEmailWarning(result, 'Add Booking');
         closeAddBookingBtn();
         loadData();
       } else {
@@ -6194,6 +6249,8 @@
     const result = await api('/api/admin?action=charge-remaining', { method: 'POST', body: JSON.stringify({ session_id }) });
     if (result && result.ok) {
       showError('✅ Payment successful!');
+      // G15 — surface email_warning if the customer confirmation email failed.
+      bkShowEmailWarning(result, 'Charge Card');
       loadData();
     } else {
       showError(result?.error || 'Charge failed.');

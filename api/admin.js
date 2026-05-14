@@ -28,7 +28,7 @@ const {
   findBookingsForLead,
   findBookingDatesBySessionIds,
 } = require('../lib/storage');
-const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, formatMoneyDollars } = require('../lib/send-emails');
+const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendAdminActionEmailFailureAlert, formatMoneyDollars } = require('../lib/send-emails');
 
 /* The previous inline supabasePatch helper has been removed — booking edits
    now route through lib/storage.js patchBooking so they use the same
@@ -298,6 +298,19 @@ async function handleChargeRemaining(req, res) {
           session_id, '|', err.message);
       }
 
+      /* G15 defensive alert — if the customer email failed, fire a business
+         alert so the admin sees a paper-trail email even if they miss the
+         UI warning toast. Best-effort: a failure here must NOT throw, must
+         NOT remove email_warning from the response, must NOT change status. */
+      if (email_warning) {
+        try {
+          await sendAdminActionEmailFailureAlert('charge-remaining', booking, booking.customer_email, email_warning);
+        } catch (alertErr) {
+          console.error('[charge-remaining] defensive alert send FAILED (response still 200):',
+            session_id, '|', alertErr.message);
+        }
+      }
+
       return res.status(200).json({
         ok: true,
         message: 'Payment successful',
@@ -448,6 +461,17 @@ async function handleCancelBooking(req, res) {
       console.error('Cancellation email failed (booking still cancelled):', err.message);
       email_warning = err.message;
     }
+
+    /* G15 defensive alert — see handleChargeRemaining for the pattern. */
+    if (email_warning) {
+      try {
+        await sendAdminActionEmailFailureAlert('cancel-booking', updated, updated.customer_email, email_warning);
+      } catch (alertErr) {
+        console.error('[cancel-booking] defensive alert send FAILED (cancel still applied):',
+          session_id, '|', alertErr.message);
+      }
+    }
+
     return res.status(200).json({ ok: true, booking: updated, ...(email_warning ? { email_warning } : {}) });
   } catch (err) {
     console.error('Cancel booking error:', err.message);
@@ -517,6 +541,16 @@ async function handleRefundBooking(req, res) {
     } catch (err) {
       console.error('Refund email failed (refund still processed):', err.message);
       email_warning = err.message;
+    }
+
+    /* G15 defensive alert — see handleChargeRemaining for the pattern. */
+    if (email_warning) {
+      try {
+        await sendAdminActionEmailFailureAlert('refund-booking', updated || booking, (updated || booking).customer_email, email_warning);
+      } catch (alertErr) {
+        console.error('[refund-booking] defensive alert send FAILED (refund still processed):',
+          session_id, '|', alertErr.message);
+      }
     }
 
     return res.status(200).json({
@@ -626,6 +660,16 @@ async function handleCaptureDamageCharge(req, res) {
     } catch (err) {
       console.error('Damage charge email failed (charge still processed):', err.message);
       email_warning = err.message;
+    }
+
+    /* G15 defensive alert — see handleChargeRemaining for the pattern. */
+    if (email_warning) {
+      try {
+        await sendAdminActionEmailFailureAlert('capture-damage-charge', updated || booking, (updated || booking).customer_email, email_warning);
+      } catch (alertErr) {
+        console.error('[capture-damage-charge] defensive alert send FAILED (capture still applied):',
+          session_id, '|', alertErr.message);
+      }
     }
 
     return res.status(200).json({
@@ -740,6 +784,17 @@ async function handleAddBooking(req, res) {
       } catch (emailErr) {
         console.error('[add-booking] confirmation email failed:', emailErr.message);
         // Don't fail the request — booking is saved
+
+        /* G15 defensive alert — see handleChargeRemaining for the pattern.
+           Build the booking shape from the request body + the new session_id
+           since we don't load the persisted row back here. */
+        try {
+          await sendAdminActionEmailFailureAlert('add-booking', { ...booking, session_id: result.session_id }, booking.customer_email, emailErr.message);
+        } catch (alertErr) {
+          console.error('[add-booking] defensive alert send FAILED (booking still saved):',
+            result.session_id, '|', alertErr.message);
+        }
+
         return res.status(200).json({
           ok: true,
           session_id:  result.session_id,
