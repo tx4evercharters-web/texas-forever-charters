@@ -3,7 +3,7 @@ const {
   countWaiversByIpInLastHour,
   findBookingBySessionId,
 } = require('../lib/storage');
-const { sendWaiverConfirmationEmail } = require('../lib/send-emails');
+const { sendWaiverConfirmationEmail, sendAdminActionEmailFailureAlert } = require('../lib/send-emails');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
@@ -152,9 +152,30 @@ async function handlePost(req, res) {
         const emailResult = await sendWaiverConfirmationEmail(waiver);
         console.log('[waiver/post] confirmation email sent OK. resend_id:', emailResult && emailResult.id);
       } catch (err) {
-        console.error('[waiver/post] confirmation email FAILED for', waiver.signer_email, '—', err.message);
+        console.error('[waiver/post] confirmation email FAILED for', waiver.signer_email, '/', err.message);
         if (err.stack) console.error(err.stack);
-        // Swallow — waiver row is saved; admin can resend manually if needed
+        /* G17: signature row is durable above; fire the G15 defensive
+           alert so the business inbox has a paper trail when the
+           customer-side email fails. Adapter shapes the waiver row into
+           the booking shape that buildAdminActionFailureAlertHtml
+           expects. session_id falls back to a synthetic 'waiver_<id>'
+           tag for legacy waivers signed without a linked booking. The
+           alert send is itself wrapped so a Resend outage on the alert
+           path cannot break the customer-facing 200 OK. */
+        const synthBooking = {
+          full_name:      ((waiver.signer_first_name || '') + ' ' + (waiver.signer_last_name || '')).trim() || null,
+          customer_email: waiver.signer_email,
+          phone:          waiver.signer_phone,
+          charter_name:   waiver.organizer_name,
+          date:           waiver.charter_date,
+          vessel:         waiver.vessel,
+          session_id:     waiver.session_id || ('waiver_' + waiver.id),
+        };
+        try {
+          await sendAdminActionEmailFailureAlert('waiver-signed', synthBooking, waiver.signer_email, err.message);
+        } catch (alertErr) {
+          console.error('[waiver/post] defensive alert ALSO failed for', waiver.signer_email, '/', alertErr.message);
+        }
       }
     } else {
       console.log('[waiver/post] no signer_email on saved waiver — skipping confirmation email. waiver:', JSON.stringify({ id: waiver && waiver.id, signer_email: waiver && waiver.signer_email }));

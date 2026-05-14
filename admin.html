@@ -2684,6 +2684,9 @@
         <textarea class="edit-input" id="ab-internal-notes" rows="2" style="resize:vertical;width:100%;" placeholder="Admin-only notes — never shown to customer"></textarea>
       </div>
 
+      <!-- Terms Acknowledged (edit mode only, populated by openEditModal) -->
+      <div id="ab-terms-section"></div>
+
       <!-- Waivers (edit mode only — populated by openEditModal) -->
       <div id="ab-waivers-section"></div>
 
@@ -3551,6 +3554,23 @@
       showError(result?.error || 'Failed to send waiver link.');
       btn.textContent = original; btn.disabled = false;
     }
+  }
+
+  /* G17: read-only compliance trail line item showing when the customer
+     acknowledged the wizard checkout terms. Sourced from the bookings
+     terms_agreed_at column (Stripe webhook writes from booking.html
+     metadata). Null on admin-added bookings (no wizard step) and on
+     legacy bookings predating the column. */
+  function renderTermsAckSection(b) {
+    if (!b) return '';
+    const value = b.terms_agreed_at
+      ? esc(new Date(b.terms_agreed_at).toLocaleString('en-US'))
+      : '<span style="color:var(--gray-400);">Not on file</span>';
+    return `
+      <div style="margin-top:18px;padding:10px 16px;background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;font-size:13px;color:var(--gray-700);">
+        <strong style="color:var(--navy);">Terms Acknowledged:</strong> ${value}
+      </div>
+    `;
   }
 
   function renderWaiverEditSection(b) {
@@ -5636,6 +5656,10 @@
   function openAddBooking(prefillDate) {
     // Reset edit-mode state and modal chrome
     abEditingSessionId = null;
+    /* G17: clear both edit-only sections so add-mode does not show
+       stale content from the previously-edited booking. */
+    const termsSlot = document.getElementById('ab-terms-section');
+    if (termsSlot) termsSlot.innerHTML = '';
     const waiversSlot = document.getElementById('ab-waivers-section');
     if (waiversSlot) waiversSlot.innerHTML = '';
     document.getElementById('ab-modal-title').textContent = '+ Add Booking';
@@ -6235,7 +6259,10 @@
     document.getElementById('ab-edit-method').value =
       (m && ['cash','venmo','zelle','check','external_platform'].includes(m)) ? m : 'stripe';
 
-    // Waivers section (edit mode only)
+    // G17: Terms Acknowledged + Waivers sections (edit mode only)
+    const termsSlot = document.getElementById('ab-terms-section');
+    if (termsSlot) termsSlot.innerHTML = renderTermsAckSection(b);
+
     const waiversSlot = document.getElementById('ab-waivers-section');
     if (waiversSlot) waiversSlot.innerHTML = renderWaiverEditSection(b);
 
