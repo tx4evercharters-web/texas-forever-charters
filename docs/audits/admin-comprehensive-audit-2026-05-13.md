@@ -782,7 +782,7 @@ Cross-cutting summary of every place a failure could happen with no notification
 
 ## 10. Gaps for the redesign
 
-Synthesized requirements list. **Total: 17 gaps.** Each gap has: **what** / **why** / **direction** / **severity** / **depends on** / **evidence**.
+Synthesized requirements list. **Total: 19 gaps** (G1-G17 identified at audit shipping; G18 + G19 added during May 13 night session). Each gap has: **what** / **why** / **direction** / **severity** / **depends on** / **evidence**.
 
 ### 10.1 Architectural
 
@@ -821,6 +821,15 @@ Synthesized requirements list. **Total: 17 gaps.** Each gap has: **what** / **wh
 - **Severity:** MEDIUM
 - **Depends on:** new table + helper + writer-side changes
 - **Evidence:** §1.7-1.10, §5.3, §9 rows 11 + 12
+
+#### G18 — Incomplete `original_session_id` webhook patch (✅ FIXED in commit `38f8a03`)
+
+- **What:** The `original_session_id` branch added in `f10c429` only patched `paid_in_full`, `remaining_balance`, and `payment_type`. It never wrote `amount_total`, `payment_intent_id`, `stripe_customer_id`, or `payment_method_id` — so the booking row was left half-updated. Bookings-tab pill rendered UNPAID (reads `amount_total`) while the Edit modal correctly showed Paid in Full (reads `paid_in_full` directly). Refund actions were also disabled because they gate on `payment_intent_id`.
+- **Why:** Different admin UI surfaces read different columns and reported contradictory states for the same row. Real customer-impact: admin can't see payment, can't refund through UI.
+- **Direction (shipped):** Read existing row first via `findBookingBySessionId`; retrieve PI for `payment_method_id` (mirror legacy path at stripe-webhook.js:436-441); write the four transaction-data fields ONLY when the existing column is empty (`0` for `amount_total`, `null` for the three ID fields). State flags (`paid_in_full`, `remaining_balance`, `payment_type`) still flip unconditionally. Conditional gating preserves deposit-flow data; interim until G7 (Phase 2) gives the balance payment its own column.
+- **Severity:** HIGH (regression from `f10c429`; live customer-impact)
+- **Depends on:** ✅ shipped — no further work in this gap. G7 (Phase 2 schema) will retire the conditional gating.
+- **Evidence:** Reproduced live on the $10 Add-Booking-with-stripe-link test row late May 13 night; diagnosed via code analysis (Stripe/Supabase credentials were sensitive and couldn't be pulled locally for live verification). Symptoms matched the predicted column state exactly.
 
 ### 10.2 Data model
 
@@ -942,6 +951,15 @@ Synthesized requirements list. **Total: 17 gaps.** Each gap has: **what** / **wh
 - **Depends on:** code change only
 - **Evidence:** §8
 
+#### G19 — booking-confirmation.html error page after admin-flow payment
+
+- **What:** After a customer pays via an admin-initiated Stripe Payment Link, the post-payment redirect lands them on `booking-confirmation.html` which renders a "something went wrong" error page. The underlying DB state is correct (verified — G18 fix wrote the row properly), but the customer sees a failure UI despite a successful charge.
+- **Why:** Customer trust signal at the worst moment. They just paid; the page should celebrate, not apologize. Recoverability requires admin to reach out manually to reassure them.
+- **Direction:** Suspected cause — `booking-confirmation.html` expects a `session_id` query parameter shape from the customer-wizard checkout flow (a `cs_*` Stripe session id that exists in `bookings` table). The admin-flow Payment Link redirect either omits the param, passes a session id that doesn't match the patched `original_session_id` row, or the page's lookup logic doesn't account for the admin-flow shape. Fix is two-sided: (a) ensure `handleSendPaymentLink` configures `after_completion.redirect.url` with the right session id template, and (b) update `booking-confirmation.html` to handle the admin-flow case (or fall back gracefully if no session_id param is present).
+- **Severity:** MEDIUM (customer-facing UI bug; cosmetic in DB-state terms but real in customer-experience terms)
+- **Depends on:** code change only (frontend page logic + likely the redirect URL string in `handleSendPaymentLink`)
+- **Evidence:** Reproduced May 13 night during G18 verification. DJ saw the page after successfully paying the $10 test link.
+
 ### 10.6 Refund / lifecycle
 
 #### G13 — Hard delete of bookings
@@ -966,7 +984,7 @@ Synthesized requirements list. **Total: 17 gaps.** Each gap has: **what** / **wh
 
 For the next session, the dependency graph suggests this order:
 
-1. **Phase 1 (code-only, no migrations):** G3 (charge-card confirmation email), G11 (partial-refund no auto-cancel), G8 (email-failure visibility), G10 (idempotency check), G12 (kebab clip), **G15 (surface `email_warning`)**, **G16 (blackout-conflict alert)**, **G17 (waiver-email alert + `terms_agreed` admin UI)**.
+1. **Phase 1 (code-only, no migrations):** ~~G11 (partial-refund no auto-cancel)~~ ✅ shipped `e754b8b` 2026-05-13 night, ~~G18 (incomplete original_session_id patch; regression hotfix)~~ ✅ shipped `38f8a03` 2026-05-13 night, **G19 (booking-confirmation error page)** ← next priority, G12 (kebab clip), G3 (charge-card confirmation email), G8 (email-failure visibility), G10 (idempotency check), G15 (surface `email_warning`), G16 (blackout-conflict alert), G17 (waiver-email alert + `terms_agreed` admin UI).
 2. **Phase 2 (schema migration):** Add columns for G1, G7, G13 in one migration. Then ship the code that writes/reads them.
 3. **Phase 3 (refactor):** G2 (single payment-state machine) and G4 (booking_events audit table). These are bigger refactors that benefit from Phase 1/2 being landed first.
 4. **Phase 4 (cleanup):** G5 (payment_type decision), G6 (terms_agreed decision — note: G17 surfaces `terms_agreed` in the admin UI; G6 then becomes a narrower "keep or drop the column" decision), G14 (link de-dup — requires G1).

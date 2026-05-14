@@ -1,6 +1,6 @@
-# TEXAS FOREVER CHARTERS — SESSION HANDOFF (next session, updated end of May 13, 2026 daytime session (Level 4 admin audit shipped))
+# TEXAS FOREVER CHARTERS — SESSION HANDOFF (next session, updated end of May 13, 2026 night session (G11 + G18 shipped))
 
-> Updated end of May 13, 2026 daytime session (Level 4 admin audit shipped). Next Claude session reads this first
+> Updated end of May 13, 2026 night session (G11 + G18 shipped). Next Claude session reads this first
 > before doing anything else. If a fact is in here, do not re-ask DJ. If it's
 > NOT in here and not in `docs/content/marketing-angles.md`, ask before assuming.
 
@@ -8,9 +8,9 @@
 
 ## ⚠️ CRITICAL — READ FIRST
 
-- **Payment architecture redesign is still #1 priority** — but the foundational Level 4 audit is DONE (commit `5b0c5ea`, doc at `docs/audits/admin-comprehensive-audit-2026-05-13.md`).
-- **Audit identified 17 gaps organized into 5 phases. Next session starts Phase 1** (code-only fixes). See "PAYMENT ARCHITECTURE REDESIGN" section below for the gap-by-gap summary and updated 5-step implementation sequence.
-- **The $10 test charge cleanup + Jaida booking are RESOLVED** (DJ handled it).
+- **Payment architecture redesign is still #1 priority.** Foundational Level 4 audit DONE (commit `5b0c5ea`). **Phase 1 in progress** — 2 of the originally-planned Phase 1 gaps shipped tonight (G11 partial-refund auto-cancel, commit `e754b8b`; G18 incomplete `original_session_id` patch hotfix, commit `38f8a03`).
+- **Audit gap count is now 19** (G1-G17 at audit shipping + G18 regression hotfix + G19 new discovery during G18 verification). **Next priority: G19** (booking-confirmation.html shows error page after admin-flow payment — customer-facing UI bug). After G19, G12 (kebab clip), then the rest of Phase 1.
+- **The $10 test charge cleanup + Jaida booking are RESOLVED** (DJ handled it daytime). A NEW $10 test booking from G18 verification is still in the DB in fully-correct state (no broken-row evidence remaining; safe to delete or leave).
 - **Logan Terrel + Senad customer comms** — pull current status from "OPEN THREADS" section, don't restate here.
 
 ---
@@ -113,10 +113,30 @@
 
 ---
 
+## TODAY'S WORK (May 13, 2026 night)
+
+### Commits shipped (2 commits)
+- `e754b8b` — **G11 fix: partial refund no longer auto-cancels booking.** Hunk in `handleRefundBooking` (`api/admin.js`). Compute `isFullRefund` BEFORE the `patchBooking` call; gate `status: 'cancelled'` + `cancelled_at` on `isFullRefund`. Mirrors the webhook's `charge.refunded` handler pattern at `stripe-webhook.js:129`. Live smoke-tested with $1 partial refund against the test booking: booking stayed active, customer email fired with "Partial Refund Processed" subject, refund_amount column displayed correctly, slot stayed held in availability. Full refund of the remainder still flipped status to cancelled as expected.
+- `38f8a03` — **G18 hotfix: complete `original_session_id` webhook patch.** Discovered as a regression from last night's `f10c429` commit. The original_session_id branch only patched 3 of the 7 fields a paid booking needs — leaving `amount_total`, `payment_intent_id`, `stripe_customer_id`, and `payment_method_id` stale. Bookings-tab pill rendered UNPAID (reads `amount_total`) while Edit modal correctly showed Paid in Full (reads `paid_in_full`) — same row, contradictory states. Refund actions also disabled because gated on `payment_intent_id`. Fix: pre-patch read via `findBookingBySessionId`; PI retrieve mirroring legacy path; write the 4 transaction-data fields only when current column is empty (`0` for amount_total, null for IDs). State flags still flip unconditionally. Conditional gating preserves deposit-flow data; interim until G7 (Phase 2 schema) lands. Verified live on a fresh test booking — pill flipped to PAID IN FULL, refund options active, partial refund completed successfully.
+
+### Two new gaps surfaced (G18, G19)
+- **G18** added to audit doc §10.1 Architectural — incomplete original_session_id patch (regression from `f10c429`). Severity HIGH. Status ✅ FIXED in `38f8a03`. Cross-referenced in §10.7.
+- **G19** added to audit doc §10.5 UI — `booking-confirmation.html` shows "something went wrong" error page after admin-flow Stripe Payment Link redirect. Severity MEDIUM (cosmetic — DB state correct, customer sees failure UI despite successful charge). Suspected cause: page expects `cs_*` session id from customer-wizard flow, but the admin Payment Link redirect either omits or passes a different shape. Phase 1, next priority.
+
+### Diagnostic methodology
+- Symptoms surfaced when DJ was smoke-testing G11 — the same test booking exposed the G18 regression. Caught the bug before it reached a real customer.
+- Phase 2-style live-DB/Stripe verification was attempted via `vercel env pull`, but Stripe + Supabase secrets are flagged Sensitive in Vercel and come back as empty placeholders. Diagnosis locked via code-level analysis of the f10c429 branch's patch fields vs. the legacy path's bookingRow construction. Symptoms (UNPAID pill + Paid-in-Full modal + disabled refunds) had only one possible column-state explanation.
+
+### Gmail thread-collapse rabbit hole (~30 min, no fix needed)
+- Initially appeared the admin-link delivery email was arriving with subject but empty body. Methodical diagnostic ("Show original" in Gmail, sending fresh test to a different address) proved the raw email source had full HTML content — Gmail was thread-collapsing the body display because multiple emails with similar subjects had clustered. Not a code bug, a Gmail UX quirk.
+- **Future smoke tests:** use different email addresses or unique subject suffixes (timestamps work) to avoid thread-collapse confusion.
+
+---
+
 ## TODAY'S WORK (May 13, 2026 daytime)
 
 ### Commit shipped (1 commit)
-- `5b0c5ea` — **Comprehensive admin audit (read-only, docs only).** Single new file at `docs/audits/admin-comprehensive-audit-2026-05-13.md` (1,074 lines). No code touched. Maps every admin action, webhook event, cron pass, booking creation path, payment state transition, schema column, email send, and silent-failure surface. Identifies 17 gaps, organizes them into 5 phases for the redesign, and bundles all 15 unresolved questions as Appendix B. DJ answered all 15 inline in the same session; answers preserved verbatim as Appendix E with the 3 new gaps that surfaced (G15, G16, G17) cross-referenced.
+- `5b0c5ea` — **Comprehensive admin audit (read-only, docs only).** Single new file at `docs/audits/admin-comprehensive-audit-2026-05-13.md` (1,074 lines at audit shipping; grew to ~1,100 lines after G18 + G19 were added during the night session). No code touched. Maps every admin action, webhook event, cron pass, booking creation path, payment state transition, schema column, email send, and silent-failure surface. Identifies 17 gaps at audit time (now 19 with G18/G19 added during the night session), organizes them into 5 phases for the redesign, and bundles all 15 unresolved questions as Appendix B. DJ answered all 15 inline in the same session; answers preserved verbatim as Appendix E with the 3 new gaps that surfaced (G15, G16, G17) cross-referenced.
 
 ### Post-deploy verification of May 12-13 evening work
 - DJ confirmed all clear: homepage Crew section (PBO Certified Captain credential), fleet card onboard amenities (Carver floating docks + sun chill float, Bentley lily pad + premium sound system), schema `reviewCount: 63`, admin kebab dropdown layering on Bookings tab.
@@ -129,6 +149,17 @@
 - $10 Stripe test charge refunded.
 - Test booking deleted from admin.
 - Jaida Matthews's May 20 charter confirmed showing PAID IN FULL in admin (verified post-cleanup).
+
+---
+
+## WHAT WORKED THIS SESSION (May 13 night)
+
+Pattern reinforcement for next session. Keep doing these.
+
+- **Conditional-overwrite semantics on G18 was the right call — DJ caught the deposit-flow regression concern in real time before shipping.** Initial proposal would have overwritten `amount_total` / `payment_intent_id` / `stripe_customer_id` / `payment_method_id` unconditionally. DJ surfaced the deposit-then-balance-payment data-loss case mid-review. Conditional gating (`if (!existing.column) patchObj.column = newValue`) landed cleanly; the deposit-flow regression that would have shipped silently was prevented. Pre-patch read via `findBookingBySessionId` is the load-bearing primitive there.
+- **Gmail thread-collapse diagnosis: pursued the empty-email hypothesis methodically.** Sent fresh test to a different address, opened "Show original" to read raw email source, confirmed body content was intact at the wire — not a code bug, a Gmail UX quirk. Resisted shipping a fix to a non-bug.
+- **"Show original" / raw-email-source read proved the email pipeline was fine.** Saved unknown hours of false-positive debugging on the inline payment-link delivery template that was actually never broken.
+- **Letting the broken-state test booking stay in the DB as evidence was the right call.** Instead of "fixing" the row manually to make the symptom go away, leaving it intact let me confirm G18 diagnosis (column state matched code-level prediction exactly) without contaminating data. Once the code fix shipped and was verified on a fresh test booking, the broken row could safely be deleted.
 
 ---
 
@@ -250,9 +281,9 @@ Shipped May 13, 2026 daytime session. Commit `5b0c5ea`, doc at `docs/audits/admi
 
 The audit maps every admin action (19 handlers), every webhook event (7 branches), every cron pass (5 sequential passes in `api/cron-reminders.js`), every booking creation path (5 distinct paths with session_id shapes + idempotency analysis), every payment state transition with side-effect coverage, every column on the `bookings` table with writer/reader cross-tab, every Resend send across the codebase (23-row table), the Customers-tab kebab clip diagnosis, and a 20-row silent-failure inventory. DJ answered all 15 unresolved questions inline; answers preserved as Appendix E.
 
-**Output: 17 gaps identified.** Summary table below. Full content lives in the audit doc; don't restate.
+**Output: 17 gaps identified at audit shipping (G1-G17); 2 more (G18 + G19) added during May 13 night session for 19 total.** Summary table below. Full content lives in the audit doc; don't restate.
 
-| Gap | Description | Severity | Phase |
+| Gap | Description | Severity | Phase / Status |
 |---|---|---|---|
 | **G1** | No persisted payment-link state (URL, ID, amount, created_at, status) | HIGH | Phase 2 (schema) |
 | **G2** | Single-funnel payment-state machine doesn't exist; transitions scattered | HIGH | Phase 4 (refactor) |
@@ -264,20 +295,25 @@ The audit maps every admin action (19 handlers), every webhook event (7 branches
 | **G8** | `email_warning` returned in JSON but admin UI never surfaces it | MEDIUM | Phase 1 |
 | **G9** | Cron reminders read `b.payment_link` which is never written; emails ship no Pay button | HIGH | Phase 3 (depends on G1) |
 | **G10** | Confirmation email not idempotent against Stripe webhook retry | LOW | Phase 1 |
-| **G11** | `handleRefundBooking` auto-cancels booking on partial refunds | MEDIUM | Phase 1 (start here) |
-| **G12** | Customers-tab kebab dropdown clip (CSS scope asymmetry) | LOW | Phase 1 |
+| **G11** | `handleRefundBooking` auto-cancels booking on partial refunds | MEDIUM | ✅ shipped `e754b8b` |
+| **G12** | Customers-tab kebab dropdown clip (CSS scope asymmetry) | LOW | Phase 1 (next-next priority) |
 | **G13** | `handleDeleteBooking` hard-deletes; no soft-delete or audit | LOW-MEDIUM | Phase 2 (schema: `deleted_at`) |
 | **G14** | Send Payment Link has no de-dup; clicking twice creates two active links | MEDIUM | Phase 5 (depends on G1) |
 | **G15** | `email_warning` never surfaced anywhere in admin UI (DJ confirmed) | MEDIUM | Phase 1 |
 | **G16** | `handleAddBlackout` doesn't alert on conflict with existing bookings | MEDIUM | Phase 1 |
 | **G17** | Waiver-signed email best-effort + `terms_agreed` not in admin UI | MEDIUM | Phase 1 |
+| **G18** | Incomplete `original_session_id` webhook patch (regression from `f10c429`) | HIGH | ✅ shipped `38f8a03` |
+| **G19** | `booking-confirmation.html` shows error page after admin-flow Stripe Payment Link redirect | MEDIUM | Phase 1 (next priority) |
 
 ### Updated implementation sequence (replaces prior 4-step plan)
 
 Per the audit's §10.7 and DJ's approval, the sequence is:
 
-**Phase 1 (code-only, no migrations):** Ship G3, G8, G10, G11, G12, G15, G16, G17 as small focused commits with strict triple-gate cadence. Each its own session block or sub-session.
-- **Order matters:** start with **G11** (live customer-impact bug: partial refund auto-cancels) and **G12** (smallest scope, builds CSS confidence on the wrap-ID asymmetry finding from §8.2 of the audit). Both are one-line / one-selector changes and serve as warmups for the heavier Phase 1 work.
+**Phase 1 (code-only, no migrations):** Originally G3, G8, G10, G11, G12, G15, G16, G17 — now with G18 (hotfix) ✅ shipped and G19 (regression discovery) added.
+- ✅ **G11 shipped** in `e754b8b` (partial-refund no auto-cancel) — verified live with $1 partial refund test.
+- ✅ **G18 shipped** in `38f8a03` (incomplete original_session_id patch hotfix) — verified live; fresh test booking flips to PAID IN FULL correctly.
+- **Next priority: G19** (booking-confirmation.html error page after admin-flow payment). Customer-facing UI bug. See audit doc §10.5 for full description.
+- **After G19: G12** (kebab clip — smallest scope, CSS confidence-builder on the wrap-ID asymmetry from audit §8.2).
 - Then proceed through G3, G8, G10, G15, G16, G17 in whatever order DJ's customer queue prioritizes.
 
 **Phase 2 (schema migration):** Design schema for G1, G7, G13 columns. Write migration SQL. Single commit, SQL-only. This is the only Phase that touches Supabase schema directly; everything downstream depends on it.
@@ -343,9 +379,12 @@ This is a real customer-impacting bug that's been silent. Goes into the redesign
 
 
 ### Queued tonight, picks up next session
-1. **Payment Architecture Redesign — start Phase 1.** Foundational Level 4 audit is DONE (commit `5b0c5ea`, doc at `docs/audits/admin-comprehensive-audit-2026-05-13.md`). Next session opens Phase 1 per the audit's §10.7 commit sequence: ship G11 first (live customer-impact bug — partial refund auto-cancels), then G12 (smallest scope, CSS confidence builder on the wrap-ID asymmetry), then the rest of Phase 1 (G3, G8, G10, G15, G16, G17) as small focused commits, each with strict triple-gate cadence. **Do not bundle.** Each its own session block or sub-session. See "PAYMENT ARCHITECTURE REDESIGN" section above for the full 5-step sequence (Phases 1-5) and the 17-gap summary table. Folds in bug #3 (Charge Card silent bypass = G3), cron reminder URL gap (G9, Phase 3), drift detection, Customers tab dropdown clipping (G12), and all unaudited admin actions.
+1. **Payment Architecture Redesign — continue Phase 1.** ✅ G11 + G18 shipped tonight (`e754b8b` + `38f8a03`), both verified live. **Next priority: G19** (booking-confirmation.html shows error page after admin-flow Stripe Payment Link redirect — customer-facing UI bug; see audit doc §10.5 for full description and suspected cause). **After G19: G12** (kebab clip — CSS scope asymmetry, see audit §8.2). Then the rest of Phase 1: G3, G8, G10, G15, G16, G17. Each its own session block, strict triple-gate cadence, **do not bundle**. See "PAYMENT ARCHITECTURE REDESIGN" section above for the full 19-gap summary table and 5-phase implementation sequence.
 
 2. **Lead delete feature design** — starter doc confirmed at `docs/specs/lead-delete-feature.md` (verified May 13 daytime; note the source-handoff path `docs/queue/lead-delete-feature.md` was incorrect, actual location is `docs/specs/`). Six open product questions for DJ to answer before any code. Use cases: spam, duplicates, test entries, PII removal. Estimated effort 30 min to full afternoon depending on scope.
+
+### Housekeeping (low priority, tiny commits)
+2a. **Add `node_modules/` to `.gitignore`.** Currently `.gitignore` only lists `.vercel` and large video files. `node_modules/` was created during the May 13 night G18 credential-diagnostic when `npm install` was run locally; it's untracked but unignored, meaning a future accidental `git add .` could pull in the entire dependency tree. Single-line edit. Do as its own commit (`chore: gitignore node_modules`).
 
 ### Existing queue (rolled forward)
 3. **Email delivery tracking** (Resend webhook integration + Email Timeline UI in admin + daily digest bounce summary). Spec already written from prior session. New `email_events` table, captures `resend_email_id` on every send, webhook at `/api/resend-webhook` validates `RESEND_WEBHOOK_SECRET`. Critical defensive feature given prior silent-failure webhook double-charge incident. **Multi-step build, needs fresh-head morning. NOTE: this may be partially absorbed by the Payment Architecture Redesign audit log work — re-scope after the audit.**
