@@ -222,6 +222,15 @@ async function handleChargeRemaining(req, res) {
   }
 
   try {
+    /* G21 idempotency — defense-in-depth against rapid admin double-clicks
+       that would otherwise both reach paymentIntents.create before the
+       first call's markBookingPaid lands (the existing paid_in_full
+       precondition at line 215 is the primary guard, this is the
+       narrow-window backup). Key = session_id + cents amount; the cents
+       suffix lets a legitimate retry after an admin edits the remaining
+       balance succeed with a fresh key, while identical amounts within
+       Stripe's 24h dedupe window resolve to the same PI.
+       Ref: docs/queue/g21-admin-paymentintent-idempotency.md */
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(remaining * 100),
       currency: 'usd',
@@ -231,7 +240,7 @@ async function handleChargeRemaining(req, res) {
       confirm: true,
       description: `Remaining balance — ${booking.charter_name || booking.experience} on ${booking.date}`,
       receipt_email: booking.customer_email || undefined,
-    });
+    }, { idempotencyKey: 'admin_charge_' + session_id + '_' + Math.round(remaining * 100) });
 
     if (paymentIntent.status === 'succeeded') {
       await markBookingPaid(session_id);
@@ -580,6 +589,14 @@ async function handleCaptureDamageCharge(req, res) {
       if (!booking.payment_method_id || !booking.stripe_customer_id) {
         return res.status(400).json({ error: `Captured the $250 hold but no saved payment method for the overflow charge of ${formatMoneyDollars(overflowCents / 100)}. Charge manually.` });
       }
+      /* G21 idempotency — same defense-in-depth pattern as
+         handleChargeRemaining. The damage_hold_status='captured'
+         precondition at line 567 is the primary guard; this key
+         protects the narrow race where two simultaneous clicks both
+         pass the precondition before either patchBooking lands.
+         Stripe's idempotency cache (24h) returns the same overflow PI
+         on a retry with the same key.
+         Ref: docs/queue/g21-admin-paymentintent-idempotency.md */
       const overflowPI = await stripe.paymentIntents.create({
         amount:         overflowCents,
         currency:       'usd',
@@ -592,7 +609,7 @@ async function handleCaptureDamageCharge(req, res) {
           purpose:            'damage_overflow',
           booking_session_id: session_id,
         },
-      });
+      }, { idempotencyKey: 'damage_overflow_' + session_id + '_' + overflowCents });
       overflowChargeId = overflowPI.id;
     }
 
