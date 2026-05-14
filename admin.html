@@ -3147,8 +3147,17 @@
     return '<span class="badge" style="background:var(--gray-100);color:var(--gray-600);border:1px solid var(--gray-200)" title="$250 damage deposit hold active">🔒 Hold Active</span>';
   }
 
-  function bkActionMenu(b) {
+  function bkActionMenu(b, scope) {
     const id = esc(b.session_id);
+    /* G12 fix — the same booking can be rendered in both the Bookings
+       tab and the Customers tab's expanded detail (renderCustDetail).
+       Without a per-tab scope, both renders emit id="bk-menu-<sid>" and
+       getElementById always returns the first match (the Bookings tab
+       one, in a display:none ancestor when user is on Customers tab).
+       The scope param ('book' or 'cust') prefixes the emitted id so
+       each render has a unique DOM id. Item-action onclicks below still
+       use unscoped `id` because they pass the session_id to handlers. */
+    const scopedId = scope + '-' + id;
     const s = bkStatus(b);
     const hasIntent = !!b.payment_intent_id;
     const refundable = bkRefundable(b);
@@ -3208,8 +3217,8 @@
 
     return `
       <div class="bk-menu-wrap">
-        <button class="btn-sm btn-gray bk-menu-trigger" onclick="bkToggleMenu('${id}', event)">⋯</button>
-        <div class="bk-menu" id="bk-menu-${id}">${items.join('')}</div>
+        <button class="btn-sm btn-gray bk-menu-trigger" onclick="bkToggleMenu('${scopedId}', event)">⋯</button>
+        <div class="bk-menu" id="bk-menu-${scopedId}">${items.join('')}</div>
       </div>
     `;
   }
@@ -4845,7 +4854,7 @@
                  applicable, so admins always see the full action set. -->
             <div class="action-btns">
               <button class="btn-sm btn-navy" onclick="openEditModal('${esc(b.session_id)}')">✏ Edit</button>
-              ${bkActionMenu(b)}
+              ${bkActionMenu(b, 'book')}
             </div>
           </td>
         </tr>
@@ -6544,7 +6553,7 @@
             <td>${esc(b.experience || '—')}</td>
             <td>${fmtMoney(total)}</td>
             <td style="white-space:nowrap">${payment}${lifecycle ? ' ' + lifecycle : ''}${damage ? ' ' + damage : ''}${chargeback ? ' ' + chargeback : ''}</td>
-            <td style="text-align:right">${bkActionMenu(b)}</td>
+            <td style="text-align:right">${bkActionMenu(b, 'cust')}</td>
           </tr>`;
         }).join('')}</tbody>
       </table>
