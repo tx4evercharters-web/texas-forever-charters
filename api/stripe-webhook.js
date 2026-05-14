@@ -341,6 +341,95 @@ module.exports = async function handler(req, res) {
   const stripeCustomerId = session.customer || null;
   const paymentIntentId = session.payment_intent || null;
 
+  /* ── Remaining-balance branch ──────────────────────────────────────────
+     When a customer pays via the admin "Send Payment Link" action, the link
+     carries meta.original_session_id pointing at the existing admin-created
+     booking row. We patch THAT row to paid_in_full instead of inserting a
+     new orphan row. Damage hold + lead conversion are skipped because both
+     were already handled at the original deposit. The confirmation email
+     still fires so the customer knows their balance landed. */
+  if (meta.original_session_id) {
+    let updated;
+    try {
+      updated = await patchBooking(meta.original_session_id, {
+        paid_in_full:      true,
+        remaining_balance: 0,
+        payment_type:      'full',
+      });
+    } catch (err) {
+      /* Transient Supabase error — return 5xx so Stripe retries the webhook
+         per its standard schedule. Do NOT fall through (would create an
+         orphan row that complicates a future retry). */
+      console.error('[stripe-webhook] patch original booking',
+        meta.original_session_id, 'FAILED:', err.message);
+      return res.status(500).json({ error: 'patch_failed', detail: err.message });
+    }
+
+    if (updated) {
+      console.log('[stripe-webhook] remaining balance applied to original booking',
+        meta.original_session_id,
+        '| amount_paid_cents:', session.amount_total,
+        '| new_payment_intent:', paymentIntentId,
+        '| stripe_session:', session.id);
+
+      /* Build the confirmation email from the (now-patched) original row
+         so the customer who originally booked is the one notified, not
+         whoever happened to type an email at Stripe's hosted page.
+         payment_type: 'full' makes the email render "Paid in Full". */
+      const emailData = {
+        customer_email:   updated.customer_email,
+        amount_total:     session.amount_total,
+        session_id:       meta.original_session_id,
+        charter_name:     updated.charter_name,
+        vessel:           updated.vessel,
+        experience:       updated.experience,
+        date:             updated.date,
+        time_slot:        updated.time_slot,
+        duration:         updated.duration,
+        full_name:        updated.full_name,
+        party_size:       updated.party_size,
+        phone:            updated.phone,
+        payment_type:     'full',
+        grand_total:      updated.grand_total,
+        deposit_amount:   updated.deposit_amount,
+        add_ons:          updated.add_ons,
+        special_requests: updated.special_requests,
+        promo_applied:    updated.promo_applied,
+        newsletter:       updated.newsletter,
+      };
+
+      let customerEmailOk = false;
+      try {
+        const result = await sendConfirmationEmails(emailData);
+        customerEmailOk = !result.customerError;
+        console.log('[stripe-webhook] remaining-balance email dispatch',
+          meta.original_session_id,
+          '| customer:', result.customerError ? 'FAILED (' + result.customerError.message + ')' : 'ok',
+          '| business:', result.businessError ? 'FAILED (' + result.businessError.message + ')' : 'ok');
+      } catch (err) {
+        console.error('[stripe-webhook] both emails failed for remaining-balance',
+          meta.original_session_id, '|', err.message);
+      }
+
+      try {
+        await patchBooking(meta.original_session_id, { confirmation_email_sent: customerEmailOk });
+      } catch (err) {
+        console.error('[stripe-webhook] failed to set confirmation_email_sent for',
+          meta.original_session_id, '|', err.message);
+      }
+
+      return res.status(200).json({ received: true, applied_to: meta.original_session_id });
+    }
+
+    /* Original row not found (deleted, or stale link with bad id). Don't
+       return — fall through to the legacy insert-new-row flow so we still
+       persist SOMETHING and the customer still gets a confirmation email.
+       The defensive alert email will fire if metadata is genuinely missing
+       elsewhere in the flow. */
+    console.warn('[stripe-webhook] original_session_id', meta.original_session_id,
+      'not found in bookings — falling back to insert-new-row path');
+  }
+
   // Retrieve payment method from payment intent
   let paymentMethodId = null;
   if (paymentIntentId) {

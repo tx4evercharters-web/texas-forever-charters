@@ -258,6 +258,11 @@ async function handleSendPaymentLink(req, res) {
   const remaining = parseFloat(booking.remaining_balance || 0);
   if (remaining <= 0) return res.status(400).json({ error: 'No remaining balance' });
 
+  // Stripe rejects non-string metadata values; coerce + truncate to 500
+  // chars (490 for free-text special_requests). Mirrors api/create-checkout.js
+  // truncate() so the webhook sees identically-shaped values.
+  const s = (v, max = 500) => (v == null ? '' : String(v).slice(0, max));
+
   try {
     const paymentLink = await stripe.paymentLinks.create({
       line_items: [{
@@ -274,6 +279,42 @@ async function handleSendPaymentLink(req, res) {
       after_completion: {
         type: 'redirect',
         redirect: { url: 'https://www.texasforevercharters.com/booking-confirmation.html' },
+      },
+      // Top-level metadata is copied by Stripe onto every checkout session
+      // that this payment link generates. The webhook reads session.metadata
+      // to build the booking row and dispatch the confirmation email —
+      // without these keys it has nothing to work with.
+      // original_session_id back-links to the admin-created booking row so
+      // the webhook can patch THAT row to paid_in_full instead of inserting
+      // a new orphan row.
+      metadata: {
+        charter_name:        s(booking.charter_name),
+        vessel:              s(booking.vessel),
+        experience:          s(booking.experience),
+        date:                s(booking.date),
+        time_slot:           s(booking.time_slot),
+        duration:            s(booking.duration),
+        full_name:           s(booking.full_name),
+        party_size:          s(booking.party_size),
+        phone:               s(booking.phone),
+        payment_type:        'remaining_balance',
+        grand_total:         s(booking.grand_total),
+        deposit_amount:      s(booking.deposit_amount),
+        add_ons:             s(typeof booking.add_ons === 'string'
+                                ? booking.add_ons
+                                : JSON.stringify(booking.add_ons || {})),
+        special_requests:    s(booking.special_requests, 490),
+        promo_applied:       s(booking.promo_applied),
+        newsletter:          s(booking.newsletter),
+        terms_agreed:        s(booking.terms_agreed),
+        terms_agreed_at:     s(booking.terms_agreed_at),
+        admin_fee:           s(booking.admin_fee),
+        tax_amount:          s(booking.tax_amount),
+        processing_fee:      s(booking.processing_fee),
+        charter_subtotal:    s(booking.charter_subtotal),
+        promo_discount:      s(booking.promo_discount),
+        customer_email:      s(booking.customer_email),
+        original_session_id: s(booking.session_id),
       },
     });
 
