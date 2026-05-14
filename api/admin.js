@@ -235,7 +235,65 @@ async function handleChargeRemaining(req, res) {
 
     if (paymentIntent.status === 'succeeded') {
       await markBookingPaid(session_id);
-      return res.status(200).json({ ok: true, message: 'Payment successful' });
+
+      /* G3 fix — send the customer-facing confirmation email after a
+         successful off-session charge. Previously the card was charged
+         and the booking was marked paid_in_full but the customer
+         received NOTHING from us, eroding trust. The card has already
+         moved + DB has already been patched at this point, so an email
+         failure must NOT undo either: wrap in try/catch, capture as
+         email_warning in the 200 response. cron-reminders pass 2
+         picks up rows with confirmation_email_sent: false and retries
+         up to 5×. Uses paymentIntent.amount (the cents we just
+         charged) for amount_total to mirror the webhook's
+         original_session_id branch. payment_type: 'full' matches
+         markBookingPaid's write. */
+      const emailData = {
+        customer_email:   booking.customer_email,
+        amount_total:     paymentIntent.amount,
+        session_id:       booking.session_id,
+        charter_name:     booking.charter_name,
+        vessel:           booking.vessel,
+        experience:       booking.experience,
+        date:             booking.date,
+        time_slot:        booking.time_slot,
+        duration:         booking.duration,
+        full_name:        booking.full_name,
+        party_size:       booking.party_size,
+        phone:            booking.phone,
+        payment_type:     'full',
+        grand_total:      booking.grand_total,
+        deposit_amount:   booking.deposit_amount,
+        add_ons:          booking.add_ons,
+        special_requests: booking.special_requests,
+        promo_applied:    booking.promo_applied,
+        newsletter:       booking.newsletter,
+      };
+
+      let customerEmailOk = false;
+      let email_warning = null;
+      try {
+        const result = await sendConfirmationEmails(emailData);
+        customerEmailOk = !result.customerError;
+        if (result.customerError) email_warning = result.customerError.message;
+      } catch (err) {
+        console.error('[charge-remaining] confirmation email failed (charge succeeded):',
+          session_id, '|', err.message);
+        email_warning = err.message;
+      }
+
+      try {
+        await patchBooking(session_id, { confirmation_email_sent: customerEmailOk });
+      } catch (err) {
+        console.error('[charge-remaining] failed to set confirmation_email_sent for',
+          session_id, '|', err.message);
+      }
+
+      return res.status(200).json({
+        ok: true,
+        message: 'Payment successful',
+        ...(email_warning ? { email_warning } : {}),
+      });
     }
     return res.status(400).json({ error: 'Payment did not succeed', status: paymentIntent.status });
   } catch (err) {

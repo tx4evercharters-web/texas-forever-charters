@@ -369,6 +369,27 @@ module.exports = async function handler(req, res) {
     }
 
     if (existing) {
+      /* G10 idempotency — if a prior webhook delivery already sent the
+         confirmation email for this booking, this is a Stripe retry of
+         the same event. Skip everything + return 200 to break the retry
+         loop. Local to this branch because it has an explicit 500
+         return at the patch step below; the legacy checkout.session
+         .completed branch has the same theoretical exposure but at much
+         lower frequency (only saveBookingWithRetry permanent failure
+         triggers a 5xx there) — flagged out-of-scope for a follow-up.
+         The narrow residual race (first delivery succeeded at email but
+         failed to patch the flag) is accepted; a future retry would
+         also be skipped once the flag lands. */
+      if (existing.confirmation_email_sent === true) {
+        console.log('[stripe-webhook] remaining-balance webhook retry: email already sent for',
+          meta.original_session_id, '— skipping');
+        return res.status(200).json({
+          received: true,
+          applied_to: meta.original_session_id,
+          idempotent: 'email_already_sent',
+        });
+      }
+
       /* Retrieve payment method from the new payment intent so the patched
          row carries it forward — needed for future refunds and Charge Card
          actions against this booking. Mirrors the legacy path below at
