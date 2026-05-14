@@ -521,6 +521,14 @@ module.exports = async function handler(req, res) {
   let damageHoldError = null; // captured for the owner alert when the hold fails
   if (paymentMethodId && stripeCustomerId) {
     try {
+      /* G20 idempotency — pass an idempotencyKey scoped to the booking
+         session so a Stripe webhook retry (triggered by saveBookingWithRetry
+         permanent failure below at line ~611) returns the SAME PaymentIntent
+         from the first attempt instead of authorizing a second $250 hold
+         on the customer's card. Stripe dedupes against the key for 24h,
+         which covers the realistic retry window. session.id is unique per
+         wizard checkout and "one hold per session" is the correct semantic.
+         Ref: docs/queue/g20-damage-hold-idempotency.md */
       const damageHold = await stripe.paymentIntents.create({
         amount:         25000, // $250.00
         currency:       'usd',
@@ -534,7 +542,7 @@ module.exports = async function handler(req, res) {
           purpose:            'damage_hold',
           booking_session_id: session.id,
         },
-      });
+      }, { idempotencyKey: 'damage_hold_' + session.id });
       damageHoldIntentId = damageHold.id;
       // Stripe returns "requires_capture" once the hold is authorized successfully.
       // If we get something else (requires_action, processing), surface that status
