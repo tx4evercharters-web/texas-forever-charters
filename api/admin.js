@@ -424,17 +424,23 @@ async function handleRefundBooking(req, res) {
     }
 
     const totalRefundedNow = parseFloat((alreadyRefunded + amount).toFixed(2));
-    const updated = await patchBooking(session_id, {
-      refund_amount:  totalRefundedNow,
-      refunded_at:    new Date().toISOString(),
-      status:         'cancelled',
-      cancelled_at:   booking.cancelled_at || new Date().toISOString(),
-    });
 
     // Determine "full" vs "partial" by what's left unrefunded after this event.
-    // Treat cents-rounding error tolerantly (1¢ slack).
+    // Treat cents-rounding error tolerantly (1¢ slack). Computed BEFORE the
+    // patch so it can gate status/cancelled_at — partial refunds must NOT
+    // cancel the booking (mirrors api/stripe-webhook.js:129 isFull pattern).
     const remainingAfter = Math.max(0, amountPaid - totalRefundedNow);
     const isFullRefund = remainingAfter < 0.01;
+
+    const refundUpdates = {
+      refund_amount: totalRefundedNow,
+      refunded_at:   new Date().toISOString(),
+    };
+    if (isFullRefund) {
+      refundUpdates.status       = 'cancelled';
+      refundUpdates.cancelled_at = booking.cancelled_at || new Date().toISOString();
+    }
+    const updated = await patchBooking(session_id, refundUpdates);
 
     // Stripe refund succeeded + DB updated. Email failure must NOT undo either —
     // we already moved the customer's money, the email is best-effort.
