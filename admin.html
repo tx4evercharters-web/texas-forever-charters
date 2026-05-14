@@ -6296,8 +6296,25 @@
       : { date: input.date, vessel: input.vessel || 'both', time_slot: input.time_slot || 'all' };
     if (!payload.date) { showError('Select a date to block.'); return; }
     const result = await api('/api/admin?action=add-blackout', { method: 'POST', body: JSON.stringify(payload) });
-    if (Array.isArray(result)) { allBlackouts = result; renderCalendar(); }
-    else { showError('Failed to add blackout date.'); }
+
+    /* G16 new response shape: { blackouts, conflicts, conflict_summary,
+       [email_warning], [conflict_query_warning] }. The legacy bare-array
+       shape is tolerated for one release in case a stale function
+       instance is still serving (bkBlackoutDateSave loops addBlackout, so
+       a half-deployed backend would otherwise blow up on every iteration).
+       Remove the array branch in the next blackout-area commit. */
+    const blackouts = Array.isArray(result) ? result : (result && result.blackouts);
+    if (!Array.isArray(blackouts)) { showError('Failed to add blackout date.'); return; }
+    allBlackouts = blackouts; renderCalendar();
+    if (result && typeof result === 'object') {
+      if (result.conflicts > 0 && result.conflict_summary) {
+        showWarning('Blackout saved, but ' + result.conflict_summary + '. Check the business inbox for the full list with contact info.');
+      }
+      if (result.conflict_query_warning) {
+        showWarning('Blackout saved, but we couldn\'t check for conflicting bookings. Verify manually for ' + payload.date + '.');
+      }
+      bkShowEmailWarning(result, 'Blackout conflict alert');
+    }
   }
 
   // Legacy: clears every blackout on a given date regardless of vessel/slot scope.

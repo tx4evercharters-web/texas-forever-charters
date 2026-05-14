@@ -9,6 +9,7 @@ const {
   addBlackout,
   removeBlackout,
   removeBlackoutById,
+  findBookingConflictsForBlackout,
   searchCustomers,
   addManualBooking,
   updateBookingPayment,
@@ -28,7 +29,7 @@ const {
   findBookingsForLead,
   findBookingDatesBySessionIds,
 } = require('../lib/storage');
-const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendAdminActionEmailFailureAlert, formatMoneyDollars } = require('../lib/send-emails');
+const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendAdminActionEmailFailureAlert, sendBlackoutConflictAlert, formatMoneyDollars } = require('../lib/send-emails');
 
 /* The previous inline supabasePatch helper has been removed — booking edits
    now route through lib/storage.js patchBooking so they use the same
@@ -93,6 +94,15 @@ async function handleListBlackouts(req, res) {
   return res.status(200).json(await getBlackouts());
 }
 
+/* G16 toast-friendly one-liner summary of conflict matches. Truncates to
+   3 names with a "+N more" suffix; the email has the full list. */
+function buildConflictSummaryString(conflicts) {
+  const n = conflicts.length;
+  const head = conflicts.slice(0, 3).map(c => (c.full_name || 'unknown') + ' (' + (c.time_slot || '?') + ')');
+  const more = n > 3 ? ', +' + (n - 3) + ' more' : '';
+  return n + ' booking' + (n === 1 ? '' : 's') + ' affected: ' + head.join(', ') + more;
+}
+
 async function handleAddBlackout(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const { date, vessel, time_slot } = req.body || {};
@@ -103,8 +113,44 @@ async function handleAddBlackout(req, res) {
   if (!['yacht', 'pontoon', 'both'].includes(v)) {
     return res.status(400).json({ error: 'vessel must be yacht, pontoon, or both' });
   }
+  const ts = time_slot || 'all';
+
   try {
-    return res.status(200).json(await addBlackout({ date, vessel: v, time_slot: time_slot || 'all' }));
+    /* G16 conflict pre-scan. Failure here is non-fatal: the admin's
+       intent (block this date) is primary, so we surface a
+       conflict_query_warning in the response and proceed with the
+       insert. The frontend renders that warning as its own toast. */
+    let conflicts = [];
+    let conflict_query_warning = null;
+    try {
+      conflicts = await findBookingConflictsForBlackout({ date, vessel: v, time_slot: ts });
+    } catch (qErr) {
+      console.error('[add-blackout] conflict query failed, proceeding without scan:', qErr.message);
+      conflict_query_warning = qErr.message;
+    }
+
+    const blackouts = await addBlackout({ date, vessel: v, time_slot: ts });
+
+    /* Defensive alert to the business inbox so a missed UI toast does
+       not leave conflicts undetected. Send failure folds into
+       email_warning, mirroring the G15 admin-action pattern. */
+    let email_warning = null;
+    if (conflicts.length > 0) {
+      try {
+        await sendBlackoutConflictAlert({ blackout: { date, vessel: v, time_slot: ts }, conflicts });
+      } catch (eErr) {
+        console.error('[add-blackout] conflict alert email failed:', eErr.message);
+        email_warning = eErr.message;
+      }
+    }
+
+    return res.status(200).json({
+      blackouts,
+      conflicts: conflicts.length,
+      conflict_summary: conflicts.length > 0 ? buildConflictSummaryString(conflicts) : null,
+      ...(email_warning          ? { email_warning }          : {}),
+      ...(conflict_query_warning ? { conflict_query_warning } : {}),
+    });
   } catch (err) {
     console.error('Add blackout error:', err.message);
     return res.status(500).json({ error: err.message });
