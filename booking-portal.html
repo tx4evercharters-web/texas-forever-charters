@@ -303,6 +303,233 @@
     }
     .portal-footer a:hover { border-bottom-color: var(--red); }
 
+    /* ── Waiver Status Block ── */
+    .portal-waiver {
+      border: 1px solid;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .portal-waiver--none,
+    .portal-waiver--partial {
+      background: rgba(245,158,11,0.10);
+      border-color: rgba(245,158,11,0.45);
+    }
+    .portal-waiver--complete {
+      background: rgba(16,185,129,0.10);
+      border-color: rgba(16,185,129,0.45);
+    }
+    .portal-waiver-eyebrow {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .portal-waiver--none .portal-waiver-eyebrow,
+    .portal-waiver--partial .portal-waiver-eyebrow { color: #FBBF24; }
+    .portal-waiver--complete .portal-waiver-eyebrow { color: #6EE7B7; }
+    .portal-waiver-headline {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 1px;
+      color: var(--white);
+      margin: 0 0 12px;
+      line-height: 1.15;
+    }
+    .portal-waiver-body {
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.78);
+      margin: 0 0 20px;
+    }
+    .portal-waiver-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .portal-waiver-btn-primary,
+    .portal-waiver-btn-secondary {
+      display: inline-block;
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .portal-waiver-btn-primary {
+      background: var(--red);
+      color: var(--white);
+      text-decoration: none;
+      border: 1.5px solid var(--red);
+    }
+    .portal-waiver-btn-primary:hover { background: var(--red-dark); border-color: var(--red-dark); }
+    .portal-waiver-btn-secondary {
+      background: transparent;
+      color: var(--white);
+      border: 1.5px solid rgba(255,255,255,0.3);
+    }
+    .portal-waiver-btn-secondary:hover {
+      border-color: var(--white);
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* ── Where to Go ── */
+    .portal-where {
+      background: var(--navy-dark);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .portal-where-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .portal-where-icon {
+      font-size: 24px;
+      line-height: 1;
+    }
+    .portal-where-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 1.5px;
+      color: var(--white);
+      margin: 0;
+    }
+    .portal-where-address {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--white);
+      padding: 14px 16px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+    .portal-where-landmark {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.85);
+      padding: 14px 16px;
+      background: rgba(251,191,36,0.08);
+      border-left: 3px solid #FBBF24;
+      border-radius: 4px;
+      margin: 0 0 18px;
+    }
+    .portal-where-landmark strong { color: var(--white); }
+    .portal-where-actions { margin-bottom: 18px; }
+    .portal-where-btn {
+      display: inline-block;
+      background: var(--red);
+      color: var(--white);
+      padding: 12px 22px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+    .portal-where-btn:hover { background: var(--red-dark); }
+    .portal-where-map {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      margin: 0 0 20px;
+    }
+    .portal-where-section {
+      padding: 16px 0;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .portal-where-section:first-of-type { border-top: none; padding-top: 4px; }
+    .portal-where-section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin: 0 0 10px;
+    }
+    .portal-where-section-body {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14.5px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.8);
+    }
+    .portal-where-section-body p { margin: 0 0 12px; }
+    .portal-where-section-body p:last-child { margin-bottom: 0; }
+    .portal-where-section-body strong { color: var(--white); }
+    .portal-where-warn {
+      display: block;
+      margin-top: 12px !important;
+      padding: 12px 14px;
+      background: rgba(200,16,46,0.10);
+      border-left: 3px solid var(--red);
+      border-radius: 4px;
+      color: rgba(255,255,255,0.85);
+    }
+    .portal-where-callout {
+      margin-top: 18px;
+      padding: 16px 18px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.8);
+    }
+    .portal-where-callout strong { color: var(--white); }
+    .portal-where-callout a {
+      color: var(--white);
+      font-weight: 700;
+      text-decoration: none;
+      border-bottom: 1px solid var(--red);
+    }
+    .portal-where-callout a:hover { border-bottom-width: 2px; }
+
+    /* ── Toast ── */
+    .portal-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translate(-50%, 20px);
+      background: rgba(15, 26, 69, 0.95);
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      z-index: 100;
+      max-width: calc(100vw - 32px);
+      text-align: center;
+    }
+    .portal-toast--visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
     /* ── Responsive ── */
     @media (max-width: 600px) {
       .portal-hero { border-radius: 0; aspect-ratio: 4 / 3; }
@@ -313,6 +540,14 @@
       .portal-glance { padding: 20px; border-radius: 10px; }
       .portal-glance-row { grid-template-columns: 110px 1fr; gap: 10px; padding: 10px 0; }
       .portal-glance-payment-balance { grid-template-columns: 1fr; }
+      .portal-waiver { padding: 18px; border-radius: 10px; }
+      .portal-waiver-headline { font-size: 22px; }
+      .portal-waiver-actions { flex-direction: column; }
+      .portal-waiver-btn-primary,
+      .portal-waiver-btn-secondary { text-align: center; }
+      .portal-where { padding: 18px; border-radius: 10px; }
+      .portal-where-title { font-size: 26px; }
+      .portal-where-address { font-size: 15px; }
     }
   </style>
 </head>
@@ -357,6 +592,72 @@
         <div class="portal-glance-eyebrow">At a Glance</div>
         <div class="portal-glance-rows" id="portalGlanceRows"></div>
         <div class="portal-glance-payment" id="portalGlancePayment"></div>
+      </section>
+
+      <!-- Waiver Status Block — innerHTML injected by renderWaiverStatus().
+           Hidden by default; renderPortal() shows/hides based on is_past
+           and the helper builds the three state variants. -->
+      <section class="portal-waiver" id="portalWaiver" style="display:none;"></section>
+
+      <!-- Where to Go — fully static content. Hidden by default; renderPortal()
+           unhides for upcoming charters and hides for past charters. -->
+      <section class="portal-where" id="portalWhere" style="display:none;">
+        <div class="portal-where-header">
+          <span class="portal-where-icon">📍</span>
+          <h2 class="portal-where-title">Where to Go</h2>
+        </div>
+
+        <div class="portal-where-address">16107 FM 2769, Leander, TX 78641</div>
+
+        <p class="portal-where-landmark">
+          When you arrive at the property, you'll see <strong>Beachside Billy's</strong> and <strong>Volente Beach Waterpark &amp; Resort</strong> on your left. That's the right place.
+        </p>
+
+        <div class="portal-where-actions">
+          <a href="https://www.google.com/maps/search/?api=1&amp;query=16107+FM+2769+Leander+TX+78641"
+             target="_blank" rel="noopener" class="portal-where-btn">Open in Google Maps</a>
+        </div>
+
+        <img src="/images/drawn-map.png"
+             alt="Annotated arrival map showing parking, Uber drop-off, and walking path to the dock"
+             class="portal-where-map">
+
+        <div class="portal-where-section">
+          <h3 class="portal-where-section-title">Driving Yourself</h3>
+          <div class="portal-where-section-body">
+            <p>When you turn onto the property, drive past Beachside Billy's and continue toward the back. There's a <strong>dirt lot at the end of the drive. That's where you park</strong>. Parking is <strong>$10 per vehicle</strong>, paid at the lot.</p>
+            <p>Once parked, follow the <strong>green-highlighted path</strong> on the map above. It walks you down to the tan plastic floating dock where your captain will be waiting.</p>
+            <p class="portal-where-warn">⚠ Don't park in the marked private slots or along the access road. <strong>Vehicles get towed. We can't get them released for you.</strong></p>
+          </div>
+        </div>
+
+        <div class="portal-where-section">
+          <h3 class="portal-where-section-title">Getting Dropped Off</h3>
+          <div class="portal-where-section-body">
+            <p>If you're taking an Uber, Lyft, or having a friend drop you off: have them <strong>drop you at the parking pull-off just off Wharf Cove</strong> (marked on the map). From there, walk the same <strong>green-highlighted path</strong> down to the tan dock.</p>
+            <p>Tell your driver "Volente Beach Waterpark" if they need a destination they'll recognize. The dropoff is in the same area.</p>
+          </div>
+        </div>
+
+        <div class="portal-where-section">
+          <h3 class="portal-where-section-title">At the Dock</h3>
+          <div class="portal-where-section-body">
+            <p>Your captain will meet you at the <strong>tan plastic floating dock</strong> at the bottom of the green path. Both the yacht and the pontoon depart from this same dock.</p>
+            <p><strong>Important:</strong> this is NOT the <strong>VIP Marina</strong> dock further along the property. If you find yourself on a wood-and-aluminum dock with covered slips, you've walked too far. Head back toward the tan plastic dock.</p>
+          </div>
+        </div>
+
+        <div class="portal-where-section">
+          <h3 class="portal-where-section-title">Arrive 15 Minutes Early</h3>
+          <div class="portal-where-section-body">
+            <p>Plan to be at the dock <strong>15 minutes before your departure time</strong>. Your captain runs a quick 10-minute safety briefing before you push off, covering the boat layout, the rules, and where everything is. The earlier you're aboard, the more lake time you get.</p>
+          </div>
+        </div>
+
+        <div class="portal-where-callout">
+          <strong>Lost or confused?</strong>
+          Call or text your captain at <a href="tel:+17373681669">(737) 368-1669</a> the moment something doesn't look right. We'd rather walk you in over the phone than have you wandering the property.
+        </div>
       </section>
 
     </main>
@@ -516,8 +817,114 @@
           '</div>';
       }
 
+      /* Waiver status + Where to Go. Past charters skip both — the
+         pre-charter info (waiver action, arrival logistics) is no longer
+         actionable once the date has passed. */
+      if (data.is_past) {
+        document.getElementById('portalWaiver').style.display = 'none';
+        document.getElementById('portalWhere').style.display = 'none';
+      } else {
+        renderWaiverStatus(data);
+        document.getElementById('portalWhere').style.display = 'block';
+      }
+
       document.getElementById('portalLoading').style.display = 'none';
       document.getElementById('portalContent').style.display = 'block';
+    }
+
+    /* ── Waiver status block ──────────────────────────────────────────
+       Three states driven by waivers_signed_count vs party_size:
+         0 signed         -> amber "Required Before Boarding"
+         1..N-1 signed    -> amber "X of Y Have Signed"
+         N signed (>=)    -> green "Waiver Complete"
+       Share With Guests copies the public waiver URL via the clipboard
+       helper below. Sign Your Waiver routes to the existing
+       /waiver.html?session_id=<X> flow. */
+    function renderWaiverStatus(data) {
+      const wrap = document.getElementById('portalWaiver');
+      if (!wrap) return;
+      const partySize = Number(data.party_size) || 0;
+      const signed    = Number(data.waivers_signed_count) || 0;
+
+      let stateClass, eyebrowText, headline, body, showSign;
+      if (signed === 0) {
+        stateClass  = 'portal-waiver--none';
+        eyebrowText = 'Action Required';
+        headline    = 'Liability Waiver: Required Before Boarding';
+        body        = 'Every guest on board must sign a digital liability waiver before your charter. ' +
+                      'None of your party of ' + partySize + ' has signed yet. ' +
+                      'The booking organizer is responsible for getting everyone signed before charter day. ' +
+                      'Guests who arrive unsigned cannot board.';
+        showSign    = true;
+      } else if (signed < partySize) {
+        stateClass  = 'portal-waiver--partial';
+        eyebrowText = 'Action Required';
+        headline    = 'Liability Waiver: ' + signed + ' of ' + partySize + ' Have Signed';
+        const remaining = partySize - signed;
+        body        = 'The remaining ' + remaining + ' guest' + (remaining === 1 ? '' : 's') +
+                      ' need to sign before charter day. ' +
+                      'The booking organizer is responsible for following up.';
+        showSign    = true;
+      } else {
+        stateClass  = 'portal-waiver--complete';
+        eyebrowText = 'All Set';
+        headline    = '✓ Waiver Complete';
+        body        = 'All ' + partySize + ' guests in your party have signed. You\'re cleared to board.';
+        showSign    = false;
+      }
+
+      const waiverPath = '/waiver.html?session_id=' + encodeURIComponent(data.id);
+      let actions = '';
+      if (showSign) {
+        actions += '<a href="' + waiverPath + '" class="portal-waiver-btn-primary">Sign Your Waiver</a>';
+      }
+      actions += '<button type="button" class="portal-waiver-btn-secondary" onclick="copyWaiverLink()">Share With Guests</button>';
+
+      /* Stash the full URL on a data attribute so copyWaiverLink can read
+         it without re-deriving from the session_id. */
+      wrap.dataset.waiverUrl = window.location.origin + waiverPath;
+      wrap.className = 'portal-waiver ' + stateClass;
+      wrap.innerHTML =
+        '<div class="portal-waiver-eyebrow">' + escapeHtml(eyebrowText) + '</div>' +
+        '<h2 class="portal-waiver-headline">' + escapeHtml(headline) + '</h2>' +
+        '<p class="portal-waiver-body">' + escapeHtml(body) + '</p>' +
+        '<div class="portal-waiver-actions">' + actions + '</div>';
+      wrap.style.display = 'block';
+    }
+
+    function copyWaiverLink() {
+      const wrap = document.getElementById('portalWaiver');
+      const url = wrap && wrap.dataset.waiverUrl;
+      if (!url) return;
+      try {
+        navigator.clipboard.writeText(url).then(
+          function () { showToast('Waiver link copied. Send it to your guests.'); },
+          function () { showToast('Could not copy. Long-press the link to copy manually.'); }
+        );
+      } catch (e) {
+        showToast('Could not copy. Long-press the link to copy manually.');
+      }
+    }
+
+    /* ── Toast helper ────────────────────────────────────────────────
+       Bottom-center transient confirmation. Subsequent calls within the
+       visible window update the text in place and reset the dismissal
+       timer. Auto dismisses after ~2.8s. */
+    let _toastTimer = null;
+    function showToast(message) {
+      let toast = document.getElementById('portalToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'portalToast';
+        toast.className = 'portal-toast';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = message;
+      toast.classList.add('portal-toast--visible');
+      if (_toastTimer) clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(function () {
+        toast.classList.remove('portal-toast--visible');
+      }, 2800);
     }
 
     loadPortal();

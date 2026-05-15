@@ -1,4 +1,4 @@
-const { findBookingByPortalToken } = require('../lib/storage');
+const { findBookingByPortalToken, countWaiversBySessionId } = require('../lib/storage');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
@@ -89,6 +89,18 @@ module.exports = async function handler(req, res) {
 
   const is_past = (booking.date || '') < todayCentral();
 
+  /* Count waivers signed against this booking's session_id. Best-effort —
+     on failure (Supabase outage, malformed range header, etc.) default to
+     0 so the portal still renders with a "0 signed" waiver state rather
+     than throwing. Known gap: fuzzy-linked waivers (booking_id set but
+     session_id null) are not counted; see lib/storage.js note. */
+  let waivers_signed_count = 0;
+  try {
+    waivers_signed_count = await countWaiversBySessionId(booking.session_id);
+  } catch (err) {
+    console.error('[portal] waiver count failed:', err.message);
+  }
+
   return res.status(200).json({
     id:                    booking.session_id,
     vessel:                booking.vessel,
@@ -108,5 +120,6 @@ module.exports = async function handler(req, res) {
     paid_in_full:          booking.paid_in_full === true,
     status:                booking.status || 'upcoming',
     is_past,
+    waivers_signed_count,
   });
 };
