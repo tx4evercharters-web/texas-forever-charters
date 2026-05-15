@@ -5,6 +5,20 @@
       "schedule": "0 14 * * *"
     }
   ],
+  "headers": [
+    {
+      "source": "/admin.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/booking-confirmation.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+      ]
+    }
+  ],
   "redirects": [
     {
       "source": "/(.*)",
