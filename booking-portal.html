@@ -142,20 +142,19 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 65%;
       display: block;
     }
     .portal-hero-overlay {
       position: absolute;
       inset: 0;
       background: linear-gradient(to bottom,
-        rgba(10,16,48,0.55) 0%,
-        rgba(10,16,48,0.25) 25%,
-        rgba(10,16,48,0) 50%);
+        rgba(10,16,48,0.40) 0%,
+        rgba(10,16,48,0.15) 25%,
+        rgba(10,16,48,0) 45%);
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      padding: clamp(28px, 5vw, 64px);
+      padding: 28px 32px;
       gap: 6px;
     }
     .portal-hero-eyebrow {
@@ -182,8 +181,8 @@
     }
     .portal-hero-badge {
       position: absolute;
-      top: clamp(28px, 5vw, 64px);
-      right: clamp(28px, 5vw, 64px);
+      top: 28px;
+      right: 28px;
       padding: 6px 14px;
       background: rgba(0,0,0,0.55);
       border: 1px solid rgba(255,255,255,0.25);
@@ -581,20 +580,18 @@
       <a href="tel:+17373681669" class="portal-error-btn">Call (737) 368-1669</a>
     </div>
 
-    <!-- Hero — sibling of <main>, edge-to-edge against the viewport. Hidden
-         until renderPortal() unhides; toggled alongside #portalContent. -->
-    <section class="portal-hero" id="portalHero" style="display:none;">
-      <img class="portal-hero-image" id="portalHeroImage" alt="">
-      <div class="portal-hero-overlay">
-        <div class="portal-hero-eyebrow">TEXAS FOREVER CHARTERS</div>
-        <h1 class="portal-hero-title">Your Charter</h1>
-        <p class="portal-hero-subtitle" id="portalHeroSubtitle"></p>
-        <div class="portal-hero-badge" id="portalHeroBadge" style="display:none;">Past Charter</div>
-      </div>
-    </section>
-
     <!-- Normal render — hidden until renderPortal() unhides -->
     <main class="portal-content" id="portalContent" style="display:none;">
+
+      <section class="portal-hero">
+        <img class="portal-hero-image" id="portalHeroImage" alt="">
+        <div class="portal-hero-overlay">
+          <div class="portal-hero-eyebrow">TEXAS FOREVER CHARTERS</div>
+          <h1 class="portal-hero-title">Your Charter</h1>
+          <p class="portal-hero-subtitle" id="portalHeroSubtitle"></p>
+          <div class="portal-hero-badge" id="portalHeroBadge" style="display:none;">Past Charter</div>
+        </div>
+      </section>
 
       <section class="portal-glance">
         <div class="portal-glance-eyebrow">At a Glance</div>
@@ -723,7 +720,6 @@
 
     function showError(msg) {
       document.getElementById('portalLoading').style.display = 'none';
-      document.getElementById('portalHero').style.display = 'none';
       document.getElementById('portalContent').style.display = 'none';
       const errEl = document.getElementById('portalError');
       errEl.style.display = 'block';
@@ -838,7 +834,6 @@
       }
 
       document.getElementById('portalLoading').style.display = 'none';
-      document.getElementById('portalHero').style.display = 'block';
       document.getElementById('portalContent').style.display = 'block';
     }
 
