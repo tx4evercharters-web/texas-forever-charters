@@ -766,17 +766,28 @@
       const depositAmount = parseFloat(meta.deposit_amount || 0);
       const paymentType = meta.payment_type || 'full';
 
-      currentSessionId = session.id;
+      /* G19 follow-up: admin-flow payment-link sessions carry
+         meta.original_session_id pointing at the booking row's actual
+         session_id (manual_* shape). Without this fallback the Stripe
+         cs_live_* from payment-link completion is used and any
+         consumer that resolves back to the booking row (ref display,
+         waiver lookup, resend-confirmation API) breaks. Wizard flow
+         never sets original_session_id, so canonicalId === session.id
+         and behavior is unchanged. Legacy pre-f10c429 admin links also
+         fall through to session.id with no regression. */
+      const canonicalId = meta.original_session_id || session.id;
+
+      currentSessionId = canonicalId;
       currentEmail     = session.customer_email || meta.email || (session.booking && session.booking.customer_email) || '';
 
       // Hero
       document.getElementById('confirmHero').style.display = 'block';
       document.getElementById('confirmEmail').textContent = currentEmail;
-      document.getElementById('confirmRef').textContent = session.id.slice(-12).toUpperCase();
+      document.getElementById('confirmRef').textContent = canonicalId.slice(-12).toUpperCase();
 
       // Session-aware waiver link — pre-fills charter info on the waiver page
       const waiverLinkEl = document.getElementById('waiverLink');
-      if (waiverLinkEl) waiverLinkEl.href = '/waiver.html?session_id=' + encodeURIComponent(session.id);
+      if (waiverLinkEl) waiverLinkEl.href = '/waiver.html?session_id=' + encodeURIComponent(canonicalId);
 
       // Email-failure banner: show only when the booking row exists AND
       // explicitly reports the confirmation email did not go through.
