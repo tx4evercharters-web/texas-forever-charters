@@ -508,6 +508,186 @@
     }
     .portal-where-callout a:hover { border-bottom-width: 2px; }
 
+    /* ── Generic card (shared shell for new sections) ── */
+    .portal-card {
+      background: var(--navy-dark);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .portal-card-eyebrow {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 12px;
+    }
+    .portal-card-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 1.5px;
+      color: var(--white);
+      margin: 0 0 18px;
+      line-height: 1.1;
+    }
+    .portal-card-body {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14.5px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.8);
+    }
+    .portal-card-body p { margin: 0 0 12px; }
+    .portal-card-body p:last-child { margin-bottom: 0; }
+    .portal-card-body strong { color: var(--white); }
+    .portal-card-body ul { padding-left: 20px; margin: 0 0 12px; }
+    .portal-card-body li { margin-bottom: 6px; }
+
+    /* ── Captain Contact phone CTA ── */
+    .portal-captain-phone {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--red);
+      color: var(--white);
+      padding: 14px 22px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 1.5px;
+      transition: background 0.15s;
+      margin-top: 8px;
+    }
+    .portal-captain-phone:hover { background: var(--red-dark); }
+    .portal-captain-meta {
+      margin-top: 14px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: rgba(255,255,255,0.65);
+    }
+    .portal-captain-meta a {
+      color: var(--white);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.25);
+    }
+
+    /* ── Vessel amenities label+description list ── */
+    .portal-amenity-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .portal-amenity-list li {
+      padding: 12px 0;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-family: 'Barlow', sans-serif;
+      font-size: 14.5px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.8);
+    }
+    .portal-amenity-list li:first-child { border-top: none; padding-top: 2px; }
+    .portal-amenity-list li strong {
+      color: var(--white);
+      display: block;
+      margin-bottom: 3px;
+      font-weight: 700;
+    }
+
+    /* ── Pontoon "Upgrade your trip" callout ── */
+    .portal-upgrade {
+      margin-top: 18px;
+      padding: 16px 18px;
+      background: rgba(200,16,46,0.10);
+      border: 1px solid rgba(200,16,46,0.35);
+      border-radius: 10px;
+    }
+    .portal-upgrade-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 8px;
+    }
+    .portal-upgrade-body {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      color: rgba(255,255,255,0.85);
+    }
+    .portal-upgrade-body a {
+      display: inline-block;
+      margin-top: 10px;
+      color: var(--white);
+      text-decoration: none;
+      border-bottom: 1px solid var(--red);
+      font-weight: 600;
+    }
+
+    /* ── Accordion (used by Rules and FAQ) ── */
+    .portal-acc-item {
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .portal-acc-item:first-of-type { border-top: none; }
+    .portal-acc-trigger {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--white);
+      text-align: left;
+      padding: 18px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      transition: color 0.15s;
+    }
+    .portal-acc-trigger:hover { color: var(--silver); }
+    .portal-acc-trigger:focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .portal-acc-chevron {
+      display: inline-block;
+      transition: transform 0.2s, color 0.2s;
+      font-size: 22px;
+      line-height: 1;
+      color: rgba(255,255,255,0.45);
+      flex-shrink: 0;
+    }
+    .portal-acc-trigger[aria-expanded="true"] .portal-acc-chevron {
+      transform: rotate(90deg);
+      color: var(--red);
+    }
+    .portal-acc-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .portal-acc-body-inner {
+      padding: 0 0 18px;
+      font-family: 'Barlow', sans-serif;
+      font-size: 14.5px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.8);
+    }
+    .portal-acc-body-inner p { margin: 0 0 10px; }
+    .portal-acc-body-inner p:last-child { margin-bottom: 0; }
+    .portal-acc-body-inner strong { color: var(--white); }
+    .portal-acc-body-inner ul { padding-left: 20px; margin: 0 0 10px; }
+    .portal-acc-body-inner li { margin-bottom: 6px; }
+
     /* ── Toast ── */
     .portal-toast {
       position: fixed;
@@ -553,6 +733,15 @@
       .portal-where { padding: 18px; border-radius: 10px; }
       .portal-where-title { font-size: 26px; }
       .portal-where-address { font-size: 15px; }
+      .portal-card { padding: 18px; border-radius: 10px; }
+      .portal-card-title { font-size: 26px; }
+      .portal-captain-phone {
+        display: flex;
+        justify-content: center;
+        font-size: 18px;
+        padding: 12px 18px;
+      }
+      .portal-acc-trigger { padding: 16px 0; font-size: 14px; }
     }
   </style>
 </head>
@@ -662,6 +851,310 @@
         <div class="portal-where-callout">
           <strong>Lost or confused?</strong>
           Call or text your captain at <a href="tel:+17373681669">(737) 368-1669</a> the moment something doesn't look right. We'd rather walk you in over the phone than have you wandering the property.
+        </div>
+      </section>
+
+      <!-- Captain Contact — day-of contact info. Captain identity intentionally
+           not named; surprise element preserved from TFC's operational pattern. -->
+      <section class="portal-card portal-captain" id="portalCaptain" style="display:none;">
+        <div class="portal-card-eyebrow">Day-Of Contact</div>
+        <h2 class="portal-card-title">Your Captain</h2>
+        <div class="portal-card-body">
+          <p>Your captain will reach out the day of your charter to confirm final details. Both <strong>DJ</strong> and <strong>Dane</strong> are PBO-certified captains, and either one might be running your trip.</p>
+          <p>Need to reach us before then?</p>
+        </div>
+        <a href="tel:+17373681669" class="portal-captain-phone">📞 (737) 368-1669</a>
+        <div class="portal-captain-meta">
+          Or email <a href="mailto:tx4evercharters@gmail.com">tx4evercharters@gmail.com</a>
+        </div>
+      </section>
+
+      <!-- What to Bring — universal packing list. Static content. -->
+      <section class="portal-card portal-bring" id="portalBring" style="display:none;">
+        <div class="portal-card-eyebrow">What to Bring</div>
+        <h2 class="portal-card-title">Pack for the Day</h2>
+        <div class="portal-card-body">
+          <ul>
+            <li>Food and drinks (no glass on the pontoon; glass allowed in the yacht cabin only).</li>
+            <li>Ice for your drinks, or add it as a charter add-on.</li>
+            <li>Plenty of water. Lake Travis sun is no joke.</li>
+            <li>Sunscreen (lots of it).</li>
+            <li>Swimwear and a change of clothes.</li>
+            <li>Towels (bring your own, or add them to your order).</li>
+            <li>Cash, Zelle, or Venmo for your captain's tip (20% required, paid day-of).</li>
+            <li>A valid ID for anyone planning to drink.</li>
+            <li>Phone charger (the yacht has outlets on board).</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Game Plan — narrative of a typical charter day + anchor options. -->
+      <section class="portal-card portal-gameplan" id="portalGameplan" style="display:none;">
+        <div class="portal-card-eyebrow">Your Day on the Lake</div>
+        <h2 class="portal-card-title">Game Plan</h2>
+        <div class="portal-card-body">
+          <p>Lake Travis is big and your captain knows it well. Most charters follow a flexible plan. You've got opinions, the captain has alternatives, and the lake decides the rest. Here's what shows up on most trips.</p>
+          <p><strong>Devil's Cove</strong> is the default destination on the majority of our charters. It's the iconic Lake Travis anchor spot, a wide shallow cove where boats raft up, music plays, and float mats stretch from boat to boat. Most groups want at least an hour here, sometimes the whole charter. Saturday afternoons in summer it gets packed; weekdays and shoulder season it's almost private.</p>
+          <p><strong>Arkansas Bend</strong> is the quieter alternative. Calmer water, fewer boats, better for families and groups that want to swim without the party atmosphere. Captain often suggests this when Devil's Cove is crowded or the wind's wrong.</p>
+          <p><strong>Hippie Hollow</strong> is visible from the water and worth knowing about: it's Texas's only legally clothing-optional state park. Adults-only vibe. Boats cruise past for the views, but it's not where you'd anchor with kids on board. Tell your captain if your group prefers to skip that stretch.</p>
+          <p>Other stops your captain can suggest: <strong>Mansfield Dam</strong> for the impressive concrete face, the <strong>Sandy Creek arm</strong> for quieter swimming, and the <strong>Hill Country bluffs</strong> on the south shore for scenery.</p>
+          <p>Once you're aboard, tell your captain what you're after (relaxed swim cove, party scene, scenic tour, sunset spot), and they'll route the day accordingly.</p>
+        </div>
+      </section>
+
+      <!-- Vessel Amenities — innerHTML injected by renderVesselAmenities() based
+           on booking.vessel. Yacht and pontoon get different content. -->
+      <section class="portal-card portal-amenities" id="portalAmenities" style="display:none;"></section>
+
+      <!-- Rules & Policies accordion. Six collapsible sub-sections covering the
+           legal/operational policies. Click triggers the accordion JS at the
+           bottom of the file. -->
+      <section class="portal-card portal-rules" id="portalRules" style="display:none;">
+        <div class="portal-card-eyebrow">Rules &amp; Policies</div>
+        <h2 class="portal-card-title">The Fine Print</h2>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Lake &amp; Boat Rules</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p><strong>Lake Travis rules.</strong> Children under 13 must wear a USCG-approved life jacket while on deck. PFDs not required inside the cabin or under seats. Texas Parks &amp; Wildlife regulations apply; your captain handles compliance. Lake Travis is a natural body of water with bacteria, pollutants, and environmental factors outside our control. Swim at your own risk.</p>
+              <p><strong>On the boat:</strong></p>
+              <ul>
+                <li>No glass on the pontoon, ever. Yacht cabin only.</li>
+                <li>Shoes off on the yacht (especially black soles). Pontoon shoes-on is fine.</li>
+                <li>No standing while the vessel is underway.</li>
+                <li>No limbs outside the railings while underway.</li>
+                <li>No smoking anything that ashes. Vaping is permitted on deck. If you want to smoke something that ashes, do it in the water or on a float mat while anchored.</li>
+                <li>No nudity. No sexual activity on board.</li>
+                <li>No illegal drugs or unauthorized substances. Immediate removal and possible legal action.</li>
+                <li>No confetti, glitter, or streamers (impossible to clean off the lake).</li>
+                <li>No personal coolers. We provide a large cooler on board.</li>
+                <li>Capacity strict: 20 on the yacht, 13 on the pontoon.</li>
+                <li>Service animals welcome with advance approval. Pets are not.</li>
+                <li>Reckless or unsafe behavior is grounds for removal without refund.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Alcohol Policy</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>BYOB is fully welcome. Bring whatever you'd like.</p>
+              <p><strong>The booking organizer must be 21 or older</strong> and is legally responsible for ensuring no one under 21 consumes alcohol. Anyone under 18 must be accompanied by a parent or guardian.</p>
+              <p>Glass is permitted only inside the yacht cabin. Never on deck, never on the pontoon.</p>
+              <p>Catering is available through Beachside Billy's at Volente Beach Waterpark if you want it.</p>
+              <p>Texas Forever Charters reserves the right to end the charter without refund if alcohol policies are violated or if guests appear unsafe. The captain's call is final.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Weather Policy</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>Texas Forever Charters decides on the day of your charter whether weather makes the trip unsafe.</p>
+              <ul>
+                <li><strong>Light rain doesn't cancel us.</strong> Lake Travis often stays clear even when downtown Austin is wet.</li>
+                <li><strong>Storms, lightning, or unsafe wind:</strong> your captain has the final call.</li>
+                <li><strong>If we cancel for weather:</strong> full refund (including your booking fee), or free reschedule. Your choice.</li>
+                <li><strong>If a storm cuts your charter short mid-trip:</strong> pro-rated refund for the time lost on the water.</li>
+                <li><strong>If you want to cancel because of weather but we're still going out:</strong> standard cancellation policy applies.</li>
+              </ul>
+              <p>Questions day-of? Call (737) 368-1669. We'll be honest with you.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Cancellation &amp; Refunds</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p><strong>Booking Fee (10% of total).</strong> Non-refundable under all circumstances. This holds your date.</p>
+              <p><strong>Balance refunds</strong> (the remaining 90%):</p>
+              <ul>
+                <li>14+ days before charter: <strong>full balance refund</strong>.</li>
+                <li>7 to 13 days before: <strong>50% balance refund</strong>.</li>
+                <li>Less than 7 days: <strong>no refund</strong>.</li>
+              </ul>
+              <p><strong>Texas Forever cancels for weather:</strong> full refund (including the booking fee), or free reschedule.</p>
+              <p><strong>Rescheduling.</strong> Call (737) 368-1669. 7+ days out: case-by-case, usually no problem. Within 7 days: requires documented emergency.</p>
+              <p><strong>Other refunded items</strong> (proportional to the refund amount): 5% admin fee, 8.5% Texas sales tax. The 2.9% credit card processing fee may or may not be refunded depending on Stripe's policy.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Damage Deposit</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>How the <strong>$250 hold</strong> works:</p>
+              <ul>
+                <li>When you book, we place a $250 pre-authorization hold on your card.</li>
+                <li>A pre-authorization is not a charge. The funds are held but not withdrawn.</li>
+                <li>If no damage occurs: the hold is released within 48 hours of your charter ending.</li>
+                <li>If damage occurs: we charge the actual cost of repair or replacement, with a $250 minimum.</li>
+              </ul>
+              <p><strong>What counts as damage:</strong> physical damage to the vessel, stains or spills that require professional cleaning, anything that makes the boat unusable for the next charter.</p>
+              <p>If damage exceeds $250, the additional cost is charged to your card.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Gratuity</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>A <strong>20% gratuity is required</strong>, paid directly to your captain on the day of the charter.</p>
+              <p>How to pay: <strong>cash, Zelle, or Venmo</strong>. The captain will give you their handle on the day of the charter. This is not collected through the website.</p>
+              <p>Why 20%? Captains do the prep work, the safety briefing, the navigation, the anchoring, and the cleanup, and they make sure your trip is great. It's industry standard for captained charters.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ accordion. Common questions specific to the portal experience. -->
+      <section class="portal-card portal-faq" id="portalFAQ" style="display:none;">
+        <div class="portal-card-eyebrow">Common Questions</div>
+        <h2 class="portal-card-title">FAQ</h2>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Do I need boating experience to book a charter?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>Absolutely not. Every Texas Forever Charter is fully captained. You show up, we handle everything. Just bring your crew, your drinks, and your good mood.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>What add-ons are available?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>Drone footage ($200), towels ($8 each), ice for coolers ($25), bottled water ($25), and beer pong setup ($50). Add-ons are selected during booking. To add anything after you've booked, call <a href="tel:+17373681669">(737) 368-1669</a>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Are pets allowed?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>Pets are not allowed on either vessel. Service animals are welcome but require a conversation with the owners in advance. Call <a href="tel:+17373681669">(737) 368-1669</a> before charter day so we can discuss your specific needs.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Do you do fishing charters?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>No, we do not offer fishing charters.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Are you lifeguards?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>We are not lifeguards. Guests swim at their own risk.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Can I share this portal link with my party?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>Yes. Share it with your party so everyone has the day-of details. Treat the URL like a password: don't post it publicly. Anyone with the link can see your charter info.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Can I edit my booking from the portal?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>Not yet. Call <a href="tel:+17373681669">(737) 368-1669</a> to make changes: dates, party size, vessel, anything.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>What if I'm running late on charter day?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>Call your captain immediately at <a href="tel:+17373681669">(737) 368-1669</a>. We try to wait, but other charters depend on our schedule. If you're more than 15 minutes late and we can't reach you, your captain may have to leave.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>Why am I being asked to pay a balance?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>If you booked with a 10% deposit, the remaining 90% balance is due 14 days before your charter. The "At a Glance" section above shows your total, your deposit, and your balance due.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="portal-acc-item">
+          <button class="portal-acc-trigger" aria-expanded="false" type="button">
+            <span>What if I lose this portal link?</span>
+            <span class="portal-acc-chevron" aria-hidden="true">›</span>
+          </button>
+          <div class="portal-acc-panel">
+            <div class="portal-acc-body-inner">
+              <p>Call or text <a href="tel:+17373681669">(737) 368-1669</a> and we'll re-send it. Same booking, same URL. We don't issue new portal tokens unless something's wrong.</p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -822,15 +1315,29 @@
           '</div>';
       }
 
-      /* Waiver status + Where to Go. Past charters skip both — the
-         pre-charter info (waiver action, arrival logistics) is no longer
-         actionable once the date has passed. */
+      /* Pre-charter sections. Past charters skip all of these — the
+         pre-charter info (waiver action, arrival logistics, what to bring,
+         game plan, vessel amenities, rules, FAQ) is no longer actionable
+         once the date has passed. Hero + At a Glance remain visible as a
+         historical record. */
+      const prerentalIds = [
+        'portalWaiver', 'portalWhere', 'portalCaptain', 'portalBring',
+        'portalGameplan', 'portalAmenities', 'portalRules', 'portalFAQ',
+      ];
       if (data.is_past) {
-        document.getElementById('portalWaiver').style.display = 'none';
-        document.getElementById('portalWhere').style.display = 'none';
+        prerentalIds.forEach(function (id) {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
       } else {
         renderWaiverStatus(data);
-        document.getElementById('portalWhere').style.display = 'block';
+        renderVesselAmenities(data);
+        ['portalWhere', 'portalCaptain', 'portalBring', 'portalGameplan',
+         'portalRules', 'portalFAQ'].forEach(function (id) {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'block';
+        });
+        setupAccordions();
       }
 
       document.getElementById('portalLoading').style.display = 'none';
@@ -930,6 +1437,90 @@
       _toastTimer = setTimeout(function () {
         toast.classList.remove('portal-toast--visible');
       }, 2800);
+    }
+
+    /* ── Vessel amenities ────────────────────────────────────────────
+       Builds the onboard-amenities card based on data.vessel. Yacht and
+       pontoon get different lists; pontoon also gets a "Tubing $200"
+       upgrade callout that routes to the phone (admin handles the add). */
+    function renderVesselAmenities(data) {
+      const wrap = document.getElementById('portalAmenities');
+      if (!wrap) return;
+
+      let title, items, extra;
+      if (data.vessel === 'pontoon') {
+        title = '24ft Bentley Navigator 243 Pontoon';
+        items = [
+          ['Bimini top', 'Shade across the seating area.'],
+          ['1 lilypad', 'Floating mat off the back for swimming and lounging.'],
+          ['Bluetooth speaker system', 'Pair your phone, run the playlist.'],
+          ['Large cooler stocked with ice (when ice add-on selected)', 'Keep your drinks cold.'],
+        ];
+        extra =
+          '<p><strong>No personal coolers, please.</strong> Our cooler is large and on board for a reason: extra coolers crowd the deck and risk damage.</p>' +
+          '<p><strong>No restroom on board.</strong> Plan accordingly with shore breaks at Volente Beach Waterpark before departure and on return.</p>' +
+          '<div class="portal-upgrade">' +
+            '<div class="portal-upgrade-title">Upgrade your trip: Tubing</div>' +
+            '<div class="portal-upgrade-body">' +
+              'Want to pull tubes behind the pontoon? Add tubing to your charter for <strong>$200</strong>. Captain handles the rig and the runs.' +
+              '<br><a href="tel:+17373681669">Call (737) 368-1669 to add</a>' +
+            '</div>' +
+          '</div>';
+      } else {
+        title = '40ft Carver Aft Cabin Yacht';
+        items = [
+          ['14ft jump platform off the stern', 'The iconic Carver feature, perfect for big leaps into the water.'],
+          ['3 floating dock floats / mats', 'Raft up off the back, lounge with drinks.'],
+          ['Paddleboards', 'Provided on board for guest use.'],
+          ['Bluetooth speaker system', 'Pair your phone, run the playlist.'],
+          ['Large cooler stocked with ice (when ice add-on selected)', 'Keep your drinks cold.'],
+          ['2 marine restrooms with sinks', 'Available below deck.'],
+          ['Refrigerator', 'In the cabin.'],
+          ['Phone charger outlets', 'Multiple available on board.'],
+          ['Full interior cabin with salon and kitchenette', 'Shade, seating, escape from the sun.'],
+        ];
+        extra = '<p><strong>No personal coolers, please.</strong> Our cooler is large and on board for a reason: extra coolers crowd the deck and risk damage.</p>';
+      }
+
+      const listHtml = items.map(function (it) {
+        return '<li><strong>' + escapeHtml(it[0]) + '</strong>' + escapeHtml(it[1]) + '</li>';
+      }).join('');
+
+      wrap.innerHTML =
+        '<div class="portal-card-eyebrow">Onboard Your Vessel</div>' +
+        '<h2 class="portal-card-title">' + escapeHtml(title) + '</h2>' +
+        '<div class="portal-card-body">' +
+          '<ul class="portal-amenity-list">' + listHtml + '</ul>' +
+          extra +
+        '</div>';
+      wrap.style.display = 'block';
+    }
+
+    /* ── Accordion setup ─────────────────────────────────────────────
+       Single click handler wired across every .portal-acc-trigger in the
+       document. Toggles aria-expanded on the trigger and animates the
+       sibling panel's max-height from 0 to its content height. Reused
+       by both the Rules and FAQ accordions. */
+    function setupAccordions() {
+      const triggers = document.querySelectorAll('.portal-acc-trigger');
+      triggers.forEach(function (btn) {
+        if (btn.dataset.wired === '1') return; // idempotent
+        btn.dataset.wired = '1';
+        btn.addEventListener('click', function () {
+          const expanded = btn.getAttribute('aria-expanded') === 'true';
+          btn.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+          const panel = btn.nextElementSibling;
+          if (!panel) return;
+          if (expanded) {
+            panel.style.maxHeight = '0px';
+          } else {
+            /* Set max-height to scrollHeight so the panel animates open to
+               its natural content size. After the transition ends we leave
+               it set so the panel stays open at the right height. */
+            panel.style.maxHeight = panel.scrollHeight + 'px';
+          }
+        });
+      });
     }
 
     loadPortal();
