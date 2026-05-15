@@ -183,21 +183,6 @@
       gap: 10px;
       flex-wrap: wrap;
     }
-    .email-fail-input {
-      flex: 1 1 220px;
-      min-width: 0;
-      background: rgba(0,0,0,0.35);
-      border: 1.5px solid rgba(255,255,255,0.15);
-      border-radius: 8px;
-      padding: 11px 14px;
-      font-family: 'Barlow', sans-serif;
-      font-size: 15px;
-      color: #fff;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    .email-fail-input:focus { border-color: #FBBF24; }
-    .email-fail-input.bad { border-color: #C8102E; }
     .email-fail-btn {
       background: #FBBF24;
       border: 1.5px solid #FBBF24;
@@ -555,7 +540,6 @@
       <div class="email-fail-banner" id="emailFailBanner" style="display:none;">
         <div class="email-fail-headline" id="emailFailHeadline"></div>
         <div class="email-fail-form">
-          <input type="email" class="email-fail-input" id="emailFailInput" placeholder="your@email.com" autocomplete="email">
           <button type="button" class="email-fail-btn" id="emailFailBtn" onclick="resendConfirmation()">Resend Confirmation Email</button>
         </div>
         <div class="email-fail-msg" id="emailFailMsg"></div>
@@ -778,7 +762,9 @@
       const canonicalId = meta.original_session_id || session.id;
 
       currentSessionId = canonicalId;
-      currentEmail     = session.customer_email || meta.email || (session.booking && session.booking.customer_email) || '';
+      /* Masked variant only — raw email no longer returned by the API. Used for the
+         hero "We sent to X" line and the email-fail banner headline. */
+      currentEmail     = session.customer_email_masked || '';
 
       // Hero
       document.getElementById('confirmHero').style.display = 'block';
@@ -839,9 +825,9 @@
         ['Date',          formatDate(meta.date)],
         ['Start Time',    meta.time_slot || '—'],
         ['Duration',      meta.duration ? meta.duration + ' hours' : '—'],
-        ['Organizer',     meta.full_name || '—'],
+        ['Organizer',     session.customer_first_name || '—'],
         ['Party Size',    meta.party_size ? meta.party_size + ' guests' : '—'],
-        ['Contact Phone', meta.phone || '—'],
+        ['Contact Phone', session.customer_phone_masked || '—'],
       ];
       if (meta.special_requests) {
         details.push(['Special Requests', meta.special_requests]);
@@ -882,16 +868,13 @@
       document.getElementById('confirmContent').style.display = 'block';
     }
 
-    function showEmailFailBanner(email) {
+    function showEmailFailBanner(_email) {
       const banner = document.getElementById('emailFailBanner');
       const headline = document.getElementById('emailFailHeadline');
-      const input = document.getElementById('emailFailInput');
-      const target = email || 'your email address';
       headline.innerHTML =
         '✅ <strong>Your payment went through and your booking is confirmed!</strong> ' +
-        'However we had trouble sending your confirmation email to <strong>' + escapeHtml(target) + '</strong>. ' +
-        'Please verify your email address below and we\'ll resend it right away.';
-      input.value = email || '';
+        'We had trouble sending your confirmation email. Click below to retry, ' +
+        'or call <strong>(737) 368-1669</strong> if the email on file is wrong.';
       banner.style.display = 'block';
     }
 
@@ -905,21 +888,11 @@
     }
 
     async function resendConfirmation() {
-      const input = document.getElementById('emailFailInput');
       const btn = document.getElementById('emailFailBtn');
       const msg = document.getElementById('emailFailMsg');
-      const email = (input.value || '').trim();
 
       msg.textContent = '';
       msg.className = 'email-fail-msg';
-      input.classList.remove('bad');
-
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        input.classList.add('bad');
-        msg.textContent = 'Please enter a valid email address.';
-        msg.className = 'email-fail-msg error';
-        return;
-      }
 
       btn.disabled = true;
       const oldText = btn.textContent;
@@ -929,18 +902,16 @@
         const res = await fetch('/api/resend-confirmation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id: currentSessionId, email }),
+          body: JSON.stringify({ session_id: currentSessionId }),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
           throw new Error(data.detail || data.error || 'Send failed');
         }
-        msg.innerHTML = '✅ Confirmation email sent to <strong>' + escapeHtml(data.email || email) + '</strong>!';
+        msg.innerHTML = '✅ Confirmation email resent. If you don\'t see it in a few minutes, please call (737) 368-1669.';
         msg.className = 'email-fail-msg ok';
         // Hide the form + button so the success state is clean.
         document.querySelector('.email-fail-form').style.display = 'none';
-        // Update the hero subtitle email too.
-        document.getElementById('confirmEmail').textContent = data.email || email;
       } catch (err) {
         btn.disabled = false;
         btn.textContent = oldText;

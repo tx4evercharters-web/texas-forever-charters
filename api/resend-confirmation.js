@@ -7,28 +7,27 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 module.exports = async function handler(req, res) {
   Object.entries(CORS_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
 
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
+  /* Security lockdown: this endpoint previously accepted a body.email
+     override and patched booking.customer_email to the caller's value,
+     enabling unauthenticated hijack of the recorded address. The override
+     path is removed — any `email` field on the body is silently ignored
+     (no 400, so a cached old frontend still resends successfully during
+     the deploy window) and the resend always goes to the email on the
+     booking row. Wrong-email recovery now flows through admin / phone
+     support. Ref: docs/audits/security-audit-2026-05-15.md §1.3 */
   const body = req.body || {};
-  const session_id    = (body.session_id || '').toString().trim();
-  const emailOverride = body.email ? body.email.toString().trim().toLowerCase() : null;
+  const session_id = (body.session_id || '').toString().trim();
 
   if (!session_id) return res.status(400).json({ error: 'session_id required' });
 
-  if (emailOverride && !EMAIL_RE.test(emailOverride)) {
-    return res.status(400).json({ error: 'Invalid email address' });
-  }
+  console.log('[resend-confirmation] request session:', session_id);
 
-  console.log('[resend-confirmation] request', 'session:', session_id,
-    '| override:', emailOverride || '(none)');
-
-  // Look up the booking
   let booking;
   try {
     booking = await findBookingBySessionId(session_id);
@@ -40,21 +39,10 @@ module.exports = async function handler(req, res) {
     return res.status(404).json({ error: 'Booking not found' });
   }
 
-  // Apply email override before sending so the new address is in lib/storage
-  // and reflected in any future admin views.
-  if (emailOverride && emailOverride !== (booking.customer_email || '').toLowerCase()) {
-    try {
-      await patchBooking(session_id, { customer_email: emailOverride });
-      booking.customer_email = emailOverride;
-      console.log('[resend-confirmation] customer_email updated for', session_id, '→', emailOverride);
-    } catch (err) {
-      console.error('[resend-confirmation] failed to update customer_email:', err.message);
-      return res.status(500).json({ error: 'Could not update email on booking' });
-    }
-  }
-
   if (!booking.customer_email) {
-    return res.status(400).json({ error: 'No email on file for this booking. Please provide one.' });
+    return res.status(400).json({
+      error: 'No email on file. Please contact us at (737) 368-1669.',
+    });
   }
 
   // Build the email payload. Booking row field names line up with what
