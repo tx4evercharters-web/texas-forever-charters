@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Charter | Texas Forever Charters</title>
+  <meta name="robots" content="noindex">
+
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    /* ── Page shell ── */
+    .portal-page {
+      min-height: 100vh;
+      background: var(--navy-deeper);
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Top bar ── */
+    .portal-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: rgba(0,0,0,0.35);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(6px);
+    }
+    .portal-topbar-logo img {
+      height: 36px;
+      display: block;
+    }
+    .portal-topbar-call {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--white);
+      text-decoration: none;
+      padding: 8px 14px;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .portal-topbar-call:hover { border-color: var(--red); background: rgba(200,16,46,0.1); }
+
+    /* ── Loading state ── */
+    .portal-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 20px;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .portal-loading p {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* ── Error state ── */
+    .portal-error {
+      text-align: center;
+      padding: 80px 24px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .portal-error-icon {
+      font-size: 52px;
+      margin-bottom: 20px;
+    }
+    .portal-error h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 2px;
+      color: var(--white);
+      margin: 0 0 12px;
+    }
+    .portal-error p {
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.6;
+      margin: 0 0 28px;
+    }
+    .portal-error-btn {
+      display: inline-block;
+      background: var(--red);
+      color: var(--white);
+      padding: 14px 28px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-size: 14px;
+      transition: background 0.15s;
+    }
+    .portal-error-btn:hover { background: var(--red-dark); }
+
+    /* ── Content wrapper ── */
+    .portal-content {
+      flex: 1;
+      max-width: 880px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 16px 60px;
+    }
+
+    /* ── Hero ── */
+    .portal-hero {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      max-height: 480px;
+      overflow: hidden;
+      border-radius: 0 0 18px 18px;
+      margin-bottom: 28px;
+    }
+    .portal-hero-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .portal-hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(15,26,69,0.15) 0%, rgba(10,16,48,0.85) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 36px 28px;
+      gap: 6px;
+    }
+    .portal-hero-eyebrow {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px;
+      letter-spacing: 4px;
+      color: rgba(255,255,255,0.65);
+    }
+    .portal-hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      letter-spacing: 2px;
+      color: var(--white);
+      margin: 0;
+      line-height: 1;
+    }
+    .portal-hero-subtitle {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.9);
+      margin: 6px 0 0;
+      letter-spacing: 1px;
+    }
+    .portal-hero-badge {
+      align-self: flex-start;
+      margin-top: 12px;
+      padding: 6px 14px;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+    }
+
+    /* ── At a glance ── */
+    .portal-glance {
+      background: var(--navy-dark);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .portal-glance-eyebrow {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 18px;
+    }
+    .portal-glance-rows {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .portal-glance-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .portal-glance-row:last-child { border-bottom: none; }
+    .portal-glance-key {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      align-self: center;
+    }
+    .portal-glance-value {
+      font-family: 'Barlow', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--white);
+      align-self: center;
+    }
+
+    /* ── Payment subsection ── */
+    .portal-glance-payment {
+      margin-top: 22px;
+      padding-top: 22px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .portal-glance-payment-paid {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #6EE7B7;
+      text-transform: uppercase;
+    }
+    .portal-glance-payment-balance {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 24px;
+    }
+    .portal-glance-payment-cell {
+      padding: 12px 14px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 8px;
+    }
+    .portal-glance-payment-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 4px;
+    }
+    .portal-glance-payment-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: var(--white);
+    }
+    .portal-glance-payment-amount.balance { color: #FCD34D; }
+
+    /* ── Footer ── */
+    .portal-footer {
+      padding: 28px 24px 36px;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin-top: auto;
+    }
+    .portal-footer p {
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
+      color: rgba(255,255,255,0.55);
+      margin: 0;
+    }
+    .portal-footer a {
+      color: var(--white);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.25);
+      transition: border-color 0.15s;
+    }
+    .portal-footer a:hover { border-bottom-color: var(--red); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .portal-hero { border-radius: 0; aspect-ratio: 4 / 3; }
+      .portal-hero-overlay { padding: 24px 18px; }
+      .portal-hero-title { font-size: 48px; }
+      .portal-hero-subtitle { font-size: 16px; }
+      .portal-content { padding: 0 12px 40px; }
+      .portal-glance { padding: 20px; border-radius: 10px; }
+      .portal-glance-row { grid-template-columns: 110px 1fr; gap: 10px; padding: 10px 0; }
+      .portal-glance-payment-balance { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="portal-page">
+
+    <header class="portal-topbar">
+      <a href="/" class="portal-topbar-logo" aria-label="Texas Forever Charters home">
+        <img src="images/New_Tx4Ever_Logo.png" alt="Texas Forever Charters">
+      </a>
+      <a href="tel:+17373681669" class="portal-topbar-call">📞 (737) 368-1669</a>
+    </header>
+
+    <!-- Loading state — shown while /api/portal?token=X is in flight -->
+    <div class="portal-loading" id="portalLoading">
+      <div class="spinner"></div>
+      <p>Loading your charter…</p>
+    </div>
+
+    <!-- 404 / network error — hidden by default, shown by showError() -->
+    <div class="portal-error" id="portalError" style="display:none;">
+      <div class="portal-error-icon">⚓</div>
+      <h2>We couldn't find that booking</h2>
+      <p id="portalErrorMsg">Check the link or call us and we'll help you find it.</p>
+      <a href="tel:+17373681669" class="portal-error-btn">Call (737) 368-1669</a>
+    </div>
+
+    <!-- Normal render — hidden until renderPortal() unhides -->
+    <main class="portal-content" id="portalContent" style="display:none;">
+
+      <section class="portal-hero">
+        <img class="portal-hero-image" id="portalHeroImage" alt="">
+        <div class="portal-hero-overlay">
+          <div class="portal-hero-eyebrow">TEXAS FOREVER CHARTERS</div>
+          <h1 class="portal-hero-title">Your Charter</h1>
+          <p class="portal-hero-subtitle" id="portalHeroSubtitle"></p>
+          <div class="portal-hero-badge" id="portalHeroBadge" style="display:none;">Past Charter</div>
+        </div>
+      </section>
+
+      <section class="portal-glance">
+        <div class="portal-glance-eyebrow">At a Glance</div>
+        <div class="portal-glance-rows" id="portalGlanceRows"></div>
+        <div class="portal-glance-payment" id="portalGlancePayment"></div>
+      </section>
+
+    </main>
+
+    <footer class="portal-footer">
+      <p>Questions? <a href="tel:+17373681669">(737) 368-1669</a> · <a href="mailto:tx4evercharters@gmail.com">tx4evercharters@gmail.com</a></p>
+    </footer>
+
+  </div>
+
+  <script>
+    /* Vessel image map. Hero image alt text is set per vessel; src points to
+       the existing assets used elsewhere on the site. */
+    const VESSEL_IMAGES = {
+      yacht:   { src: 'images/yacht-main-photo.JPG',   alt: '40ft Carver Aft Cabin Yacht docked at Lake Travis' },
+      pontoon: { src: 'images/bentley-main-photo.jpeg', alt: '24ft Bentley Navigator pontoon at Lake Travis' },
+    };
+
+    /* Format a YYYY-MM-DD charter date as "Saturday, June 6, 2026". Mirrors
+       the date-formatting pattern used in booking-confirmation.html and
+       lib/send-emails.js. T12:00:00 avoids UTC-midnight drift on the
+       client's local clock. */
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T12:00:00');
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const months = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+      return days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    function formatMoney(n) {
+      const v = Number(n);
+      if (!isFinite(v)) return '-';
+      return '$' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function addRow(parent, label, value) {
+      const row = document.createElement('div');
+      row.className = 'portal-glance-row';
+      row.innerHTML =
+        '<div class="portal-glance-key">' + escapeHtml(label) + '</div>' +
+        '<div class="portal-glance-value">' + escapeHtml(value) + '</div>';
+      parent.appendChild(row);
+    }
+
+    function showError(msg) {
+      document.getElementById('portalLoading').style.display = 'none';
+      document.getElementById('portalContent').style.display = 'none';
+      const errEl = document.getElementById('portalError');
+      errEl.style.display = 'block';
+      if (msg) document.getElementById('portalErrorMsg').textContent = msg;
+    }
+
+    /* Parse portal_token from the URL path. The Vercel rewrite serves
+       /booking/<token> from this static HTML; the token isn't in the query
+       string, so we read it from window.location.pathname. The regex also
+       enforces the 32-char hex shape — anything else falls through to the
+       error state without hitting the API. */
+    function parseTokenFromPath() {
+      const m = window.location.pathname.match(/^\/booking\/([a-f0-9]{32})\/?$/i);
+      return m ? m[1].toLowerCase() : null;
+    }
+
+    async function loadPortal() {
+      const token = parseTokenFromPath();
+      if (!token) {
+        showError('That booking link looks malformed. Check the URL or call us.');
+        return;
+      }
+
+      let res, data;
+      try {
+        res = await fetch('/api/portal?token=' + encodeURIComponent(token));
+        data = await res.json().catch(() => ({}));
+      } catch (err) {
+        showError('Network error loading your booking. Try again or call us.');
+        return;
+      }
+
+      if (!res.ok) {
+        /* 404 = token not found or booking soft-deleted. Same UX message
+           either way — we don't disclose which. */
+        if (res.status === 404) {
+          showError('We couldn\'t find that booking. Check the link or call us and we\'ll help you find it.');
+        } else {
+          showError(data.error || 'Something went wrong loading your booking.');
+        }
+        return;
+      }
+
+      renderPortal(data);
+    }
+
+    function renderPortal(data) {
+      /* Hero image + alt text per vessel. Fall back to yacht visual if the
+         vessel value is unrecognized (defensive; should never happen with
+         the values written by the booking flow). */
+      const vesselAsset = VESSEL_IMAGES[data.vessel] || VESSEL_IMAGES.yacht;
+      const heroImg = document.getElementById('portalHeroImage');
+      heroImg.src = vesselAsset.src;
+      heroImg.alt = vesselAsset.alt;
+
+      /* Hero subtitle: date · time. time_slot already canonical ("3:30pm"). */
+      const subtitle = formatDate(data.date) + (data.time_slot ? ' · ' + data.time_slot : '');
+      document.getElementById('portalHeroSubtitle').textContent = subtitle;
+
+      if (data.is_past) {
+        document.getElementById('portalHeroBadge').style.display = 'inline-block';
+      }
+
+      /* At-a-glance rows. Each value falls back to "-" when missing so the
+         layout stays consistent. */
+      const rowsEl = document.getElementById('portalGlanceRows');
+      rowsEl.innerHTML = '';
+      addRow(rowsEl, 'Vessel',       data.vessel_display || '-');
+      addRow(rowsEl, 'Experience',   data.experience     || '-');
+      addRow(rowsEl, 'Duration',     data.duration ? data.duration + ' hours' : '-');
+      addRow(rowsEl, 'Party Size',   data.party_size ? data.party_size + ' guests' : '-');
+      addRow(rowsEl, 'Charter Name', data.charter_name        || '-');
+      addRow(rowsEl, 'Organizer',    data.organizer_first_name || '-');
+
+      /* Payment subsection. paid_in_full → green pill. Else → grid of
+         Total / Deposit Paid / Balance Due. Pay Balance Now button is
+         deferred to a later Phase 4 commit per the minimal-shell scope. */
+      const payEl = document.getElementById('portalGlancePayment');
+      if (data.paid_in_full) {
+        payEl.innerHTML =
+          '<div class="portal-glance-payment-paid">✓ Paid in full</div>';
+      } else {
+        const total    = data.grand_total       != null ? formatMoney(data.grand_total)       : '-';
+        const deposit  = data.deposit_amount    != null ? formatMoney(data.deposit_amount)    : '-';
+        const balance  = data.remaining_balance != null ? formatMoney(data.remaining_balance) : '-';
+        payEl.innerHTML =
+          '<div class="portal-glance-payment-balance">' +
+            '<div class="portal-glance-payment-cell">' +
+              '<div class="portal-glance-payment-label">Total</div>' +
+              '<div class="portal-glance-payment-amount">' + total + '</div>' +
+            '</div>' +
+            '<div class="portal-glance-payment-cell">' +
+              '<div class="portal-glance-payment-label">Deposit Paid</div>' +
+              '<div class="portal-glance-payment-amount">' + deposit + '</div>' +
+            '</div>' +
+            '<div class="portal-glance-payment-cell">' +
+              '<div class="portal-glance-payment-label">Balance Due</div>' +
+              '<div class="portal-glance-payment-amount balance">' + balance + '</div>' +
+            '</div>' +
+          '</div>';
+      }
+
+      document.getElementById('portalLoading').style.display = 'none';
+      document.getElementById('portalContent').style.display = 'block';
+    }
+
+    loadPortal();
+  </script>
+
+</body>
+</html>

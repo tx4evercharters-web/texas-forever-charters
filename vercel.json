@@ -19,6 +19,9 @@
       ]
     }
   ],
+  "rewrites": [
+    { "source": "/booking/:token", "destination": "/booking-portal.html" }
+  ],
   "redirects": [
     {
       "source": "/(.*)",
