@@ -29,7 +29,7 @@ const {
   findBookingsForLead,
   findBookingDatesBySessionIds,
 } = require('../lib/storage');
-const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendAdminActionEmailFailureAlert, sendBlackoutConflictAlert, formatMoneyDollars } = require('../lib/send-emails');
+const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendPortalLinkEmail, sendAdminActionEmailFailureAlert, sendBlackoutConflictAlert, formatMoneyDollars } = require('../lib/send-emails');
 
 /* The previous inline supabasePatch helper has been removed — booking edits
    now route through lib/storage.js patchBooking so they use the same
@@ -801,6 +801,48 @@ async function handleSendWaiverLink(req, res) {
   }
 }
 
+/* Single-handler portal-link route. Drives both Copy (send=false) and Send
+   (send=true) buttons in the admin Bookings tab kebab menu. Generates a
+   portal_token on-the-fly for pre-migration bookings or any row that
+   pre-dates Phase 2.5 auto-generation wiring. Email send is conditional on
+   the `send` flag in the request body. */
+async function handlePortalLink(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
+  const { session_id, send } = req.body || {};
+  if (!session_id) return res.status(400).json({ error: 'session_id required' });
+
+  try {
+    let booking = await findBookingBySessionId(session_id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+    /* Generate portal_token if missing. Backfill for legacy / pre-Phase-2.5
+       rows. 16 bytes hex = 32 chars, matching the Phase 2 migration's
+       encode(gen_random_bytes(16), 'hex') pattern. Uniqueness is enforced
+       by the partial unique index on (portal_token) WHERE NOT NULL. */
+    if (!booking.portal_token) {
+      const newToken = crypto.randomBytes(16).toString('hex');
+      const updated = await patchBooking(session_id, { portal_token: newToken });
+      booking = updated || Object.assign({}, booking, { portal_token: newToken });
+    }
+
+    const portalUrl = 'https://www.texasforevercharters.com/booking/' + booking.portal_token;
+
+    let sent_to = null;
+    if (send) {
+      if (!booking.customer_email) {
+        return res.status(400).json({ error: 'No customer email on this booking — cannot send.' });
+      }
+      await sendPortalLinkEmail(booking, portalUrl);
+      sent_to = booking.customer_email;
+    }
+
+    return res.status(200).json({ ok: true, portal_url: portalUrl, sent_to });
+  } catch (err) {
+    console.error('portal-link error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 async function handleDeleteBooking(req, res) {
   if (req.method !== 'POST' && req.method !== 'DELETE') return res.status(405).end();
   const session_id = (req.body && req.body.session_id) || req.query.session_id;
@@ -1278,6 +1320,7 @@ const ROUTES = {
   'capture-damage-charge':handleCaptureDamageCharge,
   'list-waivers':         handleListWaivers,
   'send-waiver-link':     handleSendWaiverLink,
+  'portal-link':          handlePortalLink,
   'waivers':              handleListAllWaivers,
   'leads':                  handleListLeads,
   'mark-lead-contacted':    handleMarkLeadContacted,

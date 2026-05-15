@@ -3237,6 +3237,8 @@
       items.push(`<button class="bk-menu-item" onclick="sendPaymentLink('${id}', this)">📧 Send Payment Link</button>`);
     }
     items.push(`<button class="bk-menu-item" onclick="bkResendConfirmation('${id}')">📧 Resend Confirmation</button>`);
+    items.push(`<button class="bk-menu-item" onclick="bkCopyPortalLink('${id}')">🔗 Copy Portal Link</button>`);
+    items.push(`<button class="bk-menu-item" onclick="bkSendPortalLink('${id}')">📤 Send Portal Link</button>`);
 
     /* ── Damage hold (only when an active hold exists) ────────────── */
     if (hasActiveHold) {
@@ -3373,6 +3375,52 @@
     }
 
     showSuccess(`Confirmation email resent to ${result.email || target}`);
+    await loadData();
+  }
+
+  /* Copy Portal Link to clipboard. Hits the shared portal-link endpoint
+     with send=false so a missing portal_token gets generated on-the-fly
+     before we copy. loadData() refreshes the in-memory bookings list so
+     subsequent actions see the new token. */
+  async function bkCopyPortalLink(id) {
+    bkCloseMenus();
+    const b = bkFindBooking(id); if (!b) return;
+    const result = await api('/api/admin?action=portal-link', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: id, send: false }),
+    });
+    if (!result || !result.ok) {
+      showError(result?.error || 'Could not get portal link.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(result.portal_url);
+      showSuccess('Portal link copied to clipboard.');
+    } catch {
+      // Clipboard API unavailable (insecure context, older browser, etc.)
+      showError('Clipboard unavailable. Portal URL: ' + result.portal_url);
+    }
+    await loadData();
+  }
+
+  /* Send Portal Link by email. Same endpoint with send=true. Confirms
+     destination email before firing (matches bkSendWaiverLink pattern).
+     loadData() refreshes the in-memory bookings list. */
+  async function bkSendPortalLink(id) {
+    bkCloseMenus();
+    const b = bkFindBooking(id); if (!b) return;
+    const target = b.customer_email;
+    if (!target) { showError('No customer email on this booking — cannot send.'); return; }
+    if (!confirm(`Email the portal link to ${target}?`)) return;
+    const result = await api('/api/admin?action=portal-link', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: id, send: true }),
+    });
+    if (!result || !result.ok) {
+      showError(result?.error || 'Failed to send portal link.');
+      return;
+    }
+    showSuccess('Portal link sent to ' + (result.sent_to || target));
     await loadData();
   }
 
