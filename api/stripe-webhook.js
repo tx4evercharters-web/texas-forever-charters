@@ -236,11 +236,33 @@ async function handleBalancePayment(event, res) {
      in full with a missing audit row — annoying but recoverable. The
      reverse (audit row exists, but the patch silently failed) would
      leave a customer who paid still showing a balance — much worse. */
+
+  /* IMPORTANT — admin.html bkPaymentStatus() reads amount_total (not
+     paid_in_full) as its primary signal for the PAID IN FULL / UNPAID
+     pill. If we patch paid_in_full=true but leave amount_total at its
+     pre-payment value (often 0 for admin-created bookings), the admin
+     UI will show UNPAID despite the booking being fully paid. This was
+     the test3 bug surfaced post-Commit 8: portal correctly showed
+     paid-in-full while admin showed UNPAID because of this missing
+     write. The accumulation pattern (existing + new) is correct for
+     hybrid wizard-deposit + portal-balance flows as well as admin-
+     created flows. */
   const updates = {
     paid_in_full:              true,
     remaining_balance:         0,
+    amount_total:              (Number(booking.amount_total) || 0) + session.amount_total,
     balance_payment_intent_id: session.payment_intent || null,
   };
+
+  /* Backfill Stripe IDs when the booking was admin-created (no Stripe
+     touchpoint at booking creation, so these are null). Conditional so
+     we don't overwrite values written by the wizard-flow webhook. Mirrors
+     the existing admin Payment Link branch pattern at lines ~415-424 of
+     this file. payment_method_id is omitted — deriving it from a Checkout
+     Session response requires a follow-up Stripe API call; not worth the
+     round-trip for this fix. */
+  if (!booking.payment_intent_id)  updates.payment_intent_id  = session.payment_intent || null;
+  if (!booking.stripe_customer_id) updates.stripe_customer_id = session.customer || null;
 
   try {
     await patchBooking(sessionId, updates);
