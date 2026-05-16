@@ -286,6 +286,32 @@
     }
     .portal-glance-payment-amount.balance { color: #FCD34D; }
 
+    /* ── Pay Balance Now button (inline below the Total/Deposit/Balance
+       cells when paid_in_full=false and is_past=false) ── */
+    .portal-pay-balance-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 16px 24px;
+      background: var(--red);
+      color: var(--white);
+      border: 1.5px solid var(--red);
+      border-radius: 10px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    }
+    .portal-pay-balance-btn:hover:not(:disabled) {
+      background: var(--red-dark);
+      border-color: var(--red-dark);
+    }
+    .portal-pay-balance-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     /* ── Footer ── */
     .portal-footer {
       padding: 28px 24px 36px;
@@ -1257,6 +1283,28 @@
       }
 
       renderPortal(data);
+
+      /* Post-Stripe-Checkout return handling. The Pay Balance flow redirects
+         to Stripe and back to /booking/<token>?payment=success|cancelled.
+         Surface a toast and clean the URL so a refresh doesn't re-toast. */
+      handlePaymentReturn();
+    }
+
+    function handlePaymentReturn() {
+      const params = new URLSearchParams(window.location.search);
+      const payment = params.get('payment');
+      if (payment === 'success') {
+        showToast('Payment received. Thank you.');
+      } else if (payment === 'cancelled') {
+        showToast('Payment cancelled.');
+      } else {
+        return;
+      }
+      /* Strip the query param so a reload (or share) doesn't re-trigger
+         the toast and doesn't expose the payment-status hint in the URL. */
+      try {
+        history.replaceState({}, '', window.location.pathname);
+      } catch (e) { /* older browsers — ignore */ }
     }
 
     function renderPortal(data) {
@@ -1288,8 +1336,8 @@
       addRow(rowsEl, 'Organizer',    data.organizer_first_name || '-');
 
       /* Payment subsection. paid_in_full → green pill. Else → grid of
-         Total / Deposit Paid / Balance Due. Pay Balance Now button is
-         deferred to a later Phase 4 commit per the minimal-shell scope. */
+         Total / Deposit Paid / Balance Due + Pay Balance Now button
+         (only when not past-charter). */
       const payEl = document.getElementById('portalGlancePayment');
       if (data.paid_in_full) {
         payEl.innerHTML =
@@ -1298,6 +1346,12 @@
         const total    = data.grand_total       != null ? formatMoney(data.grand_total)       : '-';
         const deposit  = data.deposit_amount    != null ? formatMoney(data.deposit_amount)    : '-';
         const balance  = data.remaining_balance != null ? formatMoney(data.remaining_balance) : '-';
+        const balanceNum = Number(data.remaining_balance) || 0;
+        /* Show the Pay Balance Now button only for upcoming charters with a
+           real balance owed. Past charters and zero-balance rows skip it.
+           The server-side endpoint enforces the same gates — UI hide is
+           a usability hint, not a security boundary. */
+        const showPayBtn = !data.is_past && balanceNum > 0;
         payEl.innerHTML =
           '<div class="portal-glance-payment-balance">' +
             '<div class="portal-glance-payment-cell">' +
@@ -1312,7 +1366,12 @@
               '<div class="portal-glance-payment-label">Balance Due</div>' +
               '<div class="portal-glance-payment-amount balance">' + balance + '</div>' +
             '</div>' +
-          '</div>';
+          '</div>' +
+          (showPayBtn
+            ? '<button id="portalPayBalanceBtn" type="button" class="portal-pay-balance-btn" onclick="payBalance()">' +
+                'Pay Remaining Balance: ' + balance +
+              '</button>'
+            : '');
       }
 
       /* Pre-charter sections. Past charters skip all of these — the
@@ -1415,6 +1474,48 @@
         );
       } catch (e) {
         showToast('Could not copy. Long-press the link to copy manually.');
+      }
+    }
+
+    /* ── Pay Balance Now ────────────────────────────────────────────────
+       Posts the current portal_token to /api/portal-checkout, redirects to
+       the returned Stripe Checkout Session URL. The backend computes the
+       balance amount server-side from the booking row, so this client
+       never sees or sends a dollar amount — the token is the only input. */
+    async function payBalance() {
+      const btn = document.getElementById('portalPayBalanceBtn');
+      if (!btn) return;
+      const token = parseTokenFromPath();
+      if (!token) {
+        showToast('Could not load checkout. Refresh the page and try again.');
+        return;
+      }
+
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Loading checkout…';
+
+      try {
+        const res = await fetch('/api/portal-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ portal_token: token }),
+        });
+        const data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data.url) {
+          showToast(data.error || 'Could not start checkout. Please call (737) 368-1669.');
+          btn.disabled = false;
+          btn.textContent = originalText;
+          return;
+        }
+        /* Redirect to Stripe Checkout. The customer returns to this portal
+           with ?payment=success or ?payment=cancelled — handled at load. */
+        window.location.href = data.url;
+      } catch (err) {
+        console.error('[payBalance] failed:', err);
+        showToast('Network error. Please try again or call (737) 368-1669.');
+        btn.disabled = false;
+        btn.textContent = originalText;
       }
     }
 

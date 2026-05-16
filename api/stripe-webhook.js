@@ -17,6 +17,7 @@ const {
   findLeadByPaymentIntent,
   patchLead,
 } = require('../lib/storage');
+const { logBookingEvent } = require('../lib/booking-events');
 
 const LEAD_HIGH_VALUE_THRESHOLD = 500;
 
@@ -149,6 +150,124 @@ async function handleChargeRefunded(event, res) {
   }
 
   return res.status(200).json({ received: true, refunded: newRefundDollars });
+}
+
+/* ── Portal-initiated balance payment ─────────────────────────────────
+   Fires when a customer pays their remaining balance via the customer
+   portal's Pay Balance Now button (Phase 4 Commit 8). The portal flow
+   creates a Stripe Checkout Session with metadata.payment_type='balance'
+   and metadata.booking_session_id set; this handler matches on those.
+
+   IMPORTANT — dispatch order (see the dispatcher below):
+
+     1. metadata.payment_type === 'balance'    → THIS handler (portal)
+     2. metadata.original_session_id           → existing admin Payment Link branch
+     3. fallthrough                            → new-booking wizard flow
+
+   Order matters. Both balance flows mutate booking state but use
+   different idempotency keys and notification patterns: this handler
+   gates on `paid_in_full` (strongest signal) and does NOT send a TFC
+   email (Stripe's auto-receipt covers confirmation). The admin Payment
+   Link branch gates on `confirmation_email_sent` and sends the full
+   "Booking Confirmed" email. Reordering would route balance payments
+   through the wrong handler.
+
+   Idempotency: a Stripe webhook retry (or a second event for the same
+   session) hits the `paid_in_full === true` check at the top and
+   returns 200 without re-mutating. Audit-log row in booking_events is
+   written best-effort AFTER the state mutation. */
+async function handleBalancePayment(event, res) {
+  const session = event.data.object;
+  const meta = session.metadata || {};
+  const sessionId = meta.booking_session_id;
+
+  console.log('[stripe-webhook] balance payment',
+    'stripe_session:', session.id,
+    '| booking_session:', sessionId,
+    '| amount_total:', session.amount_total,
+    '| payment_intent:', session.payment_intent);
+
+  if (!sessionId) {
+    console.error('[stripe-webhook] balance payment with no booking_session_id in metadata — cannot reconcile',
+      'stripe_session:', session.id);
+    return res.status(200).json({ received: true, ignored: 'no_booking_session_id' });
+  }
+
+  /* Stripe only fires checkout.session.completed for sessions where
+     payment_status === 'paid', but be defensive. */
+  if (session.payment_status !== 'paid') {
+    console.log('[stripe-webhook] balance session not paid yet, acknowledging without processing',
+      session.id, '| status:', session.payment_status);
+    return res.status(200).json({ received: true, payment_status: session.payment_status });
+  }
+
+  let booking;
+  try {
+    booking = await findBookingBySessionId(sessionId);
+  } catch (err) {
+    console.error('[stripe-webhook] balance payment booking lookup failed:',
+      sessionId, '|', err.message);
+    return res.status(500).json({ error: 'lookup_failed' });
+  }
+
+  if (!booking) {
+    console.warn('[stripe-webhook] balance payment for unknown booking:', sessionId,
+      '| stripe_session:', session.id);
+    /* 200 because there's no point retrying a webhook for a booking that
+       doesn't exist. Logged loud so admin can investigate. */
+    return res.status(200).json({ received: true, ignored: 'booking_not_found' });
+  }
+
+  /* Application-level idempotency gate. If a webhook retry arrives after
+     the first event already flipped paid_in_full, skip the patch + the
+     event-log write. Returns 200 so Stripe stops retrying. */
+  if (booking.paid_in_full === true) {
+    console.log('[stripe-webhook] balance payment idempotent — booking already paid in full',
+      sessionId, '| stripe_session:', session.id);
+    return res.status(200).json({
+      received: true,
+      applied_to: sessionId,
+      idempotent: 'already_paid_in_full',
+    });
+  }
+
+  /* State mutation FIRST, audit-log write SECOND. A logging failure
+     after a successful patch leaves the customer correctly marked paid
+     in full with a missing audit row — annoying but recoverable. The
+     reverse (audit row exists, but the patch silently failed) would
+     leave a customer who paid still showing a balance — much worse. */
+  const updates = {
+    paid_in_full:              true,
+    remaining_balance:         0,
+    balance_payment_intent_id: session.payment_intent || null,
+  };
+
+  try {
+    await patchBooking(sessionId, updates);
+    console.log('[stripe-webhook] balance payment applied',
+      sessionId, '| amount_total:', session.amount_total);
+  } catch (err) {
+    console.error('[stripe-webhook] balance patch failed:',
+      sessionId, '|', err.message);
+    /* Return 5xx so Stripe retries — the customer's money has moved and
+       the booking row MUST eventually flip to paid_in_full. */
+    return res.status(500).json({ error: 'patch_failed', detail: err.message });
+  }
+
+  /* Best-effort audit log. logBookingEvent catches its own errors so a
+     write failure here does not bubble up to a non-2xx Stripe response. */
+  await logBookingEvent(sessionId, 'balance_paid', {
+    amount_cents:      session.amount_total,
+    stripe_session_id: session.id,
+    payment_intent_id: session.payment_intent || null,
+    source:            'portal',
+  }, 'webhook');
+
+  return res.status(200).json({
+    received:   true,
+    applied_to: sessionId,
+    amount_paid_cents: session.amount_total,
+  });
 }
 
 async function handleDisputeCreated(event, res) {
@@ -342,7 +461,26 @@ module.exports = async function handler(req, res) {
   const stripeCustomerId = session.customer || null;
   const paymentIntentId = session.payment_intent || null;
 
-  /* ── Remaining-balance branch ──────────────────────────────────────────
+  /* ── checkout.session.completed dispatch order ────────────────────────
+     The three branches below mutate booking state in DIFFERENT ways and
+     have DIFFERENT idempotency keys. Order matters:
+
+       1. meta.payment_type === 'balance'    → handleBalancePayment (portal)
+       2. meta.original_session_id            → admin Payment Link branch
+       3. fallthrough                         → new-booking wizard flow
+
+     The portal-initiated balance flow is MORE SPECIFIC than the admin
+     Payment Link flow (which only checks original_session_id). Checking
+     payment_type first ensures portal-balance events route to the right
+     handler with the right idempotency check (paid_in_full vs the admin
+     branch's confirmation_email_sent). Do not reorder without updating
+     handleBalancePayment's dispatch-order comment too. */
+
+  if (meta.payment_type === 'balance') {
+    return await handleBalancePayment(event, res);
+  }
+
+  /* ── Remaining-balance branch (admin Payment Link) ─────────────────────
      When a customer pays via the admin "Send Payment Link" action, the link
      carries meta.original_session_id pointing at the existing admin-created
      booking row. We patch THAT row to paid_in_full instead of inserting a
