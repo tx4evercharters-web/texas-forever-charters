@@ -6,6 +6,8 @@ const {
   sendStripeRefundReconciledAlert,
   sendChargebackAlert,
   sendHighValueLeadAlert,
+  sendBalancePaidEmail,
+  sendAdminActionEmailFailureAlert,
 } = require('../lib/send-emails');
 const {
   saveBooking,
@@ -284,6 +286,39 @@ async function handleBalancePayment(event, res) {
     payment_intent_id: session.payment_intent || null,
     source:            'portal',
   }, 'webhook');
+
+  /* Best-effort TFC-branded balance-paid email. Customer's money is
+     already in our account at this point — a Resend failure must NOT
+     escalate to a non-200 webhook response or Stripe will retry the
+     event (which would re-fire this email and re-write the audit row).
+     Stripe's auto-receipt continues to fire regardless; this email is
+     the brand-consistent follow-up that restates the charter and
+     provides the portal back-link.
+
+     Pass the post-patch booking state (existing row + updates merged
+     locally) so the email reflects paid_in_full=true, remaining_balance=0,
+     accumulated amount_total — saves a Supabase round-trip vs re-fetching. */
+  const bookingAfterPatch = Object.assign({}, booking, updates);
+  try {
+    await sendBalancePaidEmail(bookingAfterPatch);
+  } catch (emailErr) {
+    console.error('[stripe-webhook] balance-paid email failed (payment still applied):',
+      sessionId, '|', emailErr.message);
+    /* G15 defensive alert — surface the failure to the business inbox so
+       admin has a paper trail when a customer-facing send fails. Wrapped
+       in its own try/catch so a defensive-alert failure can't escalate. */
+    try {
+      await sendAdminActionEmailFailureAlert(
+        'balance-paid-email',
+        bookingAfterPatch,
+        bookingAfterPatch.customer_email,
+        emailErr.message
+      );
+    } catch (alertErr) {
+      console.error('[stripe-webhook] balance-paid defensive alert ALSO failed (payment still applied):',
+        sessionId, '|', alertErr.message);
+    }
+  }
 
   return res.status(200).json({
     received:   true,
