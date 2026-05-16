@@ -4933,19 +4933,24 @@
         ? `<div style="font-size:11px;color:var(--gray-400)">${esc(b.city && b.state ? b.city+', '+b.state : b.state)}</div>`
         : '';
 
-      // Experience cell: experience + duration + time slot as subtitle
-      const expSubtitleParts = [];
-      if (b.duration) expSubtitleParts.push(b.duration + ' hrs');
-      if (b.time_slot) expSubtitleParts.push(b.time_slot);
-      const expSubtitle = expSubtitleParts.length
-        ? `<div style="font-size:11px;color:var(--gray-400)">${esc(expSubtitleParts.join(' · '))}</div>`
+      // Date cell secondary line: time + duration (moved from Experience).
+      // Format "2:30pm · 3 hrs" — time first, duration second. font-weight:400
+      // override so this line doesn't inherit td-primary's bold styling.
+      const dateSubtitleParts = [];
+      if (b.time_slot) dateSubtitleParts.push(b.time_slot);
+      if (b.duration)  dateSubtitleParts.push(b.duration + ' hrs');
+      const dateSubtitle = dateSubtitleParts.length
+        ? `<div style="font-size:11px;color:var(--gray-400);font-weight:400">${esc(dateSubtitleParts.join(' · '))}</div>`
         : '';
 
       const statusBadge = bkStatusBadge(b);
       const rowOpacity = bkStatus(b) === 'cancelled' ? ' style="opacity:0.7"' : '';
       return `
         <tr${rowOpacity}>
-          <td class="td-primary" style="white-space:nowrap">${esc(fmtDate(b.date))}</td>
+          <td class="td-primary" style="white-space:nowrap">
+            <div>${esc(fmtDate(b.date))}</div>
+            ${dateSubtitle}
+          </td>
           <td>
             <div style="font-weight:600">${esc(b.full_name||'—')}${returningBadge}</div>
             <div style="font-size:11px;color:var(--gray-400)">${esc(b.customer_email||'')}</div>
@@ -4954,10 +4959,7 @@
           </td>
           <td style="white-space:nowrap">${esc(b.phone||'—')}</td>
           <td style="white-space:nowrap"><span class="badge ${b.vessel==='yacht' ? 'badge-navy' : 'badge-red'}">${esc(vesselLabel(b.vessel))}</span></td>
-          <td>
-            <div>${esc(b.experience||'—')}</div>
-            ${expSubtitle}
-          </td>
+          <td>${esc(b.experience||'—')}</td>
           <td>${esc(b.party_size ? b.party_size+' guests' : '—')}</td>
           <td class="addon-list">${esc(addOnText(b.add_ons))}</td>
           <td style="white-space:nowrap;font-weight:700">${fmtMoney(b.grand_total || (b.amount_total ? b.amount_total/100 : 0))}</td>
