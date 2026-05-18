@@ -3141,6 +3141,25 @@
     return null;
   }
 
+  /* Render a single tel: anchor wrapping the displayed phone string. Returns
+     null if phoneToTelDigits couldn't form a valid URI — callers OR-fallback
+     with their own empty-state markup (empty string, "not provided" span,
+     etc.) so each site can keep its existing fallback semantics. The
+     styleAttr param is the full inline style="..." string the call site
+     wants on the anchor; pass null/empty to omit. aria-label and title both
+     announce the full display phone for screen readers and hover tooltips,
+     matching the pattern from phoneCellHtml. Not used by phoneCellHtml
+     because that helper renders icons next to (not wrapping) the phone
+     text — different shape, can't share. */
+  function telAnchor(phone, styleAttr) {
+    const tel = phoneToTelDigits(phone);
+    if (!tel) return null;
+    const display = esc(phone);
+    return '<a href="tel:' + tel + '"' + (styleAttr ? ' ' + styleAttr : '') +
+      ' aria-label="Call ' + display + '" title="Call ' + display + '">' +
+      display + '</a>';
+  }
+
   /* Render a phone-number table cell with inline call + text icons. Used
      by the Bookings, Overdue, and Customers tables. Returns the fallback
      em-dash when phone is empty/null. Returns plain phone text (no icons)
@@ -4196,9 +4215,9 @@
         row('Date of birth', esc(w.date_of_birth || '')) +
         row('Age', w.age != null ? String(w.age) : '') +
         row('Email', w.signer_email ? '<a href="mailto:' + esc(w.signer_email) + '" style="color:var(--navy);">' + esc(w.signer_email) + '</a>' : '') +
-        row('Phone',  w.signer_phone ? '<a href="tel:'    + esc(w.signer_phone) + '" style="color:var(--navy);">' + esc(w.signer_phone) + '</a>' : '') +
+        row('Phone',  telAnchor(w.signer_phone, 'style="color:var(--navy);"') || '') +
         row('Emergency contact', esc(w.emergency_contact_name || '')) +
-        row('Emergency phone',   w.emergency_contact_phone ? '<a href="tel:' + esc(w.emergency_contact_phone) + '" style="color:var(--navy);">' + esc(w.emergency_contact_phone) + '</a>' : '') +
+        row('Emergency phone',   telAnchor(w.emergency_contact_phone, 'style="color:var(--navy);"') || '') +
         row('Relationship', esc(w.emergency_contact_relationship || '')) +
         minorBlock +
         row('Media release', w.media_release_accepted ? 'Accepted' : 'Declined') +
@@ -4381,9 +4400,8 @@
       const total = parseFloat(l.grand_total || 0);
       const totalStr = total > 0 ? fmtMoney(total) : '—';
       const charter = [vesselLabel(l.vessel), l.experience || '', l.date ? fmtDate(l.date) : '', l.time_slot || ''].filter(Boolean).join(' · ');
-      const phoneCell = l.phone
-        ? '<a href="tel:' + esc(l.phone) + '" style="color:var(--navy);text-decoration:none;font-weight:600;">' + esc(l.phone) + '</a>'
-        : '<span style="color:var(--gray-400);font-style:italic;font-size:11px;">not provided</span>';
+      const phoneCell = telAnchor(l.phone, 'style="color:var(--navy);text-decoration:none;font-weight:600;"')
+        || '<span style="color:var(--gray-400);font-style:italic;font-size:11px;">not provided</span>';
       /* Every lead gets an action button. Locked leads still open the
          modal — admin can still update notes. The button label reflects
          whether this is a first log or an edit. */
@@ -6819,10 +6837,9 @@
             : '—';
           const emName  = w.emergency_contact_name  || '';
           const emPhone = w.emergency_contact_phone || '';
+          const emPhoneAnchor = telAnchor(emPhone, 'style="color:var(--gray-600);font-size:11px;text-decoration:none;"');
           const emergencyCell = (emName || emPhone)
-            ? esc(emName || '—') + (emPhone
-                ? '<br><a href="tel:' + esc(emPhone) + '" style="color:var(--gray-600);font-size:11px;text-decoration:none;">' + esc(emPhone) + '</a>'
-                : '')
+            ? esc(emName || '—') + (emPhoneAnchor ? '<br>' + emPhoneAnchor : '')
             : '<span style="color:var(--gray-400);">—</span>';
           return `
             <tr>
