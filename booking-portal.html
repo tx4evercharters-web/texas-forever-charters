@@ -241,6 +241,23 @@
       color: var(--white);
       align-self: center;
     }
+    /* Inline links inside an At-a-Glance value (e.g. Departure Location's
+       "Get directions" map link). Matches .portal-footer a treatment so the
+       link reads as inline body text on the dark card rather than as an
+       urgent CTA. The .portal-where-callout pattern was the more aggressive
+       alternative; rejected here because Get-Directions is helpful, not
+       urgent. */
+    .portal-glance-value a {
+      color: var(--white);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.25);
+      transition: border-color 0.15s;
+    }
+    .portal-glance-value a:hover { border-bottom-color: var(--red); }
+    .portal-glance-sep {
+      margin: 0 6px;
+      color: rgba(255,255,255,0.3);
+    }
 
     /* ── Payment subsection ── */
     .portal-glance-payment {
@@ -1208,6 +1225,15 @@
       pontoon: { src: '/images/bentley-main-photo.jpeg', alt: '24ft Bentley Navigator pontoon at Lake Travis' },
     };
 
+    /* Departure location is constant across all TFC charters — TFC operates
+       exclusively from Volente Beach Waterpark & Resort. No DB column for
+       this today; if multi-marina support ever ships, move these to the
+       portal API response and read from data. The maps URL uses
+       maps.google.com so iOS Safari deep-links into Apple Maps automatically
+       while Android and desktop open Google Maps. Single URL, no UA sniff. */
+    const MARINA_NAME     = 'Volente Beach Waterpark & Resort';
+    const MARINA_MAPS_URL = 'https://maps.google.com/?q=16107+FM+2769+Leander+TX+78641';
+
     /* Format a YYYY-MM-DD charter date as "Saturday, June 6, 2026". Mirrors
        the date-formatting pattern used in booking-confirmation.html and
        lib/send-emails.js. T12:00:00 avoids UTC-midnight drift on the
@@ -1242,6 +1268,21 @@
       row.innerHTML =
         '<div class="portal-glance-key">' + escapeHtml(label) + '</div>' +
         '<div class="portal-glance-value">' + escapeHtml(value) + '</div>';
+      parent.appendChild(row);
+    }
+
+    /* HTML-allowing sibling of addRow. The value goes into innerHTML AS-IS —
+       callers are responsible for escaping any user-derived strings inside
+       valueHtml themselves. Label is still escaped because labels are short
+       trusted-author strings and adding the safety layer there is cheap. Use
+       this only for rows that need inline markup (anchors, spans, etc.) and
+       only when the value's dynamic substrings are individually escaped. */
+    function addRowHtml(parent, label, valueHtml) {
+      const row = document.createElement('div');
+      row.className = 'portal-glance-row';
+      row.innerHTML =
+        '<div class="portal-glance-key">' + escapeHtml(label) + '</div>' +
+        '<div class="portal-glance-value">' + valueHtml + '</div>';
       parent.appendChild(row);
     }
 
@@ -1337,6 +1378,11 @@
       const rowsEl = document.getElementById('portalGlanceRows');
       rowsEl.innerHTML = '';
       addRow(rowsEl, 'Vessel',       data.vessel_display || '-');
+      addRowHtml(rowsEl, 'Departure Location',
+        escapeHtml(MARINA_NAME) +
+        ' <span class="portal-glance-sep">·</span> ' +
+        '<a href="' + MARINA_MAPS_URL + '" target="_blank" rel="noopener noreferrer">Get directions →</a>'
+      );
       addRow(rowsEl, 'Experience',   data.experience     || '-');
       addRow(rowsEl, 'Duration',     data.duration ? data.duration + ' hours' : '-');
       addRow(rowsEl, 'Party Size',   data.party_size ? data.party_size + ' guests' : '-');
