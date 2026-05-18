@@ -1,7 +1,6 @@
-const crypto = require('crypto');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
-const { requireAuth, generateToken } = require('../lib/auth');
+const { requireAuth } = require('../lib/auth');
 const {
   getBookings,
   markBookingPaid,
@@ -42,23 +41,10 @@ const { logBookingEvent, EVENT_TYPES } = require('../lib/booking-events');
 
 /* ── Action handlers ── */
 
-async function handleLogin(req, res) {
-  if (req.method !== 'POST') return res.status(405).end();
-
-  const { password } = req.body || {};
-  const adminPassword = (process.env.ADMIN_PASSWORD || '').trim();
-
-  if (!adminPassword) return res.status(500).json({ error: 'ADMIN_PASSWORD not configured' });
-  if (!password) return res.status(400).json({ error: 'Password required' });
-
-  const bufA = Buffer.from(String(password).trim());
-  const bufB = Buffer.from(adminPassword);
-  const match = bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
-
-  if (!match) return res.status(401).json({ error: 'Invalid password' });
-
-  return res.status(200).json({ token: generateToken(adminPassword) });
-}
+/* The shared-password handleLogin was removed when admin auth moved to
+   Google OAuth (commit "admin auth - google oauth login restricted to
+   whitelist..."). Login now flows through /api/auth-google + a session
+   cookie verified by requireAuth in the router below. */
 
 async function handleBookings(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
@@ -1379,10 +1365,12 @@ async function handleMarkLeadContacted(req, res) {
 
 /* ── Router ── */
 
-const PUBLIC_ACTIONS = new Set(['login']);
+/* Every action in this router requires a valid admin session. The previous
+   PUBLIC_ACTIONS escape hatch for 'login' is gone — login is now its own
+   endpoint at /api/auth-google. If a future public-but-co-located action
+   needs to be added back, restore the Set and the early-return logic. */
 
 const ROUTES = {
-  'login':             handleLogin,
   'bookings':          handleBookings,
   'blackouts':         handleListBlackouts,
   'add-blackout':      handleAddBlackout,
@@ -1420,7 +1408,15 @@ module.exports = async function handler(req, res) {
 
   if (!route) return res.status(400).json({ error: `Unknown action: ${action}` });
 
-  if (!PUBLIC_ACTIONS.has(action) && !requireAuth(req, res)) return;
+  /* requireAuth verifies the session cookie + re-checks ADMIN_WHITELIST.
+     Returns the user object ({ email, name }) on success, or null after
+     sending 401. We attach the user to req so handlers can reference it
+     for per-user audit-log attribution. Commit A still passes literal
+     'admin' to logBookingEvent everywhere; Commit B threads req.user.email
+     through every call site. */
+  const user = requireAuth(req, res);
+  if (!user) return;
+  req.user = user;
 
   return route(req, res);
 };

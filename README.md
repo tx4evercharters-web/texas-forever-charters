@@ -100,7 +100,7 @@ Set in Vercel Project Settings → Environment Variables.
 | Mailchimp | `MAILCHIMP_API_KEY`, `MAILCHIMP_AUDIENCE_ID` |
 | Anthropic | `ANTHROPIC_API_KEY` |
 | Vercel Cron | `CRON_SECRET` |
-| Admin auth | `ADMIN_PASSWORD` |
+| Admin auth | `GOOGLE_CLIENT_ID`, `ADMIN_JWT_SECRET`, `ADMIN_WHITELIST`, `ADMIN_DISPLAY_NAMES` |
 | Misc | `SITE_BASE_URL`, `GOOGLE_REVIEW_URL` |
 
 ---

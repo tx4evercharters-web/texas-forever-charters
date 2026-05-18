@@ -33,10 +33,17 @@ const REQUIRED_VARS = [
   'STRIPE_WEBHOOK_SECRET',
   'RESEND_API_KEY',
   'ANTHROPIC_API_KEY',
-  'ADMIN_PASSWORD',
   'CRON_SECRET',
   'MAILCHIMP_API_KEY',
   'MAILCHIMP_AUDIENCE_ID',
+  // Admin auth (Google OAuth + signed session cookie). GOOGLE_CLIENT_SECRET
+  // is intentionally NOT listed: ID-token verification only needs
+  // GOOGLE_CLIENT_ID (used as the audience). The client secret would only
+  // be required for an authorization-code flow, which this app does not use.
+  'GOOGLE_CLIENT_ID',
+  'ADMIN_JWT_SECRET',
+  'ADMIN_WHITELIST',
+  'ADMIN_DISPLAY_NAMES',
 ];
 
 const OPTIONAL_VARS = [

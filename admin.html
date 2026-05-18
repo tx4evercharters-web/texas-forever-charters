@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Texas Forever Charters</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Google Identity Services. Loaded async + defer; bootstrapAuth() polls
+       window.google.accounts.id until the library is ready before rendering
+       the Sign-In button. -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -168,15 +172,22 @@
     .login-logo .sub { font-size: 11px; color: var(--gray-400); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
     .login-logo .bar { width: 40px; height: 3px; background: var(--red); margin: 12px auto 0; border-radius: 2px; }
 
-    .login-card label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-600); margin-bottom: 6px; }
-    .login-card input[type="password"] { width: 100%; padding: 12px 14px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 15px; outline: none; transition: border-color 0.15s; font-family: 'Barlow', sans-serif; }
-    .login-card input[type="password"]:focus { border-color: var(--navy); }
+    .login-hint { font-size: 13px; color: var(--gray-600); text-align: center; line-height: 1.6; margin-bottom: 20px; }
+    .login-google-wrap { display: flex; justify-content: center; min-height: 44px; margin-top: 6px; }
+    .login-google-wrap.is-disabled { opacity: 0.5; pointer-events: none; }
 
-    .btn-login { width: 100%; margin-top: 18px; padding: 13px; background: var(--navy); color: var(--white); border: none; border-radius: 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: background 0.15s; }
-    .btn-login:hover { background: var(--navy-dark); }
-    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+    .login-error { margin-top: 14px; padding: 10px 14px; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 6px; font-size: 13px; color: var(--red); display: none; text-align: center; }
 
-    .login-error { margin-top: 14px; padding: 10px 14px; background: var(--red-bg); border: 1px solid var(--red-border); border-radius: 6px; font-size: 13px; color: var(--red); display: none; }
+    .login-denied { text-align: center; padding: 8px 0; }
+    .login-denied-icon { font-size: 48px; line-height: 1; margin-bottom: 12px; }
+    .login-denied h2 { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: var(--red); letter-spacing: 3px; margin: 0 0 10px; }
+    .login-denied p { color: var(--gray-600); font-size: 13px; line-height: 1.6; margin: 0 0 18px; }
+    .login-denied button { padding: 10px 22px; background: var(--navy); color: var(--white); border: none; border-radius: 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; }
+
+    .header-user { display: inline-flex; align-items: center; gap: 8px; margin-right: 14px; font-size: 12px; color: rgba(255,255,255,0.75); }
+    .header-user strong { color: #FFFFFF; font-weight: 700; }
+    .header-user .header-user-logout { color: rgba(255,255,255,0.85); background: transparent; border: 1px solid rgba(255,255,255,0.25); padding: 4px 10px; border-radius: 4px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; font-family: 'Barlow Condensed', sans-serif; }
+    .header-user .header-user-logout:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
 
     /* ── App shell ── */
     #app { display: none; }
@@ -1842,15 +1853,16 @@
 <!-- ── Login ── -->
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-logo">
-      <div class="brand">Texas Forever Charters</div>
-      <div class="sub">Admin Dashboard</div>
-      <div class="bar"></div>
+    <div id="login-form">
+      <div class="login-logo">
+        <div class="brand">Texas Forever Charters</div>
+        <div class="sub">Admin Dashboard</div>
+        <div class="bar"></div>
+      </div>
+      <div class="login-hint">Sign in with your authorized Google account to continue.</div>
+      <div class="login-google-wrap" id="google-signin-btn"></div>
+      <div class="login-error" id="login-error"></div>
     </div>
-    <label for="pwd-input">Password</label>
-    <input type="password" id="pwd-input" placeholder="Enter admin password" autocomplete="current-password">
-    <button class="btn-login" id="login-btn" onclick="doLogin()">Sign In</button>
-    <div class="login-error" id="login-error"></div>
   </div>
 </div>
 
@@ -1859,6 +1871,7 @@
   <header>
     <a href="index.html" class="header-brand" aria-label="Texas Forever Charters home"><img src="images/New_Tx4Ever_Logo.png" alt="Texas Forever Charters"></a>
     <div class="header-right">
+      <span class="header-user" id="header-user" style="display:none;"></span>
       <span class="date-label" id="header-date"></span>
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
@@ -3087,7 +3100,6 @@
     if (bk) bk.innerHTML = '<option value="">— select —</option>' + TFCTimeSlots.renderOptions();
   })();
 
-  const TOKEN_KEY = 'tfc_admin_token';
   let allBookings = [];           // upcoming only — used by Bookings table
   let allBookingsAll = [];        // upcoming + past — used by Analytics
   let allBlackouts = [];
@@ -3097,9 +3109,10 @@
   let analyticsFilter = { type: 'preset', preset: 'month', year: null, customStart: null, customEnd: null };
 
   /* ── Helpers ── */
-  function getToken() { return localStorage.getItem(TOKEN_KEY); }
-  function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
-  function clearToken() { localStorage.removeItem(TOKEN_KEY); }
+  /* Session auth state. Populated by bootstrapAuth() from /api/auth-me on
+     page load, refreshed on successful Google sign-in, cleared on logout
+     or 401. Cookie itself is httpOnly and never touched by JS. */
+  let currentUser = null;
 
   function fmtDate(str) {
     if (!str) return '—';
@@ -3493,12 +3506,15 @@
        confirmation page). It looks up the booking, sends, and stamps
        confirmation_email_sent=true on success — so a refresh below picks
        up the updated state. */
-    const token = getToken();
+    /* /api/resend-confirmation is intentionally unauthenticated (same path
+       a customer hits from the confirmation page). No Authorization header
+       or session cookie needed; the endpoint locates the booking by
+       session_id and resends to the email on the row. */
     let result = null;
     try {
       const res = await fetch('/api/resend-confirmation', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ session_id: id }),
       });
       result = await res.json().catch(() => ({}));
@@ -4699,34 +4715,145 @@
     }
   }
 
-  /* ── Auth ── */
-  async function doLogin() {
-    const pwd = document.getElementById('pwd-input').value.trim();
-    if (!pwd) return;
-    const btn = document.getElementById('login-btn');
-    btn.disabled = true; btn.textContent = 'Signing in...';
-    const errEl = document.getElementById('login-error');
-    errEl.style.display = 'none';
+  /* ── Auth ─────────────────────────────────────────────────────────
+     Google OAuth + httpOnly session cookie. Flow:
+
+       1. bootstrapAuth() probes /api/auth-me on page load.
+       2. If authenticated, show the app shell and load data.
+       3. If 401, render the Google Sign-In button using the
+          google_client_id returned in the 401 body. User clicks button,
+          GIS does its popup dance, returns an id_token to
+          handleGoogleCredential.
+       4. handleGoogleCredential POSTs the id_token to /api/auth-google.
+          On 200, server sets the session cookie and we re-show the app.
+          On 403, we render the Access Denied screen (non-whitelisted
+          Google account or token did not verify).
+
+     The session cookie is httpOnly — JS never touches it. Auth state in
+     the page (currentUser) is purely a display convenience populated
+     from server responses. Don't trust it for anything; the server
+     re-verifies on every /api/admin?action=* request. */
+
+  async function bootstrapAuth() {
     try {
-      const res = await fetch('/api/admin?action=login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pwd }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
-      setToken(data.token);
-      showApp();
-      loadData();
+      const res = await fetch('/api/auth-me', { credentials: 'same-origin' });
+      if (res.status === 200) {
+        const data = await res.json();
+        currentUser = data.user || null;
+        renderHeaderUser();
+        showApp();
+        loadData();
+        /* Deep-link from the daily lead digest email: /admin.html#leads
+           opens the Leads tab automatically after auth. Only fires once
+           per pageload. setTimeout matches the original synchronous-load
+           pattern — gives loadData() a tick to start populating before
+           the tab switch triggers a re-render. */
+        if ((location.hash || '').toLowerCase() === '#leads') {
+          setTimeout(function () {
+            const btn = document.querySelector('.tab-btn[onclick*="leads"]');
+            if (btn) btn.click();
+          }, 50);
+        }
+        return;
+      }
+      if (res.status === 401) {
+        const data = await res.json().catch(() => ({}));
+        showLogin();
+        initGoogleSignIn(data.google_client_id);
+        return;
+      }
+      showLogin();
+      showLoginError('Could not reach the authentication server. Please refresh.');
     } catch (err) {
-      errEl.textContent = err.message;
-      errEl.style.display = 'block';
-    } finally {
-      btn.disabled = false; btn.textContent = 'Sign In';
+      showLogin();
+      showLoginError('Network error during sign-in check. Please refresh.');
     }
   }
 
-  function logout() { clearToken(); showLogin(); }
+  /* Initialize GIS and render the button. GIS is loaded async + defer in
+     <head>, so window.google.accounts.id may not exist yet on first call.
+     Poll every 200ms until it does. Cheap, bounded by user patience. */
+  function initGoogleSignIn(clientId) {
+    if (!clientId) {
+      showLoginError('Sign-in is not configured (missing client ID). Contact the admin.');
+      return;
+    }
+    if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+      setTimeout(function () { initGoogleSignIn(clientId); }, 200);
+      return;
+    }
+    try {
+      window.google.accounts.id.initialize({
+        client_id:   clientId,
+        callback:    handleGoogleCredential,
+        auto_select: false,
+        ux_mode:     'popup',
+      });
+      const btnEl = document.getElementById('google-signin-btn');
+      if (btnEl) {
+        btnEl.innerHTML = '';
+        window.google.accounts.id.renderButton(btnEl, {
+          type:            'standard',
+          theme:           'filled_blue',
+          size:            'large',
+          shape:           'rectangular',
+          text:            'signin_with',
+          logo_alignment:  'left',
+        });
+      }
+    } catch (err) {
+      console.error('[auth] GIS init failed:', err);
+      showLoginError('Sign-in initialization failed. Refresh and try again.');
+    }
+  }
+
+  async function handleGoogleCredential(response) {
+    const idToken = response && response.credential;
+    if (!idToken) {
+      showLoginError('Google did not return a credential. Please try again.');
+      return;
+    }
+    hideLoginError();
+    const wrap = document.getElementById('google-signin-btn');
+    if (wrap) wrap.classList.add('is-disabled');
+    try {
+      const res = await fetch('/api/auth-google', {
+        method:      'POST',
+        credentials: 'same-origin',
+        headers:     { 'Content-Type': 'application/json' },
+        body:        JSON.stringify({ id_token: idToken }),
+      });
+      if (res.status === 200) {
+        const data = await res.json();
+        currentUser = data.user || null;
+        renderHeaderUser();
+        hideLoginError();
+        showApp();
+        loadData();
+        return;
+      }
+      if (res.status === 403) {
+        showAccessDenied();
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      showLoginError(data.error || 'Sign-in failed. Please try again.');
+    } catch (err) {
+      showLoginError('Network error during sign-in. Please try again.');
+    } finally {
+      if (wrap) wrap.classList.remove('is-disabled');
+    }
+  }
+
+  async function logout() {
+    try {
+      await fetch('/api/auth-logout', { method: 'POST', credentials: 'same-origin' });
+    } catch (_) { /* best-effort — cookie expiry catches any leftover */ }
+    currentUser = null;
+    /* Full reload clears any in-memory admin state and re-runs bootstrapAuth
+       which lands the user on the login screen with a fresh GIS button. */
+    window.location.reload();
+  }
 
   function showLogin() {
     document.getElementById('login-screen').style.display = 'flex';
@@ -4742,14 +4869,67 @@
       now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  /* ── API wrapper ── */
+  function showLoginError(msg) {
+    const el = document.getElementById('login-error');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function hideLoginError() {
+    const el = document.getElementById('login-error');
+    if (!el) return;
+    el.style.display = 'none';
+  }
+
+  /* Generic Access Denied screen for non-whitelisted Google accounts. We
+     deliberately don't echo the email back — the message is the same
+     whether the account was never whitelisted or was removed mid-session.
+     One button reloads the page so the user can pick a different Google
+     account from the picker. */
+  function showAccessDenied() {
+    const form = document.getElementById('login-form');
+    if (!form) return;
+    form.innerHTML =
+      '<div class="login-denied">' +
+        '<div class="login-denied-icon">🚫</div>' +
+        '<h2>Access Denied</h2>' +
+        '<p>This Google account is not authorized for the Texas Forever Charters admin panel.</p>' +
+        '<button onclick="window.location.reload()">Try a different account</button>' +
+      '</div>';
+  }
+
+  function renderHeaderUser() {
+    const el = document.getElementById('header-user');
+    if (!el) return;
+    if (!currentUser) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    const name = currentUser.name || currentUser.email || '';
+    el.innerHTML = 'Signed in as <strong>' + esc(name) + '</strong>' +
+      '<button class="header-user-logout" type="button" onclick="logout()">Sign out</button>';
+    el.style.display = 'inline-flex';
+  }
+
+  /* ── API wrapper ──
+     All /api/admin?action=* calls flow through here. Cookie auth via
+     credentials: 'same-origin' (the session cookie is httpOnly, set by
+     /api/auth-google, scoped to the apex+subdomains in production). On
+     401 we drop client-side state and bounce to the login screen so the
+     user can re-authenticate. */
   async function api(path, options = {}) {
-    const token = getToken();
     const res = await fetch(path, {
       ...options,
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...(options.headers || {}) },
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     });
-    if (res.status === 401) { logout(); return null; }
+    if (res.status === 401) {
+      currentUser = null;
+      renderHeaderUser();
+      showLogin();
+      /* Re-init GIS so the login screen is usable. /api/auth-me re-fetch
+         is cheap and gives us a fresh client ID at the same time. */
+      bootstrapAuth();
+      return null;
+    }
     const text = await res.text();
     try { return JSON.parse(text); } catch { return null; }
   }
@@ -7781,7 +7961,6 @@
   }
 
   /* ── Init ── */
-  document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
   // Calendar grid event delegation (attached once)
   const calGrid = document.getElementById('calendar-grid');
@@ -7961,16 +8140,11 @@
     if (el) el.addEventListener('input', abOnEmailPhoneInput);
   });
 
-  if (getToken()) { showApp(); loadData(); } else { showLogin(); }
-
-  /* Deep-link from the daily lead digest email: /admin.html#leads opens
-     the Leads tab automatically after auth. Only fires once per pageload. */
-  if (getToken() && (location.hash || '').toLowerCase() === '#leads') {
-    setTimeout(function () {
-      const btn = document.querySelector('.tab-btn[onclick*="leads"]');
-      if (btn) btn.click();
-    }, 50);
-  }
+  /* Async bootstrap. bootstrapAuth() probes /api/auth-me, then either
+     shows the app shell + loads data, or shows the login screen + inits
+     the Google Sign-In button. Deep-link handling for /admin.html#leads
+     lives inside bootstrapAuth's authenticated branch. */
+  bootstrapAuth();
 </script>
 </body>
 </html>
