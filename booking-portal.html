@@ -6,6 +6,29 @@
   <title>Your Charter | Texas Forever Charters</title>
   <meta name="robots" content="noindex">
 
+  <!-- Open Graph / social preview. The og:image and og:url placeholders below
+       are substituted server-side by api/portal-html.js when the page is
+       requested via /booking/<token>. Direct hits to /booking-portal.html
+       (which shouldn't happen in production but is harmless) would leave the
+       __OG_IMAGE_URL__ / __PORTAL_TOKEN__ placeholders intact — broken-looking
+       on a crawler but not user-visible since the portal route always goes
+       through the serverless function. Title and description are static
+       (locked decision — no per-booking personalization). -->
+  <meta property="og:title" content="Texas Forever Charters - Customer Portal">
+  <meta property="og:description" content="View your booking details, sign waivers, check directions, and pay your balance.">
+  <meta property="og:image" content="__OG_IMAGE_URL__">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.texasforevercharters.com/booking/__PORTAL_TOKEN__">
+
+  <!-- Twitter card. summary_large_image renders the image full-width above
+       the title/description, matching the visual feel we get on iMessage
+       and Facebook. og:* fallbacks would work for most clients but explicit
+       twitter:* tags improve render reliability across the long tail. -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Texas Forever Charters - Customer Portal">
+  <meta name="twitter:description" content="View your booking details, sign waivers, check directions, and pay your balance.">
+  <meta name="twitter:image" content="__OG_IMAGE_URL__">
+
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
 

@@ -24,7 +24,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/booking/:token", "destination": "/booking-portal.html" }
+    { "source": "/booking/:token", "destination": "/api/portal-html?token=:token" }
   ],
   "redirects": [
     {
