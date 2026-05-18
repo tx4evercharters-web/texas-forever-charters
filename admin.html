@@ -1720,6 +1720,51 @@
     .cust-tag-suggest:hover { border-color: var(--navy); color: var(--navy); }
     .cust-detail-empty { padding: 14px; text-align: center; color: var(--gray-400); font-size: 12px; background: var(--white); border-radius: 6px; }
 
+    /* Activity log — shared between Customer detail "Activity History" and
+       Edit modal "Activity (N events)". One row per booking_events entry:
+       round avatar with initials on the left, action text + timestamp on
+       the right. System events (webhook/cron) use a gray avatar; admin
+       events use navy. */
+    .activity-log { margin: 12px 0; max-height: 480px; overflow-y: auto; }
+    .activity-log .loading { padding: 14px; text-align: center; color: var(--gray-400); font-size: 12px; }
+    .activity-log .empty { padding: 14px; text-align: center; color: var(--gray-400); font-size: 12px; }
+    .activity-row { display: flex; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--gray-100); }
+    .activity-row:last-child { border-bottom: none; }
+    .actor-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--navy); color: #FFFFFF;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .actor-avatar.system { background: var(--gray-400); }
+    .activity-body { flex: 1; min-width: 0; }
+    .activity-text { font-size: 13px; color: var(--gray-700); line-height: 1.5; }
+    .activity-text .actor { font-weight: 700; color: var(--navy); }
+    .activity-meta { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .activity-meta .booking-link { color: var(--gray-600); }
+
+    /* Edit modal Activity section uses native <details>/<summary> for
+       cheap collapse. Style the summary so it reads as a section heading. */
+    .edit-activity-section { margin-top: 18px; border-top: 1px solid var(--gray-200); padding-top: 14px; }
+    .edit-activity-section > summary {
+      cursor: pointer; list-style: none;
+      font-family: 'Bebas Neue', sans-serif; font-size: 16px;
+      color: var(--navy); letter-spacing: 2px;
+      padding: 4px 0; user-select: none;
+    }
+    .edit-activity-section > summary::-webkit-details-marker { display: none; }
+    .edit-activity-section > summary::before { content: '▸ '; font-size: 12px; }
+    .edit-activity-section[open] > summary::before { content: '▾ '; }
+
+    /* Bookings table "Last Touched" cell — two-line stack. Mirrors the
+       Date column's date+time pattern. */
+    .last-touched-cell { font-size: 11px; line-height: 1.3; }
+    .last-touched-cell .actor { font-weight: 600; color: var(--gray-700); font-size: 12px; }
+    .last-touched-cell .actor.system { color: var(--gray-500); }
+    .last-touched-cell .when { color: var(--gray-400); margin-top: 2px; }
+    .last-touched-cell .empty { color: var(--gray-300); }
+
     /* Tag picker — replaces the old freetext input + always-visible chips */
     .cust-tag-picker { position: relative; display: inline-block; margin-top: 8px; }
     .cust-tag-picker-btn {
@@ -2744,6 +2789,17 @@
       <!-- Waivers (edit mode only — populated by openEditModal) -->
       <div id="ab-waivers-section"></div>
 
+      <!-- Activity (edit mode only — populated by openEditModal via
+           loadBookingActivity). Collapsed by default via <details>; admins
+           who never expand it pay zero rendering cost for the section
+           beyond the summary line. -->
+      <details id="ab-activity-section" class="edit-activity-section" style="display:none;">
+        <summary>Activity (<span id="edit-activity-count">…</span> events)</summary>
+        <div id="edit-activity-log" class="activity-log">
+          <div class="loading">Loading…</div>
+        </div>
+      </details>
+
       <div class="edit-modal-footer">
         <button class="btn-sm btn-gray" onclick="closeAddBookingBtn()">Cancel</button>
         <button class="btn-sm btn-navy" id="ab-save-btn" onclick="abSave(false)">Save Booking</button>
@@ -3113,6 +3169,279 @@
      page load, refreshed on successful Google sign-in, cleared on logout
      or 401. Cookie itself is httpOnly and never touched by JS. */
   let currentUser = null;
+
+  /* ── Activity log helpers ───────────────────────────────────────
+     Used by the Bookings table "Last Touched" column, the Customer detail
+     Activity History section, the Edit modal Activity section, and the
+     Calendar chip tooltip. Centralized here so a tweak to event-description
+     wording lands in all four surfaces at once.
+
+     ADMIN_DISPLAY_NAMES_MAP mirrors the Vercel env var of the same name.
+     Hardcoded on purpose — two known emails, two known names, no need for
+     a round-trip to fetch the mapping. If a third admin is whitelisted via
+     ADMIN_WHITELIST, add their email:Name pair to ADMIN_DISPLAY_NAMES (env
+     var) AND to this map. The fallback path below covers the unmapped case
+     gracefully — extracts the local-part of the email and title-cases it,
+     so a new admin still renders as a reasonable display name until this
+     map is updated. */
+  const ADMIN_DISPLAY_NAMES_MAP = {
+    'djkilpatrick03@gmail.com': 'DJ',
+    'dkilpatrick1990@gmail.com': 'Dane',
+  };
+
+  function formatActorName(createdBy) {
+    if (!createdBy) return 'Unknown';
+    const v = String(createdBy).toLowerCase().trim();
+    /* webhook/cron → System. Legacy 'admin' rows render as DJ because the
+       post-deploy backfill SQL rewrites them all to djkilpatrick03@gmail.com.
+       If the backfill hasn't run yet, this still renders as 'DJ' which is
+       the same outcome — just driven by the literal string match instead
+       of the email lookup. */
+    if (v === 'webhook' || v === 'cron' || v === 'system') return 'System';
+    if (v === 'admin') return 'DJ';
+    if (ADMIN_DISPLAY_NAMES_MAP[v]) return ADMIN_DISPLAY_NAMES_MAP[v];
+    const at = v.indexOf('@');
+    if (at > 0) {
+      const local = v.slice(0, at);
+      return local.charAt(0).toUpperCase() + local.slice(1);
+    }
+    return v;
+  }
+
+  function formatActorInitials(name) {
+    if (!name) return '?';
+    const parts = String(name).trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function isSystemActor(createdBy) {
+    const v = String(createdBy || '').toLowerCase().trim();
+    return v === 'webhook' || v === 'cron' || v === 'system';
+  }
+
+  /* Relative-time formatter for the "X ago" line. Cuts off at "yesterday"
+     and switches to absolute "Mon DD" for older entries; "Mon DD, YYYY"
+     when prior years. Pair with formatFullTimestamp for tooltips. */
+  function formatRelativeTime(iso) {
+    if (!iso) return '—';
+    const t = new Date(iso);
+    if (isNaN(t)) return '—';
+    const now = new Date();
+    const deltaSec = Math.max(0, Math.floor((now - t) / 1000));
+    if (deltaSec < 60)     return deltaSec + 's ago';
+    if (deltaSec < 3600)   return Math.floor(deltaSec / 60) + 'm ago';
+    if (deltaSec < 86400)  return Math.floor(deltaSec / 3600) + 'h ago';
+    /* Same-day yesterday detection. JS Date math here uses local time
+       (admin is used in Central; matches the rest of the file's local-tz
+       assumptions). */
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const eventDay = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    const dayDelta = Math.round((today - eventDay) / 86400000);
+    if (dayDelta === 1) return 'yesterday';
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const sameYear = t.getFullYear() === now.getFullYear();
+    return sameYear
+      ? months[t.getMonth()] + ' ' + t.getDate()
+      : months[t.getMonth()] + ' ' + t.getDate() + ', ' + t.getFullYear();
+  }
+
+  function formatFullTimestamp(iso) {
+    if (!iso) return '';
+    const t = new Date(iso);
+    if (isNaN(t)) return '';
+    return t.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+    });
+  }
+
+  /* Tooltip-friendly compact timestamp for calendar chips:
+     "May 18 at 3:42 PM". Distinct from formatRelativeTime — chip
+     tooltips can afford the absolute form. */
+  function formatShortDate(iso) {
+    if (!iso) return '';
+    const t = new Date(iso);
+    if (isNaN(t)) return '';
+    return t.toLocaleString('en-US', {
+      month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+    });
+  }
+
+  /* Display formatter for a single field value inside the diff text.
+     "DJ changed date from May 24 to May 31, party_size from 8 to 10".
+     Each value passes through this helper for type-aware rendering. */
+  function formatFieldValue(field, val) {
+    if (val == null || val === '') return '(empty)';
+    if (field === 'date') {
+      const t = new Date(String(val) + 'T12:00:00');
+      if (isNaN(t)) return String(val);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const sameYear = t.getFullYear() === new Date().getFullYear();
+      return sameYear
+        ? months[t.getMonth()] + ' ' + t.getDate()
+        : months[t.getMonth()] + ' ' + t.getDate() + ', ' + t.getFullYear();
+    }
+    if (field === 'vessel') {
+      const v = String(val).toLowerCase();
+      if (v === 'yacht') return 'Yacht';
+      if (v === 'pontoon') return 'Pontoon';
+      return String(val);
+    }
+    if (field === 'paid_in_full') {
+      return (val === true || val === 'true') ? 'Yes' : 'No';
+    }
+    if (field === 'amount_total' || field === 'remaining_balance') {
+      const n = Number(val);
+      if (Number.isNaN(n)) return String(val);
+      /* amount_total is in cents in the DB but remaining_balance is in
+         dollars. Detect by magnitude — values >= 10000 are almost
+         certainly cents (a $100+ booking total in cents = 10000+),
+         while remaining balances under $10000 stay as dollars. Both
+         render the same way after the conversion. */
+      const dollars = (field === 'amount_total' && n >= 1000) ? n / 100 : n;
+      return fmtMoney(dollars);
+    }
+    if (field === 'add_ons') {
+      let obj = val;
+      if (typeof val === 'string') {
+        try { obj = JSON.parse(val); } catch { return val; }
+      }
+      const items = [];
+      if (obj && (obj.drone_footage || obj.drone))      items.push('drone');
+      if (obj && (obj.water_bottles || obj.water))      items.push('water');
+      if (obj && obj.ice)                               items.push('ice');
+      if (obj && (obj.beer_pong || obj.beerpong))       items.push('beer pong');
+      if (obj && obj.towels > 0)                        items.push(obj.towels + ' towels');
+      return items.length ? items.join(', ') : '(none)';
+    }
+    const str = String(val);
+    if (field === 'special_requests' || field === 'internal_notes') {
+      const trimmed = str.trim();
+      if (!trimmed) return '(empty)';
+      if (trimmed.length > 60) return '"' + trimmed.slice(0, 60) + '…"';
+      return '"' + trimmed + '"';
+    }
+    return str;
+  }
+
+  /* Build the human-readable action text for a booking_events row.
+     The actor portion is bolded by the caller (wrapped in <span class="actor">)
+     so it can't bleed through the html-escaping path. */
+  function formatEventDescription(e) {
+    if (!e) return '';
+    const actor    = esc(formatActorName(e.created_by));
+    const isSystem = isSystemActor(e.created_by);
+    const actorTag = '<span class="actor">' + actor + '</span>';
+    const data     = e.event_data || {};
+    const type     = e.event_type;
+
+    if (type === 'booking_created') {
+      if (isSystem) return 'Booking created via website';
+      return actorTag + ' created booking';
+    }
+    if (type === 'booking_updated') {
+      const fc = data.fields_changed;
+      if (Array.isArray(fc) && fc.length > 0) {
+        /* Old shape (pre-Commit-B): array of strings. New shape: array of
+           {field, from, to} objects. Detect by first-element type. */
+        if (typeof fc[0] === 'string') {
+          return actorTag + ' updated booking: ' + fc.map(esc).join(', ');
+        }
+        const parts = fc.map(d =>
+          esc(d.field) + ' from ' + esc(formatFieldValue(d.field, d.from)) +
+          ' to ' + esc(formatFieldValue(d.field, d.to))
+        );
+        return actorTag + ' updated booking: ' + parts.join(', ');
+      }
+      return actorTag + ' updated booking';
+    }
+    if (type === 'marked_paid') {
+      return actorTag + ' marked balance paid';
+    }
+    if (type === 'balance_paid') {
+      const amt = data.amount_charged != null ? data.amount_charged : data.amount;
+      const amtStr = amt != null ? ' ' + fmtMoney(amt) : '';
+      if (isSystem || data.source === 'portal') {
+        return 'Customer paid balance' + amtStr + ' via portal';
+      }
+      return actorTag + ' charged remaining balance' + amtStr;
+    }
+    if (type === 'booking_cancelled') {
+      const reason = data.reason ? ': ' + esc(data.reason) : '';
+      return actorTag + ' cancelled booking' + reason;
+    }
+    if (type === 'refund_processed') {
+      const amt = data.amount != null ? ' ' + fmtMoney(data.amount) : '';
+      if (isSystem || data.source === 'stripe_webhook') {
+        return 'Refund processed via Stripe webhook' + amt;
+      }
+      return actorTag + ' refunded' + amt;
+    }
+    if (type === 'concluded') {
+      return actorTag + ' marked booking concluded';
+    }
+    if (type === 'damage_hold_released') {
+      return actorTag + ' released damage hold';
+    }
+    if (type === 'damage_hold_captured') {
+      const amt = data.damage_charge_amount != null ? ' ' + fmtMoney(data.damage_charge_amount) : '';
+      return actorTag + ' charged damage' + amt;
+    }
+    if (type === 'chargeback_filed') {
+      const reason = data.dispute_reason ? ': ' + esc(data.dispute_reason) : '';
+      return 'Chargeback filed' + reason;
+    }
+    if (type === 'deposit_paid') {
+      const amt = data.amount != null ? ' ' + fmtMoney(data.amount) : '';
+      return 'Deposit paid' + amt;
+    }
+    if (type === 'portal_token_rotated') {
+      return actorTag + ' rotated portal token';
+    }
+    if (type === 'reminder_t3_sent') {
+      const waiver = (data.signed_count != null && data.party_size != null)
+        ? ' (waiver: ' + esc(data.signed_count) + '/' + esc(data.party_size) + ')'
+        : '';
+      return 'T-3 reminder sent' + waiver;
+    }
+    if (type === 'reminder_t1_sent') {
+      const waiver = (data.signed_count != null && data.party_size != null)
+        ? ' (waiver: ' + esc(data.signed_count) + '/' + esc(data.party_size) + ')'
+        : '';
+      return 'T-1 reminder sent' + waiver;
+    }
+    /* Unknown event type — render a readable fallback so a future event
+       added to lib/booking-events.js but missed here doesn't display as
+       a blank row. */
+    return actorTag + ' ' + esc(String(type || 'event').replace(/_/g, ' '));
+  }
+
+  /* Bookings table "Last Touched" cell. Two-line stack: friendly name on
+     top, relative time below. Full tooltip on the wrapper combines the
+     event description (with HTML stripped — title attribute can't render
+     markup) and the absolute timestamp. Renders an em-dash when the
+     booking has no events (ancient pre-Phase-2.5 rows). */
+  function renderLastTouchedCell(lastEvent) {
+    if (!lastEvent) {
+      return '<div class="last-touched-cell"><div class="empty">—</div></div>';
+    }
+    const actor    = formatActorName(lastEvent.created_by);
+    const isSystem = isSystemActor(lastEvent.created_by);
+    const when     = formatRelativeTime(lastEvent.created_at);
+    /* Strip HTML from the description for the title attribute — formatEventDescription
+       wraps the actor name in <span class="actor">, which would render as
+       literal angle brackets inside a title. */
+    const descText = String(formatEventDescription(lastEvent)).replace(/<[^>]+>/g, '');
+    const fullTs   = formatFullTimestamp(lastEvent.created_at);
+    const tipParts = [descText, fullTs].filter(Boolean);
+    const title    = tipParts.join(' — ');
+    return '<div class="last-touched-cell" title="' + esc(title) + '">' +
+      '<div class="actor' + (isSystem ? ' system' : '') + '">' + esc(actor) + '</div>' +
+      '<div class="when">' + esc(when) + '</div>' +
+      '</div>';
+  }
 
   function fmtDate(str) {
     if (!str) return '—';
@@ -5282,6 +5611,7 @@
           <td style="white-space:nowrap;color:${parseFloat(b.remaining_balance)>0?'var(--amber)':'var(--green)'}">${fmtMoney(b.remaining_balance)}</td>
           <td style="white-space:nowrap">${badge}${statusBadge ? '<div style="margin-top:4px">'+statusBadge+'</div>' : ''}${(() => { const d = bkDamageBadge(b); return d ? '<div style="margin-top:4px">'+d+'</div>' : ''; })()}${(() => { const c = bkChargebackBadge(b); return c ? '<div style="margin-top:4px">'+c+'</div>' : ''; })()}</td>
           <td style="white-space:nowrap">${bkWaiverCell(b)}</td>
+          <td style="white-space:nowrap">${renderLastTouchedCell(b.last_event)}</td>
           <td>
             <!-- Row actions consolidated: one visible primary "Edit"
                  button + kebab menu containing everything else (Mark
@@ -5315,6 +5645,7 @@
             <th>Remaining</th>
             <th>Status</th>
             <th>Waivers</th>
+            <th>Last Touched</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -5418,7 +5749,15 @@
     const party = b.party_size ? esc(b.party_size) + 'g' : '';
     const name = esc(chipName(b));
     const statusNote = status === 'cancelled' ? ' (cancelled)' : status === 'concluded' ? ' (concluded)' : '';
-    return `<button class="cal-chip ${cls}" type="button" data-session-id="${esc(b.session_id)}" title="${time} · ${name}${party ? ' · ' + esc(b.party_size) + ' guests' : ''}${statusNote}">
+    /* Last-touched suffix on the title attribute. handleBookings enriches
+       every booking with last_event (latest booking_events row); when
+       absent, the suffix is empty so legacy ancient bookings don't show
+       a dangling "Last touched by". */
+    const lastTouchedSuffix = b.last_event
+      ? ' · Last touched by ' + esc(formatActorName(b.last_event.created_by)) +
+        ' on ' + esc(formatShortDate(b.last_event.created_at))
+      : '';
+    return `<button class="cal-chip ${cls}" type="button" data-session-id="${esc(b.session_id)}" title="${time} · ${name}${party ? ' · ' + esc(b.party_size) + ' guests' : ''}${statusNote}${lastTouchedSuffix}">
       <div class="cal-chip-row"><span class="cal-chip-time">${time}</span>${party ? `<span class="cal-chip-party">${party}</span>` : ''}</div>
       <div class="cal-chip-name">${name}</div>
     </button>`;
@@ -6050,6 +6389,9 @@
     if (termsSlot) termsSlot.innerHTML = '';
     const waiversSlot = document.getElementById('ab-waivers-section');
     if (waiversSlot) waiversSlot.innerHTML = '';
+    /* Activity section is edit-only — hide it in add mode. */
+    const activitySlot = document.getElementById('ab-activity-section');
+    if (activitySlot) { activitySlot.style.display = 'none'; activitySlot.open = false; }
     document.getElementById('ab-modal-title').textContent = '+ Add Booking';
     document.getElementById('ab-save-btn').textContent = 'Save Booking';
     document.getElementById('ab-save-send-btn').style.display = '';
@@ -6654,6 +6996,21 @@
     const waiversSlot = document.getElementById('ab-waivers-section');
     if (waiversSlot) waiversSlot.innerHTML = renderWaiverEditSection(b);
 
+    /* Activity section: show the wrapper, reset the count placeholder,
+       and kick off the async load. Section stays collapsed by default;
+       expanding it doesn't trigger a re-fetch — the events are already
+       in the DOM after the first load. */
+    const activitySlot = document.getElementById('ab-activity-section');
+    if (activitySlot) {
+      activitySlot.style.display = '';
+      activitySlot.open = false;
+      const countEl = document.getElementById('edit-activity-count');
+      if (countEl) countEl.textContent = '…';
+      const logEl = document.getElementById('edit-activity-log');
+      if (logEl) logEl.innerHTML = '<div class="loading">Loading…</div>';
+      loadBookingActivity(session_id);
+    }
+
     document.getElementById('add-booking-overlay').classList.add('open');
   }
 
@@ -6999,6 +7356,14 @@
     // Wire notes auto-save for any expanded row
     tbody.querySelectorAll('textarea[data-cust]').forEach(custWireNotesAutoSave);
 
+    /* Load activity history for the expanded customer (async). The
+       placeholder div #activity-log-<id> was rendered by renderCustDetail.
+       The fetch is fire-and-forget — failure shows an empty state inline,
+       doesn't break the rest of the detail panel. */
+    if (custExpandedId) {
+      loadCustomerActivity(custExpandedId);
+    }
+
     // Header sort indicators
     document.querySelectorAll('#cust-table th.cust-sort').forEach(th => {
       th.classList.remove('active', 'asc', 'desc');
@@ -7153,6 +7518,10 @@
           <h4>Booking History</h4>
           ${bookingsHtml}
           ${waiversHtml}
+          <h4 style="margin-top:18px;">📜 Activity History</h4>
+          <div class="activity-log" id="activity-log-${idEsc}">
+            <div class="loading">Loading…</div>
+          </div>
         </div>
         <div class="cust-side">
           <div>
@@ -7167,6 +7536,75 @@
         </div>
       </div>
     `;
+  }
+
+  /* ── Activity log loaders + renderers ───────────────────────────
+     loadCustomerActivity fetches all events across a customer's bookings
+     and renders into #activity-log-<custId>. loadBookingActivity fetches
+     events for a single booking and renders into #edit-activity-log.
+     Both share the activity-row markup via renderActivityRow. */
+
+  function bookingLinkLabel(eventWithBooking) {
+    const b = eventWithBooking && eventWithBooking.bookings;
+    if (!b) return null;
+    const vessel = (b.vessel || '').toLowerCase();
+    const vesselLabel = vessel === 'yacht' ? 'yacht' : vessel === 'pontoon' ? 'pontoon' : 'charter';
+    const dateLabel = b.date ? fmtDate(b.date) : '';
+    const owner = b.full_name ? (b.full_name.split(' ')[0] + "'s") : '';
+    const parts = [owner, vesselLabel + ' charter'].filter(Boolean);
+    return parts.join(' ') + (dateLabel ? ' (' + dateLabel + ')' : '');
+  }
+
+  function renderActivityRow(e, opts) {
+    opts = opts || {};
+    const actor    = formatActorName(e.created_by);
+    const initials = formatActorInitials(actor);
+    const systemCls = isSystemActor(e.created_by) ? ' system' : '';
+    const text     = formatEventDescription(e);
+    const fullTs   = formatFullTimestamp(e.created_at);
+    const when     = formatRelativeTime(e.created_at);
+    const linkLabel = opts.showBooking ? bookingLinkLabel(e) : null;
+    const meta = (linkLabel
+      ? '<span class="booking-link">on ' + esc(linkLabel) + '</span> · '
+      : '') +
+      '<span title="' + esc(fullTs) + '">' + esc(when) + '</span>';
+    return '<div class="activity-row">' +
+      '<div class="actor-avatar' + systemCls + '">' + esc(initials) + '</div>' +
+      '<div class="activity-body">' +
+        '<div class="activity-text">' + text + '</div>' +
+        '<div class="activity-meta">' + meta + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  async function loadCustomerActivity(customerId) {
+    const el = document.getElementById('activity-log-' + esc(customerId));
+    if (!el) return;
+    const result = await api('/api/admin?action=customer-events&customer_id=' + encodeURIComponent(customerId));
+    if (!result) return;
+    const events = (result && result.events) || [];
+    if (!events.length) {
+      el.innerHTML = '<div class="empty">No activity recorded yet.</div>';
+      return;
+    }
+    el.innerHTML = events.map(e => renderActivityRow(e, { showBooking: true })).join('');
+  }
+
+  async function loadBookingActivity(sessionId) {
+    const el = document.getElementById('edit-activity-log');
+    const countEl = document.getElementById('edit-activity-count');
+    if (!el) return;
+    el.innerHTML = '<div class="loading">Loading…</div>';
+    if (countEl) countEl.textContent = '…';
+    const result = await api('/api/admin?action=booking-events&session_id=' + encodeURIComponent(sessionId));
+    if (!result) return;
+    const events = (result && result.events) || [];
+    if (countEl) countEl.textContent = String(events.length);
+    if (!events.length) {
+      el.innerHTML = '<div class="empty">No activity recorded yet.</div>';
+      return;
+    }
+    el.innerHTML = events.map(e => renderActivityRow(e, { showBooking: false })).join('');
   }
 
   async function custSaveNotes(id) {

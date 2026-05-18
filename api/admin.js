@@ -30,7 +30,47 @@ const {
   findBookingDatesBySessionIds,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendPortalLinkEmail, sendAdminActionEmailFailureAlert, sendBlackoutConflictAlert, formatMoneyDollars, PORTAL_BASE_URL } = require('../lib/send-emails');
-const { logBookingEvent, EVENT_TYPES } = require('../lib/booking-events');
+const {
+  logBookingEvent,
+  getLatestEventByBookingId,
+  getEventsByBookingId,
+  getEventsByCustomerId,
+  EVENT_TYPES,
+} = require('../lib/booking-events');
+
+/* Fields that drive the "Last Touched" column's field-level diff capture
+   on booking_updated events. The handleUpdateBooking allowlist is broader
+   (it allows ~30 columns to be patched); this narrower list is what we
+   record before/after values for. Choose: customer-visible state changes
+   (date, vessel, party_size...) + money fields (amount_total,
+   remaining_balance, paid_in_full) + lifecycle (status) + admin-only
+   internal_notes. source_notes intentionally excluded — it's import-source
+   metadata that shouldn't mutate post-import. */
+const TRACKED_FIELDS = [
+  'date', 'time_slot', 'vessel', 'experience', 'charter_name', 'party_size',
+  'full_name', 'customer_email', 'phone', 'add_ons', 'special_requests',
+  'amount_total', 'remaining_balance', 'paid_in_full', 'status', 'internal_notes',
+];
+
+/* Type-safe equality for diff capture. Treats null/undefined as equal,
+   does JSON deep-equal on objects (add_ons is an object/array), and
+   coerces number-like strings so "350" === 350 doesn't show as a change
+   when the admin form sends a string and the DB has a number. */
+function fieldValuesEqual(a, b) {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  if (typeof a === 'object' || typeof b === 'object') {
+    try { return JSON.stringify(a) === JSON.stringify(b); }
+    catch { return false; }
+  }
+  const aStr = String(a);
+  const bStr = String(b);
+  if (aStr === bStr) return true;
+  const aNum = Number(a);
+  const bNum = Number(b);
+  if (!Number.isNaN(aNum) && !Number.isNaN(bNum) && aNum === bNum) return true;
+  return false;
+}
 
 /* The previous inline supabasePatch helper has been removed — booking edits
    now route through lib/storage.js patchBooking so they use the same
@@ -49,7 +89,16 @@ const { logBookingEvent, EVENT_TYPES } = require('../lib/booking-events');
 async function handleBookings(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
-  const [bookings, waivers] = await Promise.all([getBookings(), getAllWaivers()]);
+  /* Three parallel fetches: bookings, all signed waivers, and the latest
+     booking_events row per booking. The events map drives the new
+     "Last Touched" column + calendar chip tooltip + customer detail
+     activity footer. One round-trip each; the JS-side grouping inside
+     getLatestEventByBookingId keeps the query count flat. */
+  const [bookings, waivers, latestEventByBookingId] = await Promise.all([
+    getBookings(),
+    getAllWaivers(),
+    getLatestEventByBookingId(),
+  ]);
 
   // Group waivers by session_id (and by booking_id as fallback) so the admin
   // table can render per-booking waiver counts without a second round trip.
@@ -61,7 +110,8 @@ async function handleBookings(req, res) {
   }
   const enrich = (b) => {
     const list = waiversBySession[b.session_id] || waiversByBookingId[b.id] || [];
-    return { ...b, waivers: list, waiver_count: list.length };
+    const last_event = (latestEventByBookingId && latestEventByBookingId[b.session_id]) || null;
+    return { ...b, waivers: list, waiver_count: list.length, last_event };
   };
 
   const today = new Date().toISOString().split('T')[0];
@@ -171,7 +221,7 @@ async function handleMarkPaid(req, res) {
 
   await logBookingEvent(session_id, EVENT_TYPES.MARKED_PAID, {
     session_id,
-  }, 'admin');
+  }, req.user.email);
 
   return res.status(200).json({ ok: true, booking });
 }
@@ -231,21 +281,40 @@ async function handleUpdateBooking(req, res) {
   }
 
   try {
+    /* Fetch the pre-patch row so we can compute field-level diffs for
+       the audit log. Diffs are scoped to TRACKED_FIELDS — pricing-detail
+       fields (admin_fee, processing_fee, etc.) survive the patch but
+       aren't worth recording before/after values for in the activity
+       log. add_ons is compared against the pre-sanitize updates value
+       (objects vs. JSON-stringified objects compare cleanly through
+       fieldValuesEqual's JSON deep-equal branch). */
+    const before = await findBookingBySessionId(session_id);
+    if (!before) return res.status(404).json({ error: 'Booking not found' });
+
     // Route through lib/storage.js patchBooking so this handler shares the
     // env-aware request() helper used everywhere else.
     const updated = await patchBooking(session_id, sanitized);
     if (!updated) return res.status(404).json({ error: 'Booking not found' });
 
-    /* Audit row — only log when something actually changed. An empty
-       sanitized object (caller sent no allowlisted keys) is a no-op
-       patch and would clutter the audit log with a meaningless
-       "fields_changed: []" entry. fields_changed lists only the
-       allowlisted keys that survived the sanitize step, so it reflects
-       what was truly written, not what the caller asked for. */
-    if (Object.keys(sanitized).length > 0) {
+    /* Audit row — only log when a tracked field actually changed. An
+       empty diff (admin opened the modal, saved without editing any
+       tracked field) does not produce an event. Non-tracked field
+       changes still apply to the DB but don't appear in the activity
+       log; that's intentional — see TRACKED_FIELDS comment for why
+       pricing-detail fields are excluded. */
+    const fields_changed = [];
+    for (const field of TRACKED_FIELDS) {
+      if (!(field in updates)) continue;
+      const fromVal = before[field];
+      const toVal   = updates[field];
+      if (!fieldValuesEqual(fromVal, toVal)) {
+        fields_changed.push({ field, from: fromVal, to: toVal });
+      }
+    }
+    if (fields_changed.length > 0) {
       await logBookingEvent(session_id, EVENT_TYPES.BOOKING_UPDATED, {
-        fields_changed: Object.keys(sanitized),
-      }, 'admin');
+        fields_changed,
+      }, req.user.email);
     }
 
     return res.status(200).json({ ok: true, booking: updated });
@@ -305,7 +374,7 @@ async function handleChargeRemaining(req, res) {
         amount_charged:    paymentIntent.amount,
         payment_intent_id: paymentIntent.id,
         source:            'admin_charge',
-      }, 'admin');
+      }, req.user.email);
 
       /* G3 fix — send the customer-facing confirmation email after a
          successful off-session charge. Previously the card was charged
@@ -531,7 +600,7 @@ async function handleMarkConcluded(req, res) {
 
     await logBookingEvent(session_id, EVENT_TYPES.CONCLUDED, {
       session_id,
-    }, 'admin');
+    }, req.user.email);
 
     return res.status(200).json({ ok: true, booking: updated });
   } catch (err) {
@@ -557,7 +626,7 @@ async function handleCancelBooking(req, res) {
        handler. */
     await logBookingEvent(session_id, EVENT_TYPES.BOOKING_CANCELLED, {
       reason: req.body.reason || null,
-    }, 'admin');
+    }, req.user.email);
 
     // Send the customer cancellation email AFTER the DB write succeeds.
     // Email failures must not undo the cancel — the booking is genuinely cancelled.
@@ -652,7 +721,7 @@ async function handleRefundBooking(req, res) {
       full_refund:      isFullRefund,
       stripe_refund_id: refund.id,
       source:           'admin',
-    }, 'admin');
+    }, req.user.email);
 
     // Stripe refund succeeded + DB updated. Email failure must NOT undo either —
     // we already moved the customer's money, the email is best-effort.
@@ -712,7 +781,7 @@ async function handleReleaseDamageHold(req, res) {
 
     await logBookingEvent(session_id, EVENT_TYPES.DAMAGE_HOLD_RELEASED, {
       damage_hold_intent_id: booking.damage_hold_intent_id,
-    }, 'admin');
+    }, req.user.email);
 
     return res.status(200).json({ ok: true, booking: updated });
   } catch (err) {
@@ -782,7 +851,7 @@ async function handleCaptureDamageCharge(req, res) {
     await logBookingEvent(session_id, EVENT_TYPES.DAMAGE_HOLD_CAPTURED, {
       damage_charge_amount:  Number(dollars.toFixed(2)),
       damage_hold_intent_id: booking.damage_hold_intent_id,
-    }, 'admin');
+    }, req.user.email);
 
     // Customer email — failure must not undo the captured charge
     let email_warning = null;
@@ -942,7 +1011,7 @@ async function handleAddBooking(req, res) {
       vessel:            booking.vessel,
       date:              booking.date,
       send_confirmation: !!send_confirmation,
-    }, 'admin');
+    }, req.user.email);
 
     if (send_confirmation) {
       try {
@@ -1363,6 +1432,37 @@ async function handleMarkLeadContacted(req, res) {
   }
 }
 
+/* ── Activity log queries ──
+   Backing endpoints for the Customer detail "Activity History" section
+   and the Edit modal "Activity (N events)" section. Both read-only;
+   neither mutates booking state. */
+
+async function handleGetCustomerEvents(req, res) {
+  if (req.method !== 'GET') return res.status(405).end();
+  const customerId = req.query.customer_id;
+  if (!customerId) return res.status(400).json({ error: 'customer_id required' });
+  try {
+    const events = await getEventsByCustomerId(customerId);
+    return res.status(200).json({ events });
+  } catch (err) {
+    console.error('[customer-events] failed:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleGetBookingEvents(req, res) {
+  if (req.method !== 'GET') return res.status(405).end();
+  const sessionId = req.query.session_id;
+  if (!sessionId) return res.status(400).json({ error: 'session_id required' });
+  try {
+    const events = await getEventsByBookingId(sessionId);
+    return res.status(200).json({ events });
+  } catch (err) {
+    console.error('[booking-events] failed:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 /* ── Router ── */
 
 /* Every action in this router requires a valid admin session. The previous
@@ -1400,6 +1500,8 @@ const ROUTES = {
   'leads':                  handleListLeads,
   'mark-lead-contacted':    handleMarkLeadContacted,
   'find-bookings-for-lead': handleFindBookingsForLead,
+  'customer-events':        handleGetCustomerEvents,
+  'booking-events':         handleGetBookingEvents,
 };
 
 module.exports = async function handler(req, res) {
