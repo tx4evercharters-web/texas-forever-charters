@@ -123,14 +123,27 @@ window.addEventListener('scroll', () => {
 });
 
 // ── Newsletter Subscription ──
+// Returns { ok, code } so callers can inject the promo code into the DOM
+// after a successful subscribe. The code is sourced server-side from
+// lib/pricing.js's WELCOME_PROMO_CODE constant; the frontend never
+// pre-renders it in static HTML (which would defeat the email-gate model).
+// On any non-2xx or missing-code response, returns { ok: false, code: null }
+// so callers can show an error state without breakage.
 async function callSubscribeApi(email) {
-  const res = await fetch('/api/subscribe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
-  });
-  const data = await res.json();
-  return res.ok && data.success;
+  try {
+    const res = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success && data.code) {
+      return { ok: true, code: data.code };
+    }
+    return { ok: false, code: null };
+  } catch (_) {
+    return { ok: false, code: null };
+  }
 }
 
 function showEmailError(input, placeholder) {
@@ -155,10 +168,16 @@ async function handleSubscribe() {
   const btn = document.querySelector('#nlForm .nl-btn');
   if (btn) { btn.textContent = 'Subscribing...'; btn.disabled = true; }
 
-  const ok = await callSubscribeApi(email);
+  const result = await callSubscribeApi(email);
 
-  if (ok) {
+  if (result.ok) {
     tfcMarkSignedUp();
+    /* Inject the code via textContent into the placeholder div, never
+       via innerHTML interpolation. The code value comes from a trusted
+       server constant but textContent is the safer default — defensive
+       layer for the day someone wires a different code source. */
+    const codeEl = document.getElementById('nlSuccessCode');
+    if (codeEl) codeEl.textContent = result.code;
     document.getElementById('nlForm').style.display = 'none';
     document.getElementById('nlSuccess').style.display = 'block';
   } else {
@@ -200,8 +219,8 @@ function tfcIsAllowedPopupPage() {
   return TFC_EXIT_POPUP_ALLOWED_PAGES.has(path);
 }
 
-// Dual-flag readers (new + legacy back-compat — booking.html reads
-// nl_subscribed to auto-apply LAKELIFE10, so we must keep setting it).
+// Dual-flag readers (new + legacy back-compat — older builds read
+// nl_subscribed for popup-suppression, so we keep writing it).
 function tfcUserSignedUp() {
   try {
     return localStorage.getItem('nl_subscribed') === '1'
@@ -253,8 +272,8 @@ function tfcMarkShown() {
 }
 
 // Persist signup state to BOTH the new flag (for fresh suppression
-// checks) and the legacy nl_subscribed flag (which booking.html still
-// reads to auto-apply the LAKELIFE10 code on returning visitors).
+// checks) and the legacy nl_subscribed flag (kept for back-compat
+// with any pre-fix code paths or cached older builds).
 function tfcMarkSignedUp() {
   try {
     localStorage.setItem('nl_subscribed', '1');
@@ -287,7 +306,7 @@ function tfcBuildPopupHTML() {
     +     '<button id="nlPopupX" aria-label="Close" onclick="closeNewsletterPopup()" style="position:absolute;top:10px;right:12px;width:34px;height:34px;border:none;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:20px;line-height:1;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:2;">✕</button>'
     +     '<div class="nl-popup-anchor">⚓</div>'
     +     '<h2 class="nl-popup-title">Get 10% Off<br><span class="nl-popup-red">Your Charter Rate</span></h2>'
-    +     '<p class="nl-popup-desc">Join our insider list for your LAKELIFE10 code plus future deals.</p>'
+    +     '<p class="nl-popup-desc">Join our insider list for an exclusive discount code plus future deals.</p>'
     +     '<div class="nl-popup-form" id="nlPopupForm">'
     +       '<input class="nl-popup-input" type="email" id="nlPopupEmail" placeholder="Your email address" aria-label="Email address">'
     +       '<button class="nl-popup-btn" id="nlPopupBtn" onclick="handlePopupSubscribe()">Claim My Discount</button>'
@@ -295,7 +314,7 @@ function tfcBuildPopupHTML() {
     +     '<div class="nl-success" id="nlPopupSuccess">'
     +       '<div class="nl-success-title">⚓ You\'re on the crew list.</div>'
     +       '<div class="nl-success-sub">Use this code at checkout for 10% off your charter rate:</div>'
-    +       '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:32px;color:#C8102E;letter-spacing:4px;margin:12px 0;">LAKELIFE10</div>'
+    +       '<div id="nlPopupSuccessCode" style="font-family:\'Bebas Neue\',sans-serif;font-size:32px;color:#C8102E;letter-spacing:4px;margin:12px 0;"></div>'
     +       '<div class="nl-success-sub">Check your email (including Promotions &amp; Spam tabs) — we sent it there too.</div>'
     +     '</div>'
     +     '<button class="nl-popup-nothanks" id="nlPopupClose" onclick="closeNewsletterPopup()">No thanks</button>'
@@ -354,10 +373,12 @@ async function handlePopupSubscribe() {
   btn.textContent = 'Subscribing...';
   btn.disabled = true;
 
-  const ok = await callSubscribeApi(email);
+  const result = await callSubscribeApi(email);
 
-  if (ok) {
+  if (result.ok) {
     tfcMarkSignedUp();
+    const codeEl = document.getElementById('nlPopupSuccessCode');
+    if (codeEl) codeEl.textContent = result.code;
     document.getElementById('nlPopupForm').style.display = 'none';
     document.getElementById('nlPopupSuccess').style.display = 'block';
   } else {

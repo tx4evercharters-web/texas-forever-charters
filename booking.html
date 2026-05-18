@@ -3030,7 +3030,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
           beer_pong:     !!booking.addOns.beerpong,
           towels:        booking.addOns.towels || 0,
         },
-        promoCode: booking.promoCode || (booking.promoApplied ? 'LAKELIFE10' : null),
+        promoCode: booking.promoCode || null,
         paymentMethod: 'stripe',
       };
     }
@@ -3119,7 +3119,7 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       add('Charter (' + p.duration + ' hrs × $' + p.effectiveHourlyRate + '/hr · ' + dayLabel + ')', '$' + p.charterSubtotal.toLocaleString());
       if (p.holidaySurcharge)   add('Bank Holiday Surcharge (+$100/hr)', '+$' + (p.holidaySurcharge * p.duration));
       if (p.longCharterPremium) add('Long Charter Premium (5+ hrs · +$100/hr)', '+$' + (p.longCharterPremium * p.duration));
-      if (p.promoDiscount > 0) add('LAKELIFE10 (10% off charter rate)', bkFmtMoney(-p.promoDiscount), 'discount');
+      if (p.promoDiscount > 0) add('Promo code (10% off charter rate)', bkFmtMoney(-p.promoDiscount), 'discount');
       add('Admin Fee (5%)', '+' + bkFmtMoney(p.adminFee));
       if (booking.addOns.drone)      add('Drone Footage', '$200');
       if (booking.addOns.towels > 0) add('Towels (' + booking.addOns.towels + ' × $8)', '$' + booking.addOns.towels * 8);
@@ -3135,13 +3135,11 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       document.getElementById('depositAmountBtn').textContent = bkFmtMoney(p.depositAmount);
       document.getElementById('fullAmountBtn').textContent    = bkFmtMoney(p.grandTotal);
 
-      // Silently auto-apply promo for newsletter subscribers
-      if (localStorage.getItem('nl_subscribed') && !booking.promoApplied) {
-        booking.promoApplied = true;
-        booking.promoCode = 'LAKELIFE10';
-      }
-
-      // Hide the entire promo section once a discount is applied (any path)
+      // Hide the entire promo section once a discount is applied (any path).
+      // Note: removed the silent localStorage auto-apply that used to set
+      // booking.promoCode from the nl_subscribed flag — returning subscribers
+      // now re-enter the code from their welcome email. The flag still
+      // controls the mid-checkout unlock banner suppression below.
       const promoSection = document.getElementById('promo-section');
       if (promoSection) promoSection.style.display = booking.promoApplied ? 'none' : '';
 
@@ -3175,15 +3173,25 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
           body: JSON.stringify({ email }),
         });
         const data = await res.json();
-        if (res.ok && data.success) {
+        if (res.ok && data.success && data.code) {
+          /* Code comes from the API response (lib/pricing.js
+             WELCOME_PROMO_CODE constant) — never pre-rendered in this
+             page's HTML. nl_subscribed flag still set so the unlock
+             banner suppression at checkShowUnlockBanner stays consistent
+             for repeat visits within the same session. */
           localStorage.setItem('nl_subscribed', '1');
-          document.getElementById('nl-unlock-banner').innerHTML = `
-            <div style="text-align:center;padding:8px 0;">
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#C8102E;letter-spacing:4px;">LAKELIFE10</div>
-              <div style="font-family:'Barlow',sans-serif;font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px;">Code sent to your email too! Enter it below for 10% off your charter rate.</div>
-            </div>
-          `;
-          document.getElementById('promoInput').value = 'LAKELIFE10';
+          const banner = document.getElementById('nl-unlock-banner');
+          banner.innerHTML =
+            '<div style="text-align:center;padding:8px 0;">' +
+              '<div id="nl-unlock-code-display" style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;color:#C8102E;letter-spacing:4px;"></div>' +
+              '<div style="font-family:\'Barlow\',sans-serif;font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px;">Code sent to your email too! Enter it below for 10% off your charter rate.</div>' +
+            '</div>';
+          // textContent injection — defensive against any future change to
+          // the code source. innerHTML interpolation above is for trusted
+          // static markup only; the API-supplied code value goes through
+          // textContent so it can never inject markup.
+          document.getElementById('nl-unlock-code-display').textContent = data.code;
+          document.getElementById('promoInput').value = data.code;
           applyPromo();
         } else {
           msg.style.display = 'block';
@@ -3569,11 +3577,11 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
     renderCalendar();
     updateProgress();
 
-    // Auto-apply promo if already subscribed via newsletter
-    if (localStorage.getItem('nl_subscribed')) {
-      booking.promoApplied = true;
-      booking.promoCode = 'LAKELIFE10';
-    }
+    // Note: previously auto-applied the welcome promo code at init when
+    // the nl_subscribed flag was set. Removed as part of the leak fix.
+    // Returning subscribers now enter the code from their welcome email.
+    // The nl_subscribed flag still controls popup-suppression and the
+    // mid-checkout unlock banner.
 
     // Deep link: ?vessel=yacht or ?vessel=pontoon skips step 1
     const urlParams = new URLSearchParams(window.location.search);

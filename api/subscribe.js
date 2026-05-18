@@ -1,6 +1,7 @@
 const https = require('https');
 const crypto = require('crypto');
 const { FROM_EMAIL } = require('../lib/send-emails');
+const { WELCOME_PROMO_CODE } = require('../lib/pricing');
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -62,7 +63,7 @@ module.exports = async function handler(req, res) {
               from: FROM_EMAIL,
               to: email,
               subject: 'Your 10% Off Promo Code — Texas Forever Charters',
-              html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0F1A45;"><div style="background:#1B2A6B;padding:24px;text-align:center;border-bottom:3px solid #C8102E;"><h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:3px;">TEXAS FOREVER CHARTERS</h1></div><div style="padding:32px 24px;text-align:center;"><p style="color:rgba(255,255,255,0.8);font-size:16px;">Welcome to the crew! Here's your exclusive discount:</p><div style="background:#C8102E;border-radius:8px;padding:20px;margin:24px 0;"><div style="color:rgba(255,255,255,0.7);font-size:12px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Your Promo Code</div><div style="color:#fff;font-size:36px;font-weight:900;letter-spacing:6px;">LAKELIFE10</div><div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:8px;">10% off your charter rate</div></div><p style="color:rgba(255,255,255,0.7);font-size:14px;">Enter this code at checkout on Step 8 of the booking process.</p><div style="margin:28px 0;"><a href="https://www.texasforevercharters.com/booking.html" style="background:#C8102E;color:#fff;padding:14px 32px;border-radius:6px;text-decoration:none;font-weight:700;font-size:16px;">Book Your Charter</a></div><p style="color:rgba(255,255,255,0.4);font-size:12px;">Questions? Call or text (737) 368-1669</p></div></div>`,
+              html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0F1A45;"><div style="background:#1B2A6B;padding:24px;text-align:center;border-bottom:3px solid #C8102E;"><h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:3px;">TEXAS FOREVER CHARTERS</h1></div><div style="padding:32px 24px;text-align:center;"><p style="color:rgba(255,255,255,0.8);font-size:16px;">Welcome to the crew! Here's your exclusive discount:</p><div style="background:#C8102E;border-radius:8px;padding:20px;margin:24px 0;"><div style="color:rgba(255,255,255,0.7);font-size:12px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Your Promo Code</div><div style="color:#fff;font-size:36px;font-weight:900;letter-spacing:6px;">${WELCOME_PROMO_CODE}</div><div style="color:rgba(255,255,255,0.7);font-size:12px;margin-top:8px;">10% off your charter rate</div></div><p style="color:rgba(255,255,255,0.7);font-size:14px;">Enter this code at checkout on Step 8 of the booking process.</p><div style="margin:28px 0;"><a href="https://www.texasforevercharters.com/booking.html" style="background:#C8102E;color:#fff;padding:14px 32px;border-radius:6px;text-decoration:none;font-weight:700;font-size:16px;">Book Your Charter</a></div><p style="color:rgba(255,255,255,0.4);font-size:12px;">Questions? Call or text (737) 368-1669</p></div></div>`,
             });
             await new Promise((resolveEmail) => {
               let settled = false;
@@ -82,7 +83,12 @@ module.exports = async function handler(req, res) {
               emailReq.end();
             });
           } catch(e) { console.error('Welcome email failed:', e.message); }
-          res.status(200).json({ success: true });
+          /* Response includes `code` so frontends can inject it into the DOM
+             after a successful subscribe instead of pre-rendering the literal
+             in static HTML (which would defeat the email-gate purpose). The
+             legacy `success: true` field stays for backwards compatibility
+             with existing callers that check only that flag. */
+          res.status(200).json({ success: true, code: WELCOME_PROMO_CODE });
         } else {
           console.error('[subscribe] mailchimp non-200:', upstream.statusCode, data);
           try {
