@@ -110,6 +110,7 @@ module.exports = async function handler(req, res) {
     duration:              booking.duration,
     party_size:            booking.party_size,
     charter_name:          booking.charter_name,
+    experience:            booking.experience,
     organizer_first_name:  firstName(booking.full_name),
     customer_email_masked: maskEmail(booking.customer_email),
     customer_phone_masked: maskPhone(booking.phone),
