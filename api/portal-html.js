@@ -36,13 +36,15 @@ const { findBookingByPortalToken } = require('../lib/storage');
 const SITE_BASE = 'https://www.texasforevercharters.com';
 
 /* Vessel → OG image map. Absolute URLs (relative paths don't resolve for
-   off-site crawlers). Existing hero images used as-is for this commit; a
-   future commit will introduce properly-sized 1200×630 variants at
-   /images/og-yacht.jpg and /images/og-pontoon.jpg — one-line update here
-   when those land. */
+   off-site crawlers). Uses purpose-built thumbnail variants sized for
+   social-preview surfaces (~856×532, ~150-200KB) — separate from the
+   full-res marketing-page heroes at /images/yacht-main-photo.JPG and
+   /images/bentley-main-photo.jpeg, which would over-fetch a 4.7MB image
+   for a preview frame. Default falls back to yacht (the more iconic
+   vessel) for missing/unknown vessel values. */
 const VESSEL_OG_IMAGES = {
-  yacht:   SITE_BASE + '/images/yacht-main-photo.JPG',
-  pontoon: SITE_BASE + '/images/bentley-main-photo.jpeg',
+  yacht:   SITE_BASE + '/images/yacht-thumbnail.jpg',
+  pontoon: SITE_BASE + '/images/pontoon-thumbnail.jpg',
 };
 const DEFAULT_OG_IMAGE = VESSEL_OG_IMAGES.yacht;
 
