@@ -1179,6 +1179,32 @@
        vertical space per row. Now: just Edit + kebab side-by-side. */
     .action-btns { display: flex; align-items: center; gap: var(--space-2); }
 
+    /* Phone action icons — small inline tel:/sms: links rendered next to the
+       phone number in the Bookings and Customers tables. Visual rule: the
+       phone number itself stays the dominant text; the icons are subordinate
+       (smaller, muted, decorative-feeling) so admins scanning a row still
+       read the number first. Tap target padded to ~28px so it's reachable
+       on touch devices without being huge in desktop table density. */
+    .phone-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; vertical-align: middle; }
+    .phone-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 13px;
+      line-height: 1;
+      opacity: 0.55;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .phone-action:hover, .phone-action:focus {
+      opacity: 1;
+      background: var(--gray-100);
+      outline: none;
+    }
+
     .modal-body { padding: 24px; }
 
     /* ── Modal responsive overrides (≤768px) ─────────────────────────
@@ -3096,6 +3122,45 @@
     return fmtMoney((cents || 0) / 100);
   }
 
+  /* Convert a display phone string to a tel:/sms: URI–safe digit form.
+     Strips non-digits, then E.164-prefixes US numbers. Returns null for
+     anything that can't form a real URI (empty, junk, fewer than 10
+     digits after stripping). Callers should treat null as "no actions —
+     render plain text only". Mirrors the semantics of
+     lib/storage.js:normalizePhoneDigits but inlined here because admin.html
+     can't import server modules. NOT applied to the existing tel: links
+     elsewhere in this file (waiver detail, leads table, customer-detail
+     emergency phone) to keep this commit's scope tight — those are
+     out-of-scope per the commit spec. */
+  function phoneToTelDigits(phone) {
+    if (!phone) return null;
+    const digits = String(phone).replace(/\D/g, '');
+    if (digits.length === 10) return '+1' + digits;
+    if (digits.length === 11 && digits[0] === '1') return '+' + digits;
+    if (digits.length > 11) return '+' + digits;
+    return null;
+  }
+
+  /* Render a phone-number table cell with inline call + text icons. Used
+     by the Bookings, Overdue, and Customers tables. Returns the fallback
+     em-dash when phone is empty/null. Returns plain phone text (no icons)
+     when phoneToTelDigits decides the number is unusable (junk / too short).
+     The 📞 and 💬 emoji match admin.html's existing emoji-icon convention
+     (no inline SVG anywhere in this file — introducing SVG just for two
+     icons would establish a new pattern). aria-labels include the full
+     phone string so screen readers announce the target before activation. */
+  function phoneCellHtml(phone) {
+    if (!phone) return '—';
+    const display = esc(phone);
+    const tel = phoneToTelDigits(phone);
+    if (!tel) return display;
+    return display +
+      '<span class="phone-actions">' +
+        '<a class="phone-action" href="tel:'  + tel + '" aria-label="Call '  + display + '" title="Call '  + display + '">📞</a>' +
+        '<a class="phone-action" href="sms:'  + tel + '" aria-label="Text '  + display + '" title="Text '  + display + '">💬</a>' +
+      '</span>';
+  }
+
   function vesselLabel(v) {
     const s = String(v == null ? '' : v).toLowerCase().replace(/\s+/g, '');
     if (s.includes('yacht') || s.includes('carver')) return 'YACHT';
@@ -4903,7 +4968,7 @@
         <td class="td-primary">${esc(fmtDate(b.date))}</td>
         <td>${esc(b.charter_name||'—')}</td>
         <td><div style="font-weight:600">${esc(b.full_name||'—')}</div><div style="font-size:11px;color:var(--gray-400)">${esc(b.customer_email||'')}</div></td>
-        <td>${esc(b.phone||'—')}</td>
+        <td>${phoneCellHtml(b.phone)}</td>
         <td>${fmtCents(b.amount_total||0)}</td>
         <td style="color:var(--red);font-weight:700">${fmtMoney(b.remaining_balance)}</td>
         <td><button class="btn-sm btn-green" onclick="markPaid('${esc(b.session_id)}',this)">Mark Paid</button></td>
@@ -4957,7 +5022,7 @@
             ${charterLine}
             ${locationLine}
           </td>
-          <td style="white-space:nowrap">${esc(b.phone||'—')}</td>
+          <td style="white-space:nowrap">${phoneCellHtml(b.phone)}</td>
           <td style="white-space:nowrap"><span class="badge ${b.vessel==='yacht' ? 'badge-navy' : 'badge-red'}">${esc(vesselLabel(b.vessel))}</span></td>
           <td>${esc(b.experience||'—')}</td>
           <td>${esc(b.party_size ? b.party_size+' guests' : '—')}</td>
@@ -6635,7 +6700,7 @@
         <tr class="cust-row${expanded}" data-id="${esc(c.id)}">
           <td class="td-primary">${esc(c.full_name || '—')}</td>
           <td>${esc(c.email || '—')}</td>
-          <td>${esc(c.phone || '—')}</td>
+          <td>${phoneCellHtml(c.phone)}</td>
           <td>${esc(((c.city && c.state) ? c.city+', '+c.state : (c.state || '—')))}</td>
           <td>${bookings}</td>
           <td style="font-weight:700;color:var(--navy)">${fmtMoney(lifetime)}</td>
