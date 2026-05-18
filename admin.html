@@ -1557,6 +1557,18 @@
     .cal-chip.cancelled .cal-chip-party { text-decoration: line-through; }
     .cal-chip.concluded { background: var(--gray-400); }
     .cal-chip.concluded .cal-chip-time { opacity: 0.85; }
+    /* Past-charter dim modifier — applies to any chip whose dateStr < today.
+       Source-order placement after .cancelled (opacity 0.85) ensures the
+       0.6 here wins specificity ties for past+cancelled combos. Cancelled
+       keeps its red background + line-through; past dims the whole chip.
+       Past+concluded: gray background + 0.6 opacity. Today and future:
+       no .past class, unchanged. Mirrored on mobile dot + agenda surfaces
+       below so all three calendar views share the past/future visual
+       distinction. Tune the opacity value if needed; 0.6 chosen as readable
+       but clearly subordinate to today/future chips. */
+    .cal-chip.past { opacity: 0.6; }
+    .cal-mobile-dot.past { opacity: 0.5; }
+    .cal-agenda-item.is-past { opacity: 0.65; }
 
     /* ── Customers tab ── */
     .cust-filter-bar {
@@ -5216,11 +5228,12 @@
     return b.charter_name || b.full_name || b.customer_email || 'Charter';
   }
 
-  function renderChip(b) {
+  function renderChip(b, isPast) {
     const status = bkStatus(b);
-    const cls = (status === 'cancelled') ? 'pontoon cancelled'
-              : (status === 'concluded') ? 'concluded'
-              : (b.vessel === 'yacht' ? 'yacht' : 'pontoon');
+    let cls = (status === 'cancelled') ? 'pontoon cancelled'
+            : (status === 'concluded') ? 'concluded'
+            : (b.vessel === 'yacht' ? 'yacht' : 'pontoon');
+    if (isPast) cls += ' past';
     const time = esc(timeShort(b.time_slot));
     const party = b.party_size ? esc(b.party_size) + 'g' : '';
     const name = esc(chipName(b));
@@ -5243,9 +5256,13 @@
     const last = new Date(calYear, calMonth + 1, 0);
     const today = new Date();
 
-    // Build booking map by date string, sorted by time
+    // Build booking map by date string, sorted by time.
+    // Sources from allBookingsAll (the upcoming + past union) rather than
+    // allBookings (upcoming only) so historical months render their charters
+    // too. Past charters are dimmed via the .past class applied per chip
+    // below — separate concern from data inclusion.
     const bookingMap = {};
-    allBookings.forEach(b => {
+    allBookingsAll.forEach(b => {
       if (b.date) {
         if (!bookingMap[b.date]) bookingMap[b.date] = [];
         bookingMap[b.date].push(b);
@@ -5267,9 +5284,16 @@
       html += `<div class="cal-day other-month"><div class="cal-day-num">${prevLast - i}</div></div>`;
     }
 
+    /* Today as YYYY-MM-DD for past/future comparison. Uses JS local time
+       to match the today-cell-highlight logic above; admin tool is used in
+       Central, JS local matches. ISO YYYY-MM-DD strings sort chronologically
+       so direct string comparison is correct (no Date parsing per chip). */
+    const todayYmd = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
     for (let d = 1; d <= last.getDate(); d++) {
       const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
       const isToday = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+      const isPast = dateStr < todayYmd;
       const bookingsOnDay = bookingMap[dateStr] || [];
       const dayBlackouts = blackoutMap[dateStr] || [];
       const scope = dayBlackoutScope(dayBlackouts);   // 'both' | 'yacht' | 'pontoon' | null
@@ -5284,7 +5308,7 @@
 
       const visible = bookingsOnDay.slice(0, CAL_MAX_CHIPS);
       const overflow = bookingsOnDay.length - visible.length;
-      const chipsHtml = visible.map(renderChip).join('');
+      const chipsHtml = visible.map(b => renderChip(b, isPast)).join('');
       const moreHtml = overflow > 0 ? `<div class="cal-more" data-show-more="${dateStr}">+${overflow} more</div>` : '';
 
       const isBlackoutCell = !!scope;
@@ -5322,6 +5346,7 @@
     const first = new Date(calYear, calMonth, 1);
     const last  = new Date(calYear, calMonth + 1, 0);
     const today = new Date();
+    const todayYmd = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
     const prevLast = new Date(calYear, calMonth, 0).getDate();
 
     let html = '<div class="cal-mobile-grid-inner">';
@@ -5339,12 +5364,16 @@
     for (let d = 1; d <= last.getDate(); d++) {
       const dateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
       const isToday = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
+      const isPast = dateStr < todayYmd;
       const bookingsOnDay = bookingMap[dateStr] || [];
       const dayBlackouts  = blackoutMap[dateStr] || [];
       const scope = dayBlackoutScope(dayBlackouts);
 
       // Build indicator list: blackouts first (one dot per scope row OR
       // one per per-slot row), then booking dots colored by vessel.
+      // Past booking dots get a .past modifier for the dim treatment;
+      // blackout dots stay un-dimmed (blackouts represent persistent state,
+      // not historical activity, and look the same regardless of date).
       const indicators = [];
       if (scope === 'both' || scope === 'yacht' || scope === 'pontoon') {
         indicators.push({ kind: 'blackout', scope });
@@ -5361,7 +5390,8 @@
         const color = ind.kind === 'booking'
           ? vesselDotColor(ind.vessel)
           : BLACKOUT_DOT_STYLE.background;
-        return `<span class="cal-mobile-dot" style="background:${color};"></span>`;
+        const pastCls = (isPast && ind.kind === 'booking') ? ' past' : '';
+        return `<span class="cal-mobile-dot${pastCls}" style="background:${color};"></span>`;
       }).join('');
       const moreHtml = overflow > 0 ? `<div class="cal-mobile-more">+${overflow}</div>` : '';
 
@@ -5401,10 +5431,13 @@
     const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const lastDay = new Date(calYear, calMonth + 1, 0).getDate();
+    const today = new Date();
+    const todayYmd = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
     const items = [];
 
     for (let d = 1; d <= lastDay; d++) {
       const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      const isPast = dateStr < todayYmd;
       const dayDate = new Date(calYear, calMonth, d);
       const dayBookings = bookingMap[dateStr] || [];
       const dayBlackouts = blackoutMap[dateStr] || [];
@@ -5445,8 +5478,9 @@
         const vesselTxt = vesselLabel(b.vessel);
         const name = chipName(b);
         const cancelledClass = (status === 'cancelled') ? ' is-cancelled' : '';
+        const pastClass = isPast ? ' is-past' : '';
         items.push(
-          '<button type="button" class="cal-agenda-item' + cancelledClass + '" onclick="openEditModal(\'' + esc(b.session_id) + '\')">' +
+          '<button type="button" class="cal-agenda-item' + cancelledClass + pastClass + '" onclick="openEditModal(\'' + esc(b.session_id) + '\')">' +
             '<div class="cal-agenda-date">' + esc(dateLabel) + '</div>' +
             '<div class="cal-agenda-meta">' +
               '<span class="cal-agenda-time">' + esc(time) + '</span>' +
