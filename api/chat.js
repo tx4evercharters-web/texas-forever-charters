@@ -28,7 +28,7 @@ const SYSTEM_PROMPT =
   "\n" +
   "LOCATION & BOOKING: Pickup at Volente Beach Water Park and Resort on Lake Travis. Captains are DJ and Dane. Text (737) 368-1669 or email tx4evercharters@gmail.com to book. " +
   "\n\n" +
-  "THE BOATS & CAPACITY: 40ft Carver Aft Cabin yacht, maximum 20 guests, $250-350/hr (Mon-Thu $250, Fri/Sun $300, Sat $350), full cabin below deck with salon, kitchen, 2 bedrooms, 2 restrooms. 24ft Bentley Navigator 243 pontoon, maximum 13 guests, $100/hr weekday or $150/hr weekend. Both BYOB friendly. " +
+  "THE BOATS & CAPACITY: 40ft Carver Aft Cabin yacht, maximum 20 guests, $250-350/hr (Mon-Thu $250, Fri/Sun $300, Sat $350), full cabin below deck with salon, kitchenette, 2 bedrooms, 2 restrooms. 24ft Bentley Navigator 243 pontoon, maximum 13 guests, $100/hr weekday or $150/hr weekend. Both BYOB friendly. " +
   "\n\n" +
   "WHAT'S INCLUDED IN EVERY CHARTER: Captain (DJ or Dane), fuel, and standard charter operations. Both vessels include coolers. The yacht (Carver) also includes 2 restrooms, a refrigerator, and the 14ft jump platform (yacht-only — the pontoon does NOT have a jump platform). Every charter also includes complimentary access to Volente Beach Waterpark & Resort — guests can come early or stay after their charter to use the waterpark. Customers just mention Texas Forever Charters at the gate. Towels, ice, and bottled water are NOT included by default — they're optional add-ons (see add-on pricing below). " +
   "\n\n" +
