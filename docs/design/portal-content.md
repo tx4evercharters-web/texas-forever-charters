@@ -34,19 +34,20 @@ Token is the 32-char hex value from `bookings.portal_token` (already provisioned
 1. Hero (vessel image + charter date)
 2. At a glance (booking summary)
 3. Waiver status block
-4. Where to go (annotated map + arrival logistics)
-5. Day-of captain contact
-6. What to bring
-7. Game plan
-8. Vessel-specific onboard info
-9. Accordion: Lake & Boat Rules
-10. Accordion: Alcohol Policy
-11. Accordion: Weather Policy
-12. Accordion: Cancellation & Refund Policy
-13. Accordion: Damage Deposit
-14. Accordion: Gratuity
-15. Accordion: FAQ
-16. Contact footer
+4. Before your charter (waterpark perk + arrival timing)
+5. Where to go (annotated map + arrival logistics)
+6. Day-of captain contact
+7. What to bring
+8. Game plan
+9. Vessel-specific onboard info
+10. Accordion: Lake & Boat Rules
+11. Accordion: Alcohol Policy
+12. Accordion: Weather Policy
+13. Accordion: Cancellation & Refund Policy
+14. Accordion: Damage Deposit
+15. Accordion: Gratuity
+16. Accordion: FAQ
+17. Contact footer
 
 ---
 
@@ -140,9 +141,9 @@ Three states:
 
 #### State A — 0 signed
 
-> **Liability Waiver — Required Before Boarding**
+> **Liability Waiver: Required Before Boarding**
 >
-> Every guest on board must sign a digital liability waiver before your charter. None of your party of `<party_size>` has signed yet. The booking organizer is responsible for getting everyone signed before charter day — guests who arrive unsigned cannot board.
+> Every guest on board must sign a digital liability waiver before your charter. None of your party of `<party_size>` has signed yet. The booking organizer is responsible for getting everyone signed before charter day. Guests who arrive unsigned cannot board.
 
 Two buttons (side by side on desktop, stacked on mobile):
 - **Sign Your Waiver** (red, primary) → `/waiver.html?session_id=<booking.session_id>` (existing waiver flow uses `session_id`, not `portal_token`; the waiver page pre-fills charter info from the session_id).
@@ -150,7 +151,7 @@ Two buttons (side by side on desktop, stacked on mobile):
 
 #### State B — partial signed (1 to party_size-1)
 
-> **Liability Waiver — `<signed_count>` of `<party_size>` Have Signed**
+> **Liability Waiver: `<signed_count>` of `<party_size>` Have Signed**
 >
 > The remaining `<party_size - signed_count>` guest(s) need to sign before charter day. The booking organizer is responsible for following up.
 
@@ -168,11 +169,23 @@ One button:
 #### Share button mechanics
 
 - **Copy:** writes `https://texasforevercharters.com/waiver.html?session_id=<booking.session_id>` to clipboard via `navigator.clipboard.writeText`.
-- **Toast on success:** `Waiver link copied — send it to your guests.`
+- **Toast on success:** `Waiver link copied. Send it to your guests.`
 - **Web Share API (mobile):** when `navigator.share` is available, presents the native share sheet with text `Sign your Texas Forever Charters waiver before our trip:` and the URL.
 - **Fallback:** if both clipboard API and Web Share API are unavailable (rare — old browser), show a modal with the URL pre-selected for manual copy.
 
-### 4. Where to Go
+### 4. Before Your Charter
+
+Two practical heads-ups for the day of: the included waterpark access perk and the arrival-timing rule.
+
+#### 4a. Volente Beach Waterpark Access
+
+> Your charter includes complimentary Volente Beach Waterpark access, before and after your trip. Mention Texas Forever Charters at the gate. Bring a swimsuit, hit the slides, grab food at Beachside Billy's. The park is right there at the property.
+
+#### 4b. Arrive 15 Minutes Early
+
+> Plan to be at the dock **15 minutes before your departure time**. Your captain runs a quick 10-minute safety briefing before you push off, covering the boat layout, the rules, and where everything is. The earlier you're aboard, the more lake time you get.
+
+### 5. Where to Go
 
 Address line (large, copyable): **16107 FM 2769, Leander, TX 78641**
 
@@ -185,37 +198,33 @@ Buttons row:
 
 Embedded map: `images/drawn-map.png` — the annotated map with park-here / Uber-dropoff / boat-pickup pins and the green walking path. Display at a comfortable size on both desktop (max-width 720px) and mobile (full bleed with rounded corners).
 
-Five sub-sections of copy follow the map.
+Four sub-sections of copy follow the map.
 
-#### 4a. Driving Yourself
+#### 5a. Driving Yourself
 
-> When you turn onto the property, drive past Beachside Billy's and continue toward the back. There's a **dirt lot at the end of the drive — that's where you park**. Parking is **$10 per vehicle**, paid at the lot.
+> When you turn onto the property, drive past Beachside Billy's and continue toward the back. There's a **dirt lot at the end of the drive. That's where you park**. Parking is **$10 per vehicle**, paid at the lot.
 >
 > Once parked, follow the **green-highlighted path** on the map above. It walks you down to the tan plastic floating dock where your captain will be waiting.
 >
-> ⚠ Don't park in the marked private slots or along the access road. **Vehicles get towed** — we can't get them released for you.
+> ⚠ Don't park in the marked private slots or along the access road. **Vehicles get towed.** We can't get them released for you.
 
-#### 4b. Getting Dropped Off
+#### 5b. Getting Dropped Off
 
 > If you're taking an Uber, Lyft, or having a friend drop you off: have them **drop you at the parking pull-off just off Wharf Cove** (marked on the map). From there, walk the same **green-highlighted path** down to the tan dock.
 >
-> Tell your driver "Volente Beach Waterpark" if they need a destination they'll recognize — the dropoff is right there.
+> Tell your driver "Volente Beach Waterpark" if they need a destination they'll recognize. The dropoff is in the same area.
 
-#### 4c. At the Dock
+#### 5c. At the Dock
 
 > Your captain will meet you at the **tan plastic floating dock** at the bottom of the green path. Both the yacht and the pontoon depart from this same dock.
 >
-> **Important:** this is NOT the **VIP Marina** dock further along the property. If you find yourself on a wood-and-aluminum dock with covered slips, you've walked too far — head back toward the tan plastic dock.
+> **Important:** this is NOT the **VIP Marina** dock further along the property. If you find yourself on a wood-and-aluminum dock with covered slips, you've walked too far. Head back toward the tan plastic dock.
 
-#### 4d. Arrive 15 Minutes Early
-
-> Plan to be at the dock **15 minutes before your departure time**. Your captain runs a quick 10-minute safety briefing before you push off — covers the boat layout, the rules, and where everything is. The earlier you're aboard, the more lake time you get.
-
-#### 4e. Lost or Confused?
+#### 5d. Lost or Confused?
 
 > Call or text your captain at **(737) 368-1669** the moment something doesn't look right. We'd rather walk you in over the phone than have you wandering the property.
 
-### 5. Day-of Captain Contact
+### 6. Day-of Captain Contact
 
 Per DJ's design call, captain identity is a day-of surprise. **The portal does NOT pre-assign DJ or Dane.** Both are PBO-certified and either runs your trip.
 
@@ -231,17 +240,17 @@ Copy:
 
 **CRITICAL CONSTRAINT (memory rule):** Use **PBO-certified** only. **Never** use "USCG", "Coast Guard", or any federal-credential terminology. TFC captains are Texas state-licensed Party Boat Operators. This applies to every customer-facing surface, this portal included.
 
-### 6. What to Bring
+### 7. What to Bring
 
 Universal list (all charters):
 
-- Food and drinks (no glass containers on deck — see boat rules below)
-- Ice for your drinks (or add it as an add-on at booking)
-- Plenty of water — Lake Travis sun is no joke
+- Food and drinks (no glass on the pontoon; glass allowed in the yacht cabin only)
+- Ice for your drinks, or add it as a charter add-on
+- Plenty of water. Lake Travis sun is no joke
 - Sunscreen (lots of it)
 - Swimwear and a change of clothes
-- Towels — bring your own or add them to your order
-- Cash, Zelle, or Venmo for your captain's tip (20% required, day-of)
+- Towels (bring your own, or add them to your order)
+- Cash, Zelle, or Venmo for your captain's tip (20% required, paid day-of)
 - A valid ID for anyone planning to drink
 - Phone charger (yacht has outlets on board; pontoon does not)
 
@@ -251,56 +260,57 @@ Universal list (all charters):
 
 #### Yacht-only callout (render only if `vessel = 'yacht'`)
 
-> ⚠ **Marine toilet rules.** The yacht has two restrooms with marine toilets. They handle human waste and a small amount of marine-safe TP only — **no feminine products, no paper towels, no large amounts of toilet paper**. Clogged marine toilets are a damage event. There's a trash bin in each restroom for everything else.
+> ⚠ **Marine toilet rules.** The yacht has two restrooms with marine toilets. They handle human waste and a small amount of marine-safe TP only. **No feminine products, no paper towels, no large amounts of toilet paper.** Clogged marine toilets are a damage event. There's a trash bin in each restroom for everything else.
 
-### 7. Game Plan
+### 8. Game Plan
 
 > **Where We Go**
 >
-> Lake Travis is big and your captain knows it well. Most charters follow a flexible plan — you've got opinions, the captain has alternatives, and the lake decides the rest. Here's what shows up on most trips.
+> Lake Travis is big and your captain knows it well. Most charters follow a flexible plan. You've got opinions, the captain has alternatives, and the lake decides the rest. Here's what shows up on most trips.
 >
-> **Devil's Cove** is the default destination on the majority of our charters. It's the iconic Lake Travis anchor spot — a wide, shallow cove where boats raft up, music plays, and float mats stretch from boat to boat. Most groups want at least an hour here, sometimes the whole charter. Saturday afternoons in summer it gets packed; weekdays and shoulder season it's almost private.
+> **Devil's Cove** is the default destination on the majority of our charters. It's the iconic Lake Travis anchor spot, a wide, shallow cove where boats raft up, music plays, and float mats stretch from boat to boat. Most groups want at least an hour here, sometimes the whole charter. Saturday afternoons in summer it gets packed; weekdays and shoulder season it's almost private.
 >
-> **Arkansas Bend** is the quieter alternative. Calmer water, fewer boats, better for families and groups that want to swim without the party atmosphere. Captain often suggests this when Devil's Cove is crowded or the wind's wrong.
+> **Arkansas Bend** is a captain favorite for groups who want a longer cruise. It's a quieter cove down the lake with a chill, family-and-kids vibe: calmer water, fewer boats, easy swimming. Tell your captain at the start of the trip if you'd like to head that way.
 >
-> **Hippie Hollow** is visible from the water and worth knowing about: it's Texas's only legally clothing-optional state park. **Adults-only vibe** — boats cruise past for the views, but it's not where you'd anchor with kids on board. Tell your captain if your group prefers to skip that stretch.
+> **Hippie Hollow** is visible from the water and worth knowing about: it's Texas's only legally clothing-optional public park, run by Travis County. **Adults-only vibe.** Boats cruise past for the views, but it's not where you'd anchor with kids on board. Tell your captain if your group prefers to skip that stretch.
 >
-> Other stops your captain can suggest: **Mansfield Dam** for the impressive concrete face, **Sandy Creek arm** for quieter swimming, and the **Hill Country bluffs** on the south shore for scenery.
+> Other stops your captain can suggest: **Mansfield Dam**, where the captain can cruise past for the impressive concrete face, and the **Sandy Creek arm** for quieter swimming.
 >
-> Once you're aboard, tell your captain what you're after — relaxed swim cove, party scene, scenic tour, sunset spot — and they'll route the day accordingly.
+> Once you're aboard, tell your captain what you're after (relaxed swim cove, party scene, scenic tour, sunset spot), and they'll route the day accordingly.
 
-### 8. Vessel-Specific Onboard Info
+### 9. Vessel-Specific Onboard Info
 
 Render exactly one of the two blocks below based on `bookings.vessel`.
 
-#### 8a. Yacht (`vessel = 'yacht'`)
+#### 9a. Yacht (`vessel = 'yacht'`)
 
 > **On Board the 40ft Carver Aft Cabin**
 >
 > Your yacht charter comes loaded:
 >
-> - **14ft jump platform** off the stern — the iconic Carver feature, perfect for big leaps into the water
-> - **3 floating dock floats / mats** — raft up off the back, lounge with drinks
-> - **Paddleboards** — provided on board for guest use
-> - **Bluetooth speaker system** — pair your phone, run the playlist
-> - **Large cooler** stocked with ice (when ice add-on selected) — keep your drinks cold
-> - **2 marine restrooms** with sinks
-> - **Refrigerator** in the cabin
-> - **Phone charger outlets** on board
-> - **Full interior cabin** with salon and kitchenette — shade, seating, escape from the sun
+> - **14ft jump platform** off the stern. The iconic Carver feature, perfect for big leaps into the water.
+> - **3 floating dock floats / mats.** Raft up off the back, lounge with drinks.
+> - **Paddleboards** available when conditions allow (weather and cove traffic dependent). Captain's call on the day.
+> - **Bluetooth speaker system.** Pair your phone, run the playlist.
+> - **Large cooler** stocked with ice (when ice add-on selected). Keep your drinks cold.
+> - **2 private bedrooms** below deck.
+> - **2 marine restrooms** with sinks.
+> - **Refrigerator** in the cabin.
+> - **Phone charger outlets** on board.
+> - **Full interior cabin** with salon and kitchenette. Shade, seating, escape from the sun.
 >
 > 🚫 **No personal coolers**, please. Our cooler is large and on board for a reason: extra coolers crowd the deck and risk damage. Bring your drinks, we'll keep them cold.
 
-#### 8b. Pontoon (`vessel = 'pontoon'`)
+#### 9b. Pontoon (`vessel = 'pontoon'`)
 
 > **On Board the 24ft Bentley Navigator 243**
 >
 > Your pontoon charter includes:
 >
-> - **Bimini top** — shade across the seating area
-> - **1 lilypad** — floating mat off the back for swimming and lounging
-> - **Bluetooth speaker system** — pair your phone, run the playlist
-> - **Large cooler** stocked with ice (when ice add-on selected) — keep your drinks cold
+> - **Bimini top.** Shade across the seating area.
+> - **1 lilypad.** Floating mat off the back for swimming and lounging.
+> - **Bluetooth speaker system.** Pair your phone, run the playlist.
+> - **Large cooler** stocked with ice (when ice add-on selected). Keep your drinks cold.
 >
 > 🚫 **No personal coolers**, please. Our cooler is large and on board for a reason: extra coolers crowd the deck and risk damage. Bring your drinks, we'll keep them cold.
 >
@@ -308,11 +318,11 @@ Render exactly one of the two blocks below based on `bookings.vessel`.
 >
 > #### Upgrade your trip: Tubing
 >
-> Want to pull tubes behind the pontoon? Add tubing to your charter for **$200** — captain handles the rig and the runs.
->
-> [Add Tubing — $200] (button → opens a contact flow or call action; Phase 4 decides whether this is a self-serve checkout add or a "call to add" prompt)
+> Want to pull tubes behind the pontoon? Add tubing to your charter for **$200**. Call **(737) 368-1669** to upgrade. Captain handles the rig and the runs.
 
-### 9. Accordion: Lake & Boat Rules
+Implementation note (out of scope for this commit): a future Phase 4 follow-up commit may replace the call-to-add flow with a self-serve Stripe Checkout Session for the tubing add-on; for now, the rendered HTML is plain text + a `tel:` link, no button.
+
+### 10. Accordion: Lake & Boat Rules
 
 When expanded:
 
@@ -327,32 +337,32 @@ When expanded:
 > - No glass containers on deck or pontoon. Glass allowed in yacht cabin only (NEVER on pontoon).
 > - No standing while vessel is underway.
 > - No limbs outside the railings while underway.
-> - No littering — please.
+> - No littering, please.
 > - No smoking anything that produces ash on either vessel. Vaping is permitted on deck. If you want to smoke something that ashes, do it in the water or on a float mat while anchored.
 > - No nudity. No sexual activity on board.
-> - No illegal drugs or unauthorized substances — immediate removal and possible legal action.
+> - No illegal drugs or unauthorized substances. Immediate removal and possible legal action.
 > - Reckless or unsafe behavior is grounds for removal without refund.
 > - Capacity is strictly enforced: 20 guests on the yacht, 13 on the pontoon. No exceptions.
-> - Shoes off on the yacht — especially black soles, which damage the deck. Pontoon is fine with shoes on.
+> - Shoes off on the yacht (especially black soles, which damage the deck). Pontoon is fine with shoes on.
 > - Guests are responsible for damage they cause. See Damage Deposit section below.
 
 **Note on language:** "USCG-approved" here is correct because it refers to the **life jacket equipment specification** (the standard for the gear), NOT to the captain's credentials. The captain rule is PBO-only. Equipment standard ≠ captain credential.
 
-### 10. Accordion: Alcohol Policy
+### 11. Accordion: Alcohol Policy
 
 When expanded:
 
-> BYOB is fully welcome — bring whatever you'd like.
+> BYOB is fully welcome. Bring whatever you'd like.
 >
 > Rules:
 >
 > - The **booking organizer must be 21 or older** and is legally responsible for ensuring no one under 21 consumes alcohol.
 > - Anyone under 18 must be accompanied by a parent or guardian.
-> - **Glass is allowed only inside the yacht cabin** — never on the deck or anywhere on the pontoon.
+> - **Glass is allowed only inside the yacht cabin.** Never on the deck or anywhere on the pontoon.
 > - **Catering is available** through Beachside Billy's at Volente Beach Waterpark if you want it.
 > - Texas Forever Charters reserves the right to end the charter without refund if alcohol policies are violated or if guests appear unsafe.
 
-### 11. Accordion: Weather Policy
+### 12. Accordion: Weather Policy
 
 When expanded:
 
@@ -366,7 +376,7 @@ When expanded:
 >
 > Questions about weather day-of? Call **(737) 368-1669**. We'll be honest with you.
 
-### 12. Accordion: Cancellation & Refund Policy
+### 13. Accordion: Cancellation & Refund Policy
 
 When expanded:
 
@@ -396,7 +406,7 @@ When expanded:
 > - 8.5% Texas sales tax
 > - 2.9% credit card processing fee may or may not be refunded depending on Stripe's policy
 
-### 13. Accordion: Damage Deposit
+### 14. Accordion: Damage Deposit
 
 When expanded:
 
@@ -415,7 +425,7 @@ When expanded:
 >
 > If damage exceeds $250, the additional cost is charged to your card.
 
-### 14. Accordion: Gratuity
+### 15. Accordion: Gratuity
 
 When expanded:
 
@@ -431,7 +441,7 @@ When expanded:
 >
 > **Why 20%?** Captains do the prep work, the safety briefing, the navigation, the anchoring, the cleanup, and they make sure your trip is great. It's industry standard for captained charters.
 
-### 15. Accordion: FAQ
+### 16. Accordion: FAQ
 
 Mirror the existing website FAQ from `index.html` (lines 333-456), with the following corrections applied per DJ's confirmed answers:
 
@@ -442,13 +452,14 @@ Mirror the existing website FAQ from `index.html` (lines 333-456), with the foll
 
 Plus add these portal-specific FAQs at the end:
 
-- **Can I share this portal link?** → "Yes, share with your party. Treat the URL like a password — don't post it publicly. Anyone with the link can see your charter details."
-- **Can I edit my booking from the portal?** → "Not yet. Call **(737) 368-1669** to make changes — dates, party size, vessel, anything."
+- **How much do add-ons cost?** → "Add-on pricing: drone footage $200 per charter, towels $8 each, water bottles $25 per pack, ice $25 per bag, beer pong $50. Drone footage and beer pong are per-charter flat fees. Towels are per-towel. Add these at booking time, or call (737) 368-1669 to add them later."
+- **Can I share this portal link?** → "Yes, share with your party. Treat the URL like a password. Don't post it publicly. Anyone with the link can see your charter details."
+- **Can I edit my booking from the portal?** → "Not yet. Call **(737) 368-1669** to make changes: dates, party size, vessel, anything."
 - **What if I'm running late on charter day?** → "Call your captain immediately at **(737) 368-1669**. We try to wait, but other charters depend on our schedule. If you're more than 15 minutes late and we can't reach you, your captain may have to leave."
-- **Why am I being asked to pay a balance?** → "If you booked with a 10% deposit, the remaining 90% is due 14 days before your charter. Pay it from the top of this page — it's a fresh Stripe checkout, takes 30 seconds."
-- **What if I lose this link?** → "Call or text **(737) 368-1669** and we'll re-send it. Same booking, same URL — we don't issue new portal tokens unless something's wrong."
+- **Why am I being asked to pay a balance?** → "If you booked with a 10% deposit, the remaining 90% is due 14 days before your charter. Pay it from the top of this page. It's a fresh Stripe checkout, takes 30 seconds."
+- **What if I lose this link?** → "Call or text **(737) 368-1669** and we'll re-send it. Same booking, same URL. We don't issue new portal tokens unless something's wrong."
 
-### 16. Contact Footer
+### 17. Contact Footer
 
 Always-visible footer (no accordion):
 
@@ -724,9 +735,9 @@ The `booking_events` table already exists, has the synthetic `booking_created` b
 The following sections contain copy I (Claude) drafted based on DJ's bullet-point descriptions during the spec conversation, since canonical Part 1 / Part 2 spec text wasn't pasted in this session:
 
 - **Section 3 (Waiver Status Block)** — three state copy variants drafted from DJ's "0 / partial / all signed" outline.
-- **Section 4 (Where to Go)** — five sub-sections (Driving / Drop-off / Dock / Arrive / Lost) drafted from DJ's brief descriptions ($10 dirt lot, tan plastic dock not VIP Marina, etc.).
-- **Section 7 (Game Plan)** — Devil's Cove + Arkansas Bend + Hippie Hollow adults-only note, plus Mansfield Dam / Sandy Creek / Hill Country bluffs alternatives.
-- **Section 8 (Vessel-Specific Onboard Info)** — yacht and pontoon amenity lists drafted from DJ's brief enumeration of features.
-- **Section 15 (Portal-specific FAQs)** — the four added FAQ items.
+- **Section 5 (Where to Go)** — four sub-sections (Driving / Drop-off / Dock / Lost) drafted from DJ's brief descriptions ($10 dirt lot, tan plastic dock not VIP Marina, etc.).
+- **Section 8 (Game Plan)** — Devil's Cove + Arkansas Bend + Hippie Hollow adults-only note, plus Mansfield Dam and Sandy Creek arm as captain-suggested alternatives.
+- **Section 9 (Vessel-Specific Onboard Info)** — yacht and pontoon amenity lists drafted from DJ's brief enumeration of features.
+- **Section 16 (Portal-specific FAQs)** — the portal-specific FAQ items.
 
 DJ should review and revise this copy before Phase 4 implementation begins. Final copy lands in Phase 4 HTML; this doc is the canonical reference Phase 4 implements against.

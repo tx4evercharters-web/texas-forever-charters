@@ -819,6 +819,21 @@
            and the helper builds the three state variants. -->
       <section class="portal-waiver" id="portalWaiver" style="display:none;"></section>
 
+      <!-- Before Your Charter — practical day-of heads-ups (Volente Beach
+           Waterpark perk + arrival timing). Placed before Where to Go so
+           customers see the prep info before the wayfinding. Inline strong
+           labels instead of h3 sub-headings to fit the .portal-card pattern
+           used by Captain / Bring / Gameplan; spec uses 4a/4b structure for
+           authoring clarity but the rendered card is one body block. -->
+      <section class="portal-card portal-before" id="portalBefore" style="display:none;">
+        <div class="portal-card-eyebrow">Before Your Trip</div>
+        <h2 class="portal-card-title">Before Your Charter</h2>
+        <div class="portal-card-body">
+          <p><strong>Volente Beach Waterpark access.</strong> Your charter includes complimentary Volente Beach Waterpark access, before and after your trip. Mention Texas Forever Charters at the gate. Bring a swimsuit, hit the slides, grab food at Beachside Billy's. The park is right there at the property.</p>
+          <p><strong>Arrive 15 minutes early.</strong> Plan to be at the dock 15 minutes before your departure time. Your captain runs a quick 10-minute safety briefing before you push off, covering the boat layout, the rules, and where everything is. The earlier you're aboard, the more lake time you get.</p>
+        </div>
+      </section>
+
       <!-- Where to Go — fully static content. Hidden by default; renderPortal()
            unhides for upcoming charters and hides for past charters. -->
       <section class="portal-where" id="portalWhere" style="display:none;">
@@ -864,13 +879,6 @@
           <div class="portal-where-section-body">
             <p>Your captain will meet you at the <strong>tan plastic floating dock</strong> at the bottom of the green path. Both the yacht and the pontoon depart from this same dock.</p>
             <p><strong>Important:</strong> this is NOT the <strong>VIP Marina</strong> dock further along the property. If you find yourself on a wood-and-aluminum dock with covered slips, you've walked too far. Head back toward the tan plastic dock.</p>
-          </div>
-        </div>
-
-        <div class="portal-where-section">
-          <h3 class="portal-where-section-title">Arrive 15 Minutes Early</h3>
-          <div class="portal-where-section-body">
-            <p>Plan to be at the dock <strong>15 minutes before your departure time</strong>. Your captain runs a quick 10-minute safety briefing before you push off, covering the boat layout, the rules, and where everything is. The earlier you're aboard, the more lake time you get.</p>
           </div>
         </div>
 
@@ -920,10 +928,10 @@
         <h2 class="portal-card-title">Game Plan</h2>
         <div class="portal-card-body">
           <p>Lake Travis is big and your captain knows it well. Most charters follow a flexible plan. You've got opinions, the captain has alternatives, and the lake decides the rest. Here's what shows up on most trips.</p>
-          <p><strong>Devil's Cove</strong> is the default destination on the majority of our charters. It's the iconic Lake Travis anchor spot, a wide shallow cove where boats raft up, music plays, and float mats stretch from boat to boat. Most groups want at least an hour here, sometimes the whole charter. Saturday afternoons in summer it gets packed; weekdays and shoulder season it's almost private.</p>
-          <p><strong>Arkansas Bend</strong> is the quieter alternative. Calmer water, fewer boats, better for families and groups that want to swim without the party atmosphere. Captain often suggests this when Devil's Cove is crowded or the wind's wrong.</p>
-          <p><strong>Hippie Hollow</strong> is visible from the water and worth knowing about: it's Texas's only legally clothing-optional state park. Adults-only vibe. Boats cruise past for the views, but it's not where you'd anchor with kids on board. Tell your captain if your group prefers to skip that stretch.</p>
-          <p>Other stops your captain can suggest: <strong>Mansfield Dam</strong> for the impressive concrete face, the <strong>Sandy Creek arm</strong> for quieter swimming, and the <strong>Hill Country bluffs</strong> on the south shore for scenery.</p>
+          <p><strong>Devil's Cove</strong> is the default destination on the majority of our charters. It's the iconic Lake Travis anchor spot, a wide, shallow cove where boats raft up, music plays, and float mats stretch from boat to boat. Most groups want at least an hour here, sometimes the whole charter. Saturday afternoons in summer it gets packed; weekdays and shoulder season it's almost private.</p>
+          <p><strong>Arkansas Bend</strong> is a captain favorite for groups who want a longer cruise. It's a quieter cove down the lake with a chill, family-and-kids vibe: calmer water, fewer boats, easy swimming. Tell your captain at the start of the trip if you'd like to head that way.</p>
+          <p><strong>Hippie Hollow</strong> is visible from the water and worth knowing about: it's Texas's only legally clothing-optional public park, run by Travis County. Adults-only vibe. Boats cruise past for the views, but it's not where you'd anchor with kids on board. Tell your captain if your group prefers to skip that stretch.</p>
+          <p>Other stops your captain can suggest: <strong>Mansfield Dam</strong>, where the captain can cruise past for the impressive concrete face, and the <strong>Sandy Creek arm</strong> for quieter swimming.</p>
           <p>Once you're aboard, tell your captain what you're after (relaxed swim cove, party scene, scenic tour, sunset spot), and they'll route the day accordingly.</p>
         </div>
       </section>
@@ -1077,12 +1085,12 @@
 
         <div class="portal-acc-item">
           <button class="portal-acc-trigger" aria-expanded="false" type="button">
-            <span>What add-ons are available?</span>
+            <span>How much do add-ons cost?</span>
             <span class="portal-acc-chevron" aria-hidden="true">›</span>
           </button>
           <div class="portal-acc-panel">
             <div class="portal-acc-body-inner">
-              <p>Drone footage ($200), towels ($8 each), ice for coolers ($25), bottled water ($25), and beer pong setup ($50). Add-ons are selected during booking. To add anything after you've booked, call <a href="tel:+17373681669">(737) 368-1669</a>.</p>
+              <p>Add-on pricing: drone footage $200 per charter, towels $8 each, water bottles $25 per pack, ice $25 per bag, beer pong $50. Drone footage and beer pong are per-charter flat fees. Towels are per-towel. Add these at booking time, or call <a href="tel:+17373681669">(737) 368-1669</a> to add them later.</p>
             </div>
           </div>
         </div>
@@ -1380,7 +1388,7 @@
          once the date has passed. Hero + At a Glance remain visible as a
          historical record. */
       const prerentalIds = [
-        'portalWaiver', 'portalWhere', 'portalCaptain', 'portalBring',
+        'portalWaiver', 'portalBefore', 'portalWhere', 'portalCaptain', 'portalBring',
         'portalGameplan', 'portalAmenities', 'portalRules', 'portalFAQ',
       ];
       if (data.is_past) {
@@ -1391,7 +1399,7 @@
       } else {
         renderWaiverStatus(data);
         renderVesselAmenities(data);
-        ['portalWhere', 'portalCaptain', 'portalBring', 'portalGameplan',
+        ['portalBefore', 'portalWhere', 'portalCaptain', 'portalBring', 'portalGameplan',
          'portalRules', 'portalFAQ'].forEach(function (id) {
           const el = document.getElementById(id);
           if (el) el.style.display = 'block';
@@ -1563,8 +1571,7 @@
           '<div class="portal-upgrade">' +
             '<div class="portal-upgrade-title">Upgrade your trip: Tubing</div>' +
             '<div class="portal-upgrade-body">' +
-              'Want to pull tubes behind the pontoon? Add tubing to your charter for <strong>$200</strong>. Captain handles the rig and the runs.' +
-              '<br><a href="tel:+17373681669">Call (737) 368-1669 to add</a>' +
+              'Want to pull tubes behind the pontoon? Add tubing to your charter for <strong>$200</strong>. Call <a href="tel:+17373681669">(737) 368-1669</a> to upgrade. Captain handles the rig and the runs.' +
             '</div>' +
           '</div>';
       } else {
@@ -1572,9 +1579,10 @@
         items = [
           ['14ft jump platform off the stern', 'The iconic Carver feature, perfect for big leaps into the water.'],
           ['3 floating dock floats / mats', 'Raft up off the back, lounge with drinks.'],
-          ['Paddleboards', 'Provided on board for guest use.'],
+          ['Paddleboards', 'Available when conditions allow (weather and cove traffic dependent). Captain\'s call on the day.'],
           ['Bluetooth speaker system', 'Pair your phone, run the playlist.'],
           ['Large cooler stocked with ice (when ice add-on selected)', 'Keep your drinks cold.'],
+          ['2 private bedrooms', 'Below deck.'],
           ['2 marine restrooms with sinks', 'Available below deck.'],
           ['Refrigerator', 'In the cabin.'],
           ['Phone charger outlets', 'Multiple available on board.'],
