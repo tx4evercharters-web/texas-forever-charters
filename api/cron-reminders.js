@@ -165,8 +165,7 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-      const paymentLink = b.payment_link || b.balance_payment_link || null;
-      await r.fn(b, paymentLink);
+      await r.fn(b);
 
       const merged = { ...sent, [r.key]: true };
       await supabase(
