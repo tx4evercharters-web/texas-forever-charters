@@ -683,6 +683,7 @@ module.exports = async function handler(req, res) {
           special_requests: updated.special_requests,
           promo_applied:    updated.promo_applied,
           newsletter:       updated.newsletter,
+          portal_token:     updated.portal_token,
         };
 
         let customerEmailOk = false;
@@ -924,6 +925,13 @@ module.exports = async function handler(req, res) {
     special_requests: meta.special_requests,
     promo_applied:    meta.promo_applied,
     newsletter:       meta.newsletter,
+    /* portal_token threaded into the email payload so the customer
+       confirmation can render its portal-link section. portalToken comes
+       from the pre-check above (retry-safety) and matches whatever ended
+       up persisted on the booking row. Also flows through to
+       sendDamageHoldFailedCustomerNotice below, which reuses this
+       emailData object. */
+    portal_token:     portalToken,
   };
 
   console.log('[stripe-webhook] dispatching confirmation emails', session.id);

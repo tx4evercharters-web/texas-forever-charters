@@ -30,7 +30,7 @@ const {
   findBookingsForLead,
   findBookingDatesBySessionIds,
 } = require('../lib/storage');
-const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendPortalLinkEmail, sendAdminActionEmailFailureAlert, sendBlackoutConflictAlert, formatMoneyDollars } = require('../lib/send-emails');
+const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendPortalLinkEmail, sendAdminActionEmailFailureAlert, sendBlackoutConflictAlert, formatMoneyDollars, PORTAL_BASE_URL } = require('../lib/send-emails');
 const { logBookingEvent, EVENT_TYPES } = require('../lib/booking-events');
 
 /* The previous inline supabasePatch helper has been removed — booking edits
@@ -353,6 +353,7 @@ async function handleChargeRemaining(req, res) {
         special_requests: booking.special_requests,
         promo_applied:    booking.promo_applied,
         newsletter:       booking.newsletter,
+        portal_token:     booking.portal_token,
       };
 
       let customerEmailOk = false;
@@ -893,7 +894,7 @@ async function handlePortalLink(req, res) {
       booking = updated || Object.assign({}, booking, { portal_token: newToken });
     }
 
-    const portalUrl = 'https://www.texasforevercharters.com/booking/' + booking.portal_token;
+    const portalUrl = PORTAL_BASE_URL + booking.portal_token;
 
     let sent_to = null;
     if (send) {
@@ -979,6 +980,12 @@ async function handleAddBooking(req, res) {
           special_requests: booking.special_requests,
           promo_applied:    booking.promo_applied,
           newsletter:       false,
+          /* portal_token comes from addManualBooking's result (the
+             function generates the token at insert time and returns it
+             alongside session_id and customer_id, post-this-commit). The
+             request-body `booking` object doesn't carry portal_token
+             because the admin frontend doesn't generate or pass one. */
+          portal_token:     result.portal_token,
         });
       } catch (emailErr) {
         console.error('[add-booking] confirmation email failed:', emailErr.message);
