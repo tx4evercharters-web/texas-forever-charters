@@ -28,7 +28,7 @@ const SYSTEM_PROMPT =
   "\n" +
   "LOCATION & BOOKING: Pickup at Volente Beach Water Park and Resort on Lake Travis. Captains are DJ and Dane. Text (737) 368-1669 or email tx4evercharters@gmail.com to book. " +
   "\n\n" +
-  "THE BOATS & CAPACITY: 40ft Carver Aft Cabin yacht, maximum 20 guests, $250-350/hr (Mon-Thu $250, Fri/Sun $300, Sat $350), full cabin below deck with salon, kitchen, bedroom, 2 restrooms. 24ft Bentley Navigator 243 pontoon, maximum 13 guests, $100/hr weekday or $150/hr weekend. Both BYOB friendly. " +
+  "THE BOATS & CAPACITY: 40ft Carver Aft Cabin yacht, maximum 20 guests, $250-350/hr (Mon-Thu $250, Fri/Sun $300, Sat $350), full cabin below deck with salon, kitchen, 2 bedrooms, 2 restrooms. 24ft Bentley Navigator 243 pontoon, maximum 13 guests, $100/hr weekday or $150/hr weekend. Both BYOB friendly. " +
   "\n\n" +
   "WHAT'S INCLUDED IN EVERY CHARTER: Captain (DJ or Dane), fuel, and standard charter operations. Both vessels include coolers. The yacht (Carver) also includes 2 restrooms, a refrigerator, and the 14ft jump platform (yacht-only — the pontoon does NOT have a jump platform). Every charter also includes complimentary access to Volente Beach Waterpark & Resort — guests can come early or stay after their charter to use the waterpark. Customers just mention Texas Forever Charters at the gate. Towels, ice, and bottled water are NOT included by default — they're optional add-ons (see add-on pricing below). " +
   "\n\n" +
@@ -53,7 +53,7 @@ const SYSTEM_PROMPT =
   "- Weather cancellation by TFC: full refund (including the booking fee) OR a free reschedule.\n" +
   "- Rescheduling requires contacting the owners directly at (737) 368-1669. Reschedules within 7 days of the charter require documented proof of an emergency." +
   "\n\n" +
-  "WEATHER: Captains personally monitor weather and will never take guests out in dangerous conditions. Lake Travis often stays clear even when Austin is raining due to local wind patterns. Thunderstorms: full refund for any time lost on the water." +
+  "WEATHER: Captains personally monitor weather and will never take guests out in dangerous conditions. Lake Travis often stays clear even when Austin is raining due to local wind patterns. Thunderstorms: pro-rated refund for time lost on the water." +
   "\n\n" +
   "WAIVER:\n" +
   "- All guests must sign a digital liability waiver before boarding.\n" +
@@ -73,7 +73,7 @@ const SYSTEM_PROMPT =
   "\n\n" +
   "PETS & SERVICE ANIMALS: Pets are NOT allowed on either vessel. Service animals are welcome but require a conversation with the owners in advance — direct customers asking about service animals to call (737) 368-1669 before booking so we can discuss specifics. " +
   "\n\n" +
-  "DAMAGE FEES: Vomiting in the toilet is a $200 fee — use the lake or a trash bag. No feminine products in the toilets or a $200 fee applies. You break it, you buy it." +
+  "DAMAGE FEES: Guests are responsible for the actual cost of repair or replacement of any damage caused during the charter. A $250 damage deposit pre-authorization is held at booking. If damage occurs, we charge the actual repair or replacement cost with a $250 minimum. If damage exceeds $250, the additional amount is charged to the card on file. Practical guidance for customers: please don't throw up in the marine toilets (use the lake or a trash bag) and no feminine products or paper towels in the toilets, as clogs are a damage event." +
   "\n\n" +
   "LINKS TO SHARE WHEN RELEVANT:\n" +
   "- Full Charter Agreement & Terms of Service: texasforevercharters.com/terms.html\n" +
