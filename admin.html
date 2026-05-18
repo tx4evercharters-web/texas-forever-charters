@@ -1179,13 +1179,16 @@
        vertical space per row. Now: just Edit + kebab side-by-side. */
     .action-btns { display: flex; align-items: center; gap: var(--space-2); }
 
-    /* Phone action icons — small inline tel:/sms: links rendered next to the
-       phone number in the Bookings and Customers tables. Visual rule: the
-       phone number itself stays the dominant text; the icons are subordinate
-       (smaller, muted, decorative-feeling) so admins scanning a row still
-       read the number first. Tap target padded to ~28px so it's reachable
-       on touch devices without being huge in desktop table density. */
-    .phone-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; vertical-align: middle; }
+    /* Phone cell stacked layout — number on first line, call+text icons on
+       second line below, left-aligned under the number. Matches the
+       multi-line cell rhythm used elsewhere in the Bookings rows (Customer
+       column stacks name + email + charter; Date column stacks date + time).
+       Originally rendered inline-side-by-side (commit cc40aa3); stacked
+       below resolves visual cramming when a wide phone number ran against
+       a tight column. The .phone-action tap target (26×26) is unchanged —
+       only the container layout flipped from inline-flex to flex-column. */
+    .phone-cell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+    .phone-actions { display: flex; align-items: center; gap: 6px; }
     .phone-action {
       display: inline-flex;
       align-items: center;
@@ -3209,11 +3212,13 @@
     const display = esc(phone);
     const tel = phoneToTelDigits(phone);
     if (!tel) return display;
-    return display +
-      '<span class="phone-actions">' +
-        '<a class="phone-action" href="tel:'  + tel + '" aria-label="Call '  + display + '" title="Call '  + display + '">📞</a>' +
-        '<a class="phone-action" href="sms:'  + tel + '" aria-label="Text '  + display + '" title="Text '  + display + '">💬</a>' +
-      '</span>';
+    return '<div class="phone-cell">' +
+      '<div class="phone-cell-number">' + display + '</div>' +
+      '<div class="phone-actions">' +
+        '<a class="phone-action" href="tel:' + tel + '" aria-label="Call ' + display + '" title="Call ' + display + '">📞</a>' +
+        '<a class="phone-action" href="sms:' + tel + '" aria-label="Text ' + display + '" title="Text ' + display + '">💬</a>' +
+      '</div>' +
+    '</div>';
   }
 
   function vesselLabel(v) {
