@@ -3160,6 +3160,42 @@
       display + '</a>';
   }
 
+  /* Validate an email and return the full mailto: URL string, or null when
+     the input can't form a mailable address. Validation is intentionally
+     loose — just "has @ with at least one . after the @". RFC 5322 compliance
+     is a 5000-character regex no one needs; this catches the common
+     empty/null/n-a junk that would otherwise render a broken mailto: link
+     and lets every realistic email through. Sites that need the full anchor
+     element should use mailtoAnchor instead; sites that own their own
+     markup shape (e.g., the customer-detail "Send Email" action button
+     whose display is an icon+label, not the address) use mailtoHref to
+     share the validation. */
+  function mailtoHref(email) {
+    if (!email) return null;
+    const trimmed = String(email).trim();
+    if (!trimmed) return null;
+    const atIdx = trimmed.indexOf('@');
+    if (atIdx < 1 || trimmed.indexOf('.', atIdx) < atIdx + 2) return null;
+    return 'mailto:' + trimmed;
+  }
+
+  /* Render a single mailto: anchor wrapping the displayed email string.
+     Mirrors telAnchor's pattern from commit ec47c4a. Returns null if
+     mailtoHref couldn't form a valid URI — callers OR-fallback with their
+     own empty-state markup (empty string for waiver detail, em-dash for
+     leads table, etc.) so each site keeps its existing fallback semantics.
+     No normalization (unlike phone numbers — email addresses are already
+     canonical when valid). styleAttr is the full inline style="..." string
+     the call site wants on the anchor; pass null/empty to omit. */
+  function mailtoAnchor(email, styleAttr) {
+    const href = mailtoHref(email);
+    if (!href) return null;
+    const display = esc(String(email).trim());
+    return '<a href="' + href + '"' + (styleAttr ? ' ' + styleAttr : '') +
+      ' aria-label="Email ' + display + '" title="Email ' + display + '">' +
+      display + '</a>';
+  }
+
   /* Render a phone-number table cell with inline call + text icons. Used
      by the Bookings, Overdue, and Customers tables. Returns the fallback
      em-dash when phone is empty/null. Returns plain phone text (no icons)
@@ -4214,7 +4250,7 @@
       '<div>' +
         row('Date of birth', esc(w.date_of_birth || '')) +
         row('Age', w.age != null ? String(w.age) : '') +
-        row('Email', w.signer_email ? '<a href="mailto:' + esc(w.signer_email) + '" style="color:var(--navy);">' + esc(w.signer_email) + '</a>' : '') +
+        row('Email', mailtoAnchor(w.signer_email, 'style="color:var(--navy);"') || '') +
         row('Phone',  telAnchor(w.signer_phone, 'style="color:var(--navy);"') || '') +
         row('Emergency contact', esc(w.emergency_contact_name || '')) +
         row('Emergency phone',   telAnchor(w.emergency_contact_phone, 'style="color:var(--navy);"') || '') +
@@ -4423,7 +4459,7 @@
         '<td title="' + esc(tip) + '" style="white-space:nowrap;">' + fmtAge(leadAgeMs(l)) + '</td>' +
         '<td>' + statusContent + leadBouncePill(l.bounce_reason) + linkedBookingChip + '</td>' +
         '<td style="font-weight:700;color:var(--navy);">' + esc(l.full_name || '—') + '</td>' +
-        '<td><a href="mailto:' + esc(l.customer_email || '') + '" style="color:var(--navy);text-decoration:none;">' + esc(l.customer_email || '—') + '</a></td>' +
+        '<td>' + (mailtoAnchor(l.customer_email, 'style="color:var(--navy);text-decoration:none;"') || '—') + '</td>' +
         '<td>' + phoneCell + '</td>' +
         '<td style="font-size:12px;color:var(--gray-700);">' + esc(charter || '—') + '</td>' +
         '<td style="font-weight:700;">' + totalStr + '</td>' +
@@ -6863,7 +6899,7 @@
       `<span class="cust-tag ${esc(t)} removable">${esc(t)}<button class="cust-tag-x" data-rm-tag="${esc(t)}" data-cust="${esc(c.id)}">×</button></span>`
     ).join('');
 
-    const mailto = c.email ? `mailto:${esc(c.email)}` : '#';
+    const mailto = mailtoHref(c.email) || '#';
     const sourceBadge = c.derived_source ? `<span class="badge badge-navy">${esc(c.derived_source)}</span>` : '';
     const subscribed = isCustSubscribed(c);
     const smsSubscribed = !!c.sms_subscribed;
