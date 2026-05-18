@@ -20,6 +20,7 @@ const {
   importHistoricalBookings,
   patchBooking,
   findBookingBySessionId,
+  generatePortalToken,
   deleteBookingRow,
   listWaivers,
   getAllWaivers,
@@ -30,6 +31,7 @@ const {
   findBookingDatesBySessionIds,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendPortalLinkEmail, sendAdminActionEmailFailureAlert, sendBlackoutConflictAlert, formatMoneyDollars } = require('../lib/send-emails');
+const { logBookingEvent, EVENT_TYPES } = require('../lib/booking-events');
 
 /* The previous inline supabasePatch helper has been removed — booking edits
    now route through lib/storage.js patchBooking so they use the same
@@ -180,6 +182,11 @@ async function handleMarkPaid(req, res) {
 
   const booking = await markBookingPaid(session_id);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  await logBookingEvent(session_id, EVENT_TYPES.MARKED_PAID, {
+    session_id,
+  }, 'admin');
+
   return res.status(200).json({ ok: true, booking });
 }
 
@@ -242,6 +249,19 @@ async function handleUpdateBooking(req, res) {
     // env-aware request() helper used everywhere else.
     const updated = await patchBooking(session_id, sanitized);
     if (!updated) return res.status(404).json({ error: 'Booking not found' });
+
+    /* Audit row — only log when something actually changed. An empty
+       sanitized object (caller sent no allowlisted keys) is a no-op
+       patch and would clutter the audit log with a meaningless
+       "fields_changed: []" entry. fields_changed lists only the
+       allowlisted keys that survived the sanitize step, so it reflects
+       what was truly written, not what the caller asked for. */
+    if (Object.keys(sanitized).length > 0) {
+      await logBookingEvent(session_id, EVENT_TYPES.BOOKING_UPDATED, {
+        fields_changed: Object.keys(sanitized),
+      }, 'admin');
+    }
+
     return res.status(200).json({ ok: true, booking: updated });
   } catch (err) {
     console.error('[update-booking] failed:', err.message);
@@ -290,6 +310,16 @@ async function handleChargeRemaining(req, res) {
 
     if (paymentIntent.status === 'succeeded') {
       await markBookingPaid(session_id);
+
+      /* Audit row. source: 'admin_charge' differentiates this off-session
+         charge from the portal-initiated balance flow (source: 'portal'
+         in handleBalancePayment) — both share the BALANCE_PAID event
+         type because they represent the same booking-state transition. */
+      await logBookingEvent(session_id, EVENT_TYPES.BALANCE_PAID, {
+        amount_charged:    paymentIntent.amount,
+        payment_intent_id: paymentIntent.id,
+        source:            'admin_charge',
+      }, 'admin');
 
       /* G3 fix — send the customer-facing confirmation email after a
          successful off-session charge. Previously the card was charged
@@ -511,6 +541,11 @@ async function handleMarkConcluded(req, res) {
   try {
     const updated = await patchBooking(session_id, { status: 'concluded' });
     if (!updated) return res.status(404).json({ error: 'Booking not found' });
+
+    await logBookingEvent(session_id, EVENT_TYPES.CONCLUDED, {
+      session_id,
+    }, 'admin');
+
     return res.status(200).json({ ok: true, booking: updated });
   } catch (err) {
     console.error('Mark concluded error:', err.message);
@@ -528,6 +563,14 @@ async function handleCancelBooking(req, res) {
       cancelled_at: new Date().toISOString(),
     });
     if (!updated) return res.status(404).json({ error: 'Booking not found' });
+
+    /* Audit row. reason is optional — captures cancellation rationale
+       when the admin UI sends it. Pulled from req.body so adding a
+       reason field to the modal later doesn't require touching this
+       handler. */
+    await logBookingEvent(session_id, EVENT_TYPES.BOOKING_CANCELLED, {
+      reason: req.body.reason || null,
+    }, 'admin');
 
     // Send the customer cancellation email AFTER the DB write succeeds.
     // Email failures must not undo the cancel — the booking is genuinely cancelled.
@@ -610,6 +653,20 @@ async function handleRefundBooking(req, res) {
     }
     const updated = await patchBooking(session_id, refundUpdates);
 
+    /* Audit row. amount is dollars (matches refund_amount column).
+       The webhook's handleChargeRefunded fires its own REFUND_PROCESSED
+       with source: 'stripe_webhook' for Stripe-side refunds (dashboard,
+       etc.); this admin path is the user-initiated source. Both events
+       can fire for the same refund — the admin refund triggers a
+       charge.refunded webhook ~1s later, but the webhook's idempotency
+       guard (line ~122) short-circuits before logging. */
+    await logBookingEvent(session_id, EVENT_TYPES.REFUND_PROCESSED, {
+      refund_amount:    amount,
+      full_refund:      isFullRefund,
+      stripe_refund_id: refund.id,
+      source:           'admin',
+    }, 'admin');
+
     // Stripe refund succeeded + DB updated. Email failure must NOT undo either —
     // we already moved the customer's money, the email is best-effort.
     let email_warning = null;
@@ -665,6 +722,11 @@ async function handleReleaseDamageHold(req, res) {
       damage_hold_status:      'released',
       damage_hold_released_at: new Date().toISOString(),
     });
+
+    await logBookingEvent(session_id, EVENT_TYPES.DAMAGE_HOLD_RELEASED, {
+      damage_hold_intent_id: booking.damage_hold_intent_id,
+    }, 'admin');
+
     return res.status(200).json({ ok: true, booking: updated });
   } catch (err) {
     console.error('Release damage hold error:', err.message);
@@ -729,6 +791,11 @@ async function handleCaptureDamageCharge(req, res) {
       damage_charge_amount:    Number(dollars.toFixed(2)),
       damage_captured_at:      new Date().toISOString(),
     });
+
+    await logBookingEvent(session_id, EVENT_TYPES.DAMAGE_HOLD_CAPTURED, {
+      damage_charge_amount:  Number(dollars.toFixed(2)),
+      damage_hold_intent_id: booking.damage_hold_intent_id,
+    }, 'admin');
 
     // Customer email — failure must not undo the captured charge
     let email_warning = null;
@@ -816,11 +883,12 @@ async function handlePortalLink(req, res) {
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
     /* Generate portal_token if missing. Backfill for legacy / pre-Phase-2.5
-       rows. 16 bytes hex = 32 chars, matching the Phase 2 migration's
-       encode(gen_random_bytes(16), 'hex') pattern. Uniqueness is enforced
-       by the partial unique index on (portal_token) WHERE NOT NULL. */
+       rows that pre-date auto-generation in saveBooking / addManualBooking.
+       Token format + uniqueness guarantees live in lib/storage.js's
+       generatePortalToken; uniqueness is enforced by the partial unique
+       index on (portal_token) WHERE NOT NULL. */
     if (!booking.portal_token) {
-      const newToken = crypto.randomBytes(16).toString('hex');
+      const newToken = generatePortalToken();
       const updated = await patchBooking(session_id, { portal_token: newToken });
       booking = updated || Object.assign({}, booking, { portal_token: newToken });
     }
@@ -876,6 +944,18 @@ async function handleAddBooking(req, res) {
 
   try {
     const result = await addManualBooking(booking);
+
+    /* Audit row. source: 'admin' differentiates from the wizard's
+       webhook-fired BOOKING_CREATED. send_confirmation captures whether
+       the admin opted into the auto-send-confirmation path (drives the
+       handleSendConfirmation try/catch below). */
+    await logBookingEvent(result.session_id, EVENT_TYPES.BOOKING_CREATED, {
+      source:            'admin',
+      amount_total:      booking.amount_total,
+      vessel:            booking.vessel,
+      date:              booking.date,
+      send_confirmation: !!send_confirmation,
+    }, 'admin');
 
     if (send_confirmation) {
       try {

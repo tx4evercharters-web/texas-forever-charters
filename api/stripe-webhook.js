@@ -14,12 +14,13 @@ const {
   patchBooking,
   findBookingBySessionId,
   findBookingByPaymentIntent,
+  generatePortalToken,
   findActiveLeadByEmail,
   findLeadByStripeSession,
   findLeadByPaymentIntent,
   patchLead,
 } = require('../lib/storage');
-const { logBookingEvent } = require('../lib/booking-events');
+const { logBookingEvent, EVENT_TYPES } = require('../lib/booking-events');
 
 const LEAD_HIGH_VALUE_THRESHOLD = 500;
 
@@ -140,6 +141,18 @@ async function handleChargeRefunded(event, res) {
     console.error('[stripe-webhook] failed to patch booking for refund:', booking.session_id, err.message);
     return res.status(500).json({ error: 'patch_failed' });
   }
+
+  /* Audit row. source differentiates Stripe-initiated refunds (dashboard
+     or charge.refunded events) from admin-initiated refunds via the
+     refund-booking action, which fires its own REFUND_PROCESSED with
+     source: 'admin'. stripe_refund_id is the latest refund on the
+     charge if available — Stripe expands charge.refunds on this event. */
+  const latestRefund = (charge.refunds && Array.isArray(charge.refunds.data)) ? charge.refunds.data[0] : null;
+  await logBookingEvent(booking.session_id, EVENT_TYPES.REFUND_PROCESSED, {
+    refund_amount:    newRefundDollars,
+    stripe_refund_id: latestRefund ? latestRefund.id : null,
+    source:           'stripe_webhook',
+  }, 'webhook');
 
   /* Best-effort alert — booking is already updated, an alert send failure
      must not unwind the patch. */
@@ -387,6 +400,15 @@ async function handleDisputeCreated(event, res) {
   } catch (err) {
     console.error('[stripe-webhook] chargeback alert send FAILED:', dispute.id, '|', err.message);
   }
+
+  /* Audit row. dispute_amount stored in dollars to match the column the
+     row patch above uses. logBookingEvent guards against a null session_id
+     so the stub-booking branch above (no PI match) silently no-ops. */
+  await logBookingEvent(booking.session_id, EVENT_TYPES.CHARGEBACK_FILED, {
+    dispute_id:     dispute.id,
+    dispute_amount: amountCents / 100,
+    dispute_reason: dispute.reason,
+  }, 'webhook');
 
   return res.status(200).json({ received: true });
 }
@@ -775,10 +797,30 @@ module.exports = async function handler(req, res) {
   const charterSubtotal = parseFloat(meta.charter_subtotal || 0);
   const promoDiscount = parseFloat(meta.promo_discount || 0);
 
+  /* Portal-token retry safety. saveBooking uses on_conflict=session_id
+     with Prefer: resolution=merge-duplicates — PostgREST merges every
+     column present in the payload, so generating a fresh portal_token
+     on every handler invocation would OVERWRITE the existing token on
+     a webhook retry, breaking any portal link already in the customer's
+     inbox. Pre-fetch the row; reuse the existing token when present,
+     generate fresh on first delivery. Lookup-failure path falls back
+     to generating new — same retry exposure as before this change, so
+     never worse, sometimes better. The same existingForToken signal
+     also gates the BOOKING_CREATED + DEPOSIT_PAID audit writes below
+     so a retry doesn't double-insert audit rows. */
+  let existingForToken = null;
+  try {
+    existingForToken = await findBookingBySessionId(session.id);
+  } catch (err) {
+    console.error('[stripe-webhook] portal_token pre-check lookup failed, generating new token:', err.message);
+  }
+  const portalToken = (existingForToken && existingForToken.portal_token) || generatePortalToken();
+
   /* Build the booking row once so we can pass it to retry, alert, and
      log it intact on permanent failure. */
   const bookingRow = {
     session_id:       session.id,
+    portal_token:     portalToken,
     customer_email:   session.customer_email,
     amount_total:     session.amount_total,
     charter_name:     meta.charter_name,
@@ -837,6 +879,26 @@ module.exports = async function handler(req, res) {
       detail:     err.message,
       session_id: session.id,
     });
+  }
+
+  /* Audit log — only on first delivery. existingForToken (from the
+     pre-check above) being truthy means a prior delivery already
+     inserted the row, so this invocation is a Stripe retry — skip
+     both events to keep the audit log dedupe-clean. logBookingEvent
+     is best-effort and catches its own errors, so a write failure
+     here cannot abort the handler. */
+  if (!existingForToken) {
+    await logBookingEvent(session.id, EVENT_TYPES.BOOKING_CREATED, {
+      source:       'wizard',
+      amount_total: session.amount_total,
+      vessel:       meta.vessel,
+      date:         meta.date,
+    }, 'webhook');
+    await logBookingEvent(session.id, EVENT_TYPES.DEPOSIT_PAID, {
+      amount_total:      session.amount_total,
+      deposit_amount:    meta.deposit_amount,
+      payment_intent_id: paymentIntentId,
+    }, 'webhook');
   }
 
   const emailData = {
