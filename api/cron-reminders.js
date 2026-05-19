@@ -10,6 +10,7 @@ const {
   sendDailyLeadDigest,
 } = require('../lib/send-emails');
 const { listRecentLeads, deleteStaleLeads } = require('../lib/storage');
+const { pingHeartbeat } = require('../lib/observability');
 
 const LEAD_DIGEST_WINDOW_HOURS = 24;
 const LEAD_RETENTION_DAYS = 90;
@@ -107,6 +108,12 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  /* Better Stack heartbeat URL for this cron endpoint. Optional env var;
+     pingHeartbeat is a no-op when the var is unset (local dev, preview
+     deploys) so the cron still runs everywhere. */
+  const heartbeatUrl = process.env.BETTER_STACK_HEARTBEAT_REMINDERS;
+
+  try {
   const today = todayCentral();
   console.log('[cron-reminders] starting run for', today);
 
@@ -124,8 +131,11 @@ module.exports = async function handler(req, res) {
       '&customer_email=not.is.null'
     ) || [];
   } catch (err) {
+    /* Convert the bookings-query failure to throw so the outer catch
+       fires the /fail heartbeat. Previously this returned 500 inline,
+       which would have silently succeeded the heartbeat check. */
     console.error('[cron-reminders] failed to query bookings:', err.message);
-    return res.status(500).json({ error: 'Query failed', detail: err.message });
+    throw new Error('Initial bookings query failed: ' + err.message);
   }
 
   console.log('[cron-reminders] candidates after filter:', bookings.length);
@@ -330,9 +340,15 @@ module.exports = async function handler(req, res) {
       '&or=(status.is.null,status.eq.upcoming,status.eq.concluded)'
     ) || [];
   } catch (err) {
+    /* Post-charter query failure bails out of subsequent passes (leads
+       digest, retention cleanup are skipped). Preserving existing
+       behavior — the cron RAN and the partial summary is logged, so
+       the success heartbeat fires; downstream Sentry instrumentation
+       (Commit 2) will surface this as an exception with context. */
     console.error('[cron-reminders] post-charter query failed:', err.message);
     summary.post_charter = { error: err.message };
     console.log('[cron-reminders] done. summary:', JSON.stringify(summary));
+    await pingHeartbeat(heartbeatUrl);
     return res.status(200).json(summary);
   }
 
@@ -460,5 +476,18 @@ module.exports = async function handler(req, res) {
   }
 
   console.log('[cron-reminders] done. summary:', JSON.stringify(summary));
+  await pingHeartbeat(heartbeatUrl);
   return res.status(200).json(summary);
+  } catch (err) {
+    /* Outer catch — covers any uncaught throw from the cron body
+       (the most likely sources are the converted-to-throw bookings
+       query failure above, or any unexpected throw in one of the
+       passes whose internal try/catch missed a path). Logs the stack
+       (the value-add over today's one-line console.error), fires the
+       /fail heartbeat so Better Stack pages DJ, returns 500 to
+       Vercel. */
+    console.error('[cron-reminders] uncaught error:', err.message, err.stack);
+    await pingHeartbeat(heartbeatUrl, { fail: true });
+    return res.status(500).json({ error: 'Cron run failed', detail: err.message });
+  }
 };

@@ -49,6 +49,12 @@ const REQUIRED_VARS = [
 const OPTIONAL_VARS = [
   'SITE_BASE_URL',
   'GOOGLE_REVIEW_URL',
+  // Better Stack cron heartbeat URLs. Optional: pingHeartbeat is a no-op
+  // when unset (lib/observability.js), so the crons run regardless.
+  // Presence here is surfaced in the deploy probe so DJ can confirm
+  // they're wired up before relying on the alerting.
+  'BETTER_STACK_HEARTBEAT_REMINDERS',
+  'BETTER_STACK_HEARTBEAT_CHARTER_REMINDERS',
 ];
 
 module.exports = async function handler(req, res) {

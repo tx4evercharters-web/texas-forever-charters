@@ -35,6 +35,7 @@ const {
 } = require('../lib/send-emails');
 const { countWaiversBySessionId } = require('../lib/storage');
 const { logBookingEvent, EVENT_TYPES } = require('../lib/booking-events');
+const { pingHeartbeat } = require('../lib/observability');
 
 /* ── Supabase REST helper. Duplicated from api/cron-reminders.js per
    the existing duplicate-over-share pattern in this codebase. Extraction
@@ -257,36 +258,53 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const today = todayCentral();
-  console.log('[cron-charter-reminders] starting run for', today);
+  /* Better Stack heartbeat URL for this cron endpoint. Optional env var;
+     pingHeartbeat is a no-op when the var is unset. */
+  const heartbeatUrl = process.env.BETTER_STACK_HEARTBEAT_CHARTER_REMINDERS;
 
-  const results = {
-    today,
-    t3_sent: 0, t3_skipped: 0, t3_failed: 0,
-    t1_sent: 0, t1_skipped: 0, t1_failed: 0,
-    errors: [],
-  };
+  try {
+    const today = todayCentral();
+    console.log('[cron-charter-reminders] starting run for', today);
 
-  await processReminder({
-    today,
-    daysOut:       3,
-    jsonbKey:      't3_reminder',
-    eventType:     EVENT_TYPES.REMINDER_T3_SENT,
-    sendFn:        sendT3ReminderEmail,
-    results,
-    resultsPrefix: 't3',
-  });
+    const results = {
+      today,
+      t3_sent: 0, t3_skipped: 0, t3_failed: 0,
+      t1_sent: 0, t1_skipped: 0, t1_failed: 0,
+      errors: [],
+    };
 
-  await processReminder({
-    today,
-    daysOut:       1,
-    jsonbKey:      't1_reminder',
-    eventType:     EVENT_TYPES.REMINDER_T1_SENT,
-    sendFn:        sendT1ReminderEmail,
-    results,
-    resultsPrefix: 't1',
-  });
+    await processReminder({
+      today,
+      daysOut:       3,
+      jsonbKey:      't3_reminder',
+      eventType:     EVENT_TYPES.REMINDER_T3_SENT,
+      sendFn:        sendT3ReminderEmail,
+      results,
+      resultsPrefix: 't3',
+    });
 
-  console.log('[cron-charter-reminders] done. summary:', JSON.stringify(results));
-  return res.status(200).json(results);
+    await processReminder({
+      today,
+      daysOut:       1,
+      jsonbKey:      't1_reminder',
+      eventType:     EVENT_TYPES.REMINDER_T1_SENT,
+      sendFn:        sendT1ReminderEmail,
+      results,
+      resultsPrefix: 't1',
+    });
+
+    console.log('[cron-charter-reminders] done. summary:', JSON.stringify(results));
+    await pingHeartbeat(heartbeatUrl);
+    return res.status(200).json(results);
+  } catch (err) {
+    /* Outer catch — processReminder catches per-booking errors into
+       results.errors, so reaching here means a setup-level throw
+       (Supabase env vars missing, send-emails import broken, etc.).
+       Stack logged for diagnosis; /fail heartbeat pages DJ via Better
+       Stack. Sentry instrumentation (Commit 2) will add structured
+       context. */
+    console.error('[cron-charter-reminders] uncaught error:', err.message, err.stack);
+    await pingHeartbeat(heartbeatUrl, { fail: true });
+    return res.status(500).json({ error: 'Cron run failed', detail: err.message });
+  }
 };
