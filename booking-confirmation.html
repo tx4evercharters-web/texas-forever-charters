@@ -6,6 +6,20 @@
   <title>Booking Confirmed | Texas Forever Charters</title>
   <meta name="robots" content="noindex">
 
+  <!-- Google tag (gtag.js) — load on the success page so the purchase
+       event below can fire after Stripe redirects the customer here.
+       Same measurement ID as the rest of the marketing-page install.
+       Loaded async; the gtag() function is queued by dataLayer until
+       the SDK initializes, so events fired immediately after this
+       block still ship correctly. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5K59MVPLE6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-5K59MVPLE6');
+  </script>
+
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 
@@ -765,6 +779,26 @@
       /* Masked variant only — raw email no longer returned by the API. Used for the
          hero "We sent to X" line and the email-fail banner headline. */
       currentEmail     = session.customer_email_masked || '';
+
+      /* GA4 purchase event — fires once per successful Stripe checkout
+         that lands the customer on this page. Google Ads reads this event
+         for conversion attribution. transaction_id uses the canonical
+         session_id (admin-payment-link flow rewrites Stripe's cs_live_*
+         to the booking row's manual_* shape), so repeat fires on refresh
+         dedupe correctly via GA4's built-in 24h purchase-event dedupe.
+         payment_type custom param lets DJ distinguish in GA between
+         wizard-paid bookings (the ones Google Ads should attribute) and
+         admin-payment-link-paid bookings (existing customers paying
+         balance via DJ's manual link). Defensive guard so a GA load
+         failure doesn't break the confirmation render. */
+      if (typeof gtag === 'function') {
+        gtag('event', 'purchase', {
+          transaction_id: canonicalId,
+          value:          (session.amount_total || 0) / 100,
+          currency:       'USD',
+          payment_type:   meta.original_session_id ? 'admin_payment_link' : 'direct_booking',
+        });
+      }
 
       // Hero
       document.getElementById('confirmHero').style.display = 'block';

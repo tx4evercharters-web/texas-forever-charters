@@ -16,6 +16,20 @@
   <meta property="og:url" content="https://texasforevercharters.com/booking.html">
   <meta property="og:type" content="website">
 
+  <!-- Google tag (gtag.js) — installed on the booking wizard so the
+       begin_checkout event fires when the user submits to Stripe and the
+       checkout_cancelled event fires when they return from a Stripe
+       cancel. Same measurement ID as the rest of the marketing-page
+       install. Loaded async; gtag() calls below queue via dataLayer
+       until the SDK initializes. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-5K59MVPLE6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-5K59MVPLE6');
+  </script>
+
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@300;400;500;600;700&family=Source+Serif+4:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 
@@ -3294,6 +3308,28 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
         towels:        booking.addOns.towels || 0,
       };
 
+      /* GA4 begin_checkout event — fires when the user commits to
+         checkout (clicks "Pay deposit" or "Pay in full"), right before
+         the Stripe-redirect fetch. value uses calGrandTotal (the full
+         charter value the user is purchasing) rather than `amount` (the
+         specific transaction amount, which is deposit-only on the
+         deposit path). Google Ads sees the purchase event later with
+         the actual paid amount; begin_checkout signals intent-to-buy
+         at the full value. Defensive guard so a GA load failure doesn't
+         block the Stripe redirect. */
+      if (typeof gtag === 'function') {
+        gtag('event', 'begin_checkout', {
+          currency: 'USD',
+          value:    calGrandTotal,
+          items:    [{
+            item_name:     (booking.vessel || 'charter') + ' - ' + (booking.experience || 'unspecified'),
+            item_category: booking.vessel || 'unspecified',
+            price:         calGrandTotal,
+            quantity:      1,
+          }],
+        });
+      }
+
       try {
         const res = await fetch('/api/create-checkout', {
           method: 'POST',
@@ -3771,6 +3807,17 @@ booking.newsletter = document.getElementById('newsletterCheck').checked;
       try {
         const cancelledSid = new URL(window.location.href).searchParams.get('cancelled_session_id');
         if (cancelledSid && /^cs_/.test(cancelledSid)) {
+          /* GA4 checkout_cancelled custom event — fires once per page
+             load when the user returned from a Stripe cancel. Custom
+             event name (not a standard GA4 event); DJ can build a
+             custom report on it for funnel-drop-off analysis. Fires
+             regardless of whether the modal opens — the cancel
+             happened either way. Defensive gtag guard. */
+          if (typeof gtag === 'function') {
+            gtag('event', 'checkout_cancelled', {
+              cancelled_session_id: cancelledSid,
+            });
+          }
           setTimeout(function () {
             if (hasMinimumContact()) {
               sessionStorage.removeItem(SS_KEY); // override the once-per-session gate
