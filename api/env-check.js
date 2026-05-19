@@ -55,6 +55,15 @@ const OPTIONAL_VARS = [
   // they're wired up before relying on the alerting.
   'BETTER_STACK_HEARTBEAT_REMINDERS',
   'BETTER_STACK_HEARTBEAT_CHARTER_REMINDERS',
+  // Sentry error tracking. Optional: initSentryNode + captureException
+  // are no-ops when SENTRY_DSN_API is unset (lib/observability.js), so
+  // handlers run regardless. Browser SDK uses SENTRY_DSN_BROWSER (returned
+  // to admin.html via /api/auth-me). SENTRY_ENVIRONMENT segments events
+  // by Vercel scope (production / preview / development) to keep preview
+  // deploy noise out of the production Sentry project.
+  'SENTRY_DSN_API',
+  'SENTRY_DSN_BROWSER',
+  'SENTRY_ENVIRONMENT',
 ];
 
 module.exports = async function handler(req, res) {

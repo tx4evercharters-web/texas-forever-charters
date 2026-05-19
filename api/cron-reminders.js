@@ -10,7 +10,8 @@ const {
   sendDailyLeadDigest,
 } = require('../lib/send-emails');
 const { listRecentLeads, deleteStaleLeads } = require('../lib/storage');
-const { pingHeartbeat } = require('../lib/observability');
+const { pingHeartbeat, initSentryNode, captureException } = require('../lib/observability');
+initSentryNode();
 
 const LEAD_DIGEST_WINDOW_HOURS = 24;
 const LEAD_RETENTION_DAYS = 90;
@@ -482,11 +483,15 @@ module.exports = async function handler(req, res) {
     /* Outer catch — covers any uncaught throw from the cron body
        (the most likely sources are the converted-to-throw bookings
        query failure above, or any unexpected throw in one of the
-       passes whose internal try/catch missed a path). Logs the stack
-       (the value-add over today's one-line console.error), fires the
-       /fail heartbeat so Better Stack pages DJ, returns 500 to
-       Vercel. */
+       passes whose internal try/catch missed a path). Logs the stack,
+       captures to Sentry with cron-endpoint context, fires the /fail
+       heartbeat so Better Stack pages DJ, returns 500 to Vercel. */
     console.error('[cron-reminders] uncaught error:', err.message, err.stack);
+    captureException(err, {
+      handler:       'cron-reminders',
+      cron_endpoint: '/api/cron-reminders',
+      error_phase:   'outer_catch',
+    });
     await pingHeartbeat(heartbeatUrl, { fail: true });
     return res.status(500).json({ error: 'Cron run failed', detail: err.message });
   }

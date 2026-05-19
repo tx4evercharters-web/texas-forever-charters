@@ -18,6 +18,8 @@
 
 const { saveLead } = require('../lib/storage');
 const { sendHighValueLeadAlert } = require('../lib/send-emails');
+const { initSentryNode, captureException } = require('../lib/observability');
+initSentryNode();
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
@@ -39,6 +41,17 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST')    return res.status(405).json({ error: 'Method not allowed' });
+
+  /* Outer try/catch + Sentry capture for the public capture endpoint.
+     Previously a throw in body parsing or validation logic would 500
+     with no context beyond Vercel function logs. Now Sentry receives
+     the exception with the source tag (so DJ can see which capture
+     surface produced bad data — exit_intent vs stripe_cancel_return)
+     plus user_agent for spam-pattern triage. Customer PII fields
+     (name/email/phone) intentionally not attached as tags — they
+     belong in the request body which beforeSend scrubs, not in
+     searchable Sentry tags. */
+  try {
 
   const body = req.body || {};
 
@@ -142,4 +155,23 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(200).json({ ok: true, id: saved.id });
+
+  } catch (err) {
+    /* Anything uncaught during validation, body parsing, or downstream
+       calls lands here. captureException ships to Sentry with source +
+       truncated user_agent for spam-pattern triage; existing logging
+       paths remain so Vercel function logs still tell the story. */
+    const safeSource = (req.body && typeof req.body.source === 'string')
+      ? String(req.body.source).slice(0, 80) : 'unknown';
+    const safeUA = String(req.headers['user-agent'] || '').slice(0, 120) || 'unknown';
+    console.error('[capture-lead] uncaught error:', err.message, err.stack);
+    captureException(err, {
+      handler:    'capture-lead',
+      source:     safeSource,
+      user_agent: safeUA,
+    });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'unexpected_error' });
+    }
+  }
 };

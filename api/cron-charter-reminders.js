@@ -35,7 +35,8 @@ const {
 } = require('../lib/send-emails');
 const { countWaiversBySessionId } = require('../lib/storage');
 const { logBookingEvent, EVENT_TYPES } = require('../lib/booking-events');
-const { pingHeartbeat } = require('../lib/observability');
+const { pingHeartbeat, initSentryNode, captureException } = require('../lib/observability');
+initSentryNode();
 
 /* ── Supabase REST helper. Duplicated from api/cron-reminders.js per
    the existing duplicate-over-share pattern in this codebase. Extraction
@@ -300,10 +301,14 @@ module.exports = async function handler(req, res) {
     /* Outer catch — processReminder catches per-booking errors into
        results.errors, so reaching here means a setup-level throw
        (Supabase env vars missing, send-emails import broken, etc.).
-       Stack logged for diagnosis; /fail heartbeat pages DJ via Better
-       Stack. Sentry instrumentation (Commit 2) will add structured
-       context. */
+       Stack logged for diagnosis; captured to Sentry with endpoint
+       context; /fail heartbeat pages DJ via Better Stack. */
     console.error('[cron-charter-reminders] uncaught error:', err.message, err.stack);
+    captureException(err, {
+      handler:       'cron-charter-reminders',
+      cron_endpoint: '/api/cron-charter-reminders',
+      error_phase:   'outer_catch',
+    });
     await pingHeartbeat(heartbeatUrl, { fail: true });
     return res.status(500).json({ error: 'Cron run failed', detail: err.message });
   }

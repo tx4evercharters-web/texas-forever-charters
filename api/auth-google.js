@@ -21,6 +21,8 @@ const {
   signSessionCookie,
   setSessionCookieHeader,
 } = require('../lib/auth');
+const { initSentryNode, captureException } = require('../lib/observability');
+initSentryNode();
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -35,8 +37,14 @@ module.exports = async function handler(req, res) {
   } catch (err) {
     /* Thrown only when GOOGLE_CLIENT_ID is missing — config error, not
        a token-validation failure. Surface as 500 so we don't silently
-       reject all logins with a generic 403 when env is misconfigured. */
+       reject all logins with a generic 403 when env is misconfigured.
+       Sentry capture so DJ is paged on env-config breakage; we don't
+       know the email yet (verify failed) so no user context. */
     console.error('[auth-google] config error:', err.message);
+    captureException(err, {
+      handler:     'auth-google',
+      error_phase: 'verify_id_token',
+    });
     return res.status(500).json({ error: 'Authentication misconfigured' });
   }
 
@@ -64,7 +72,15 @@ module.exports = async function handler(req, res) {
   try {
     cookieValue = signSessionCookie({ email: verified.email });
   } catch (err) {
+    /* Thrown when ADMIN_JWT_SECRET is missing/empty. Whitelist already
+       passed at this point, so the email is safe to attach as user
+       context — helps DJ see which whitelisted admin couldn't sign in. */
     console.error('[auth-google] sign session failed:', err.message);
+    captureException(err, {
+      handler:     'auth-google',
+      error_phase: 'sign_cookie',
+      user_email:  verified.email,
+    });
     return res.status(500).json({ error: 'Authentication misconfigured' });
   }
 

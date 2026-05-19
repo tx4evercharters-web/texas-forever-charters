@@ -9,6 +9,14 @@
        window.google.accounts.id until the library is ready before rendering
        the Sign-In button. -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Sentry browser SDK v8 (errors only, no perf tracing). bootstrapAuth
+       reads SENTRY_DSN_BROWSER from /api/auth-me and initializes via
+       initSentryBrowser() once the SDK is loaded. Loaded async + defer so
+       it doesn't block initial render; the queue-and-flush pattern in
+       initSentryBrowser handles the SDK arriving after auth-me resolves.
+       TODO(security): pin to an SRI integrity hash from Sentry's CDN
+       docs — tracked in docs/queue/. -->
+  <script src="https://browser.sentry-cdn.com/8.45.0/bundle.min.js" crossorigin="anonymous" async defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -5537,6 +5545,12 @@
         const data = await res.json();
         currentUser = data.user || null;
         renderHeaderUser();
+        /* Initialize Sentry browser SDK with the DSN that came back in
+           the auth-me response. Errors fired between page-load and this
+           point aren't captured — acceptable tradeoff for an admin tool
+           (most pre-bootstrap errors are framework / library init noise
+           that we couldn't usefully act on anyway). */
+        initSentryBrowser(data.sentry_dsn, data.sentry_environment);
         showApp();
         loadData();
         /* Deep-link from the daily lead digest email: /admin.html#leads
@@ -5556,6 +5570,11 @@
         const data = await res.json().catch(() => ({}));
         showLogin();
         initGoogleSignIn(data.google_client_id);
+        /* Sentry init on the pre-auth login screen too — we want to
+           capture errors that happen during the Google Sign-In flow.
+           data.sentry_dsn is returned on the 401 response (same
+           public-config block as google_client_id). */
+        initSentryBrowser(data.sentry_dsn, data.sentry_environment);
         return;
       }
       showLogin();
@@ -5563,6 +5582,75 @@
     } catch (err) {
       showLogin();
       showLoginError('Network error during sign-in check. Please refresh.');
+    }
+  }
+
+  /* ── Sentry browser init ──────────────────────────────────────────
+     Loaded from the Sentry CDN script tag in <head>. Init is delayed
+     until /api/auth-me returns the DSN — single round-trip pattern
+     consistent with the GIS bootstrap. SDK might still be loading
+     when this runs (async + defer script), so poll briefly for
+     window.Sentry then init.
+
+     Polls for up to 2s to avoid retaining state forever; in practice
+     the CDN bundle arrives within ~200ms on a typical connection,
+     well before auth-me round-trips. If Sentry never loads (network
+     block, CDN outage), admin still works — just without error
+     capture. Defensive fail-open. */
+  function initSentryBrowser(dsn, env) {
+    if (!dsn) return;
+    let elapsed = 0;
+    const tick = setInterval(function () {
+      if (window.Sentry && typeof window.Sentry.init === 'function') {
+        clearInterval(tick);
+        try {
+          window.Sentry.init({
+            dsn:              dsn,
+            environment:      env || 'production',
+            tracesSampleRate: 0,
+            beforeSend:       sentryBrowserBeforeSend,
+          });
+          if (currentUser && currentUser.email) {
+            window.Sentry.setUser({ email: currentUser.email });
+          }
+        } catch (initErr) {
+          console.error('[sentry-browser] init failed (non-fatal):', initErr);
+        }
+        return;
+      }
+      elapsed += 100;
+      if (elapsed >= 2000) {
+        clearInterval(tick);
+        /* CDN load timed out. Not fatal — admin works without error
+           capture; queue follow-up is a self-host or fallback path
+           if this becomes a recurring miss. */
+        console.warn('[sentry-browser] CDN script did not load within 2s — skipping init');
+      }
+    }, 100);
+  }
+
+  /* Browser-side beforeSend filter. Mirrors the server-side filter's
+     intent: strip captured form-input values from breadcrumbs (Sentry
+     browser auto-captures clicks and `input` events; admin forms
+     contain customer PII that must not ship to Sentry). Heavy-handed
+     by design — ALL ui.input breadcrumb values get redacted, not just
+     a denylist match. Partial scrubbing risks PII leaks. */
+  function sentryBrowserBeforeSend(event) {
+    try {
+      if (event && Array.isArray(event.breadcrumbs)) {
+        event.breadcrumbs = event.breadcrumbs.map(function (crumb) {
+          if (crumb && crumb.category === 'ui.input' && crumb.data && 'value' in crumb.data) {
+            crumb.data = Object.assign({}, crumb.data, { value: '[REDACTED]' });
+          }
+          return crumb;
+        });
+      }
+      return event;
+    } catch (filterErr) {
+      /* On filter throw, drop the event rather than risk shipping
+         unscrubbed PII. Matches the server-side filter's defensive
+         fail-closed pattern. */
+      return null;
     }
   }
 
