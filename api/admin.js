@@ -28,6 +28,7 @@ const {
   patchLead,
   findBookingsForLead,
   saveLead,
+  deleteLead,
   findBookingDatesBySessionIds,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendPortalLinkEmail, sendAdminActionEmailFailureAlert, sendBlackoutConflictAlert, formatMoneyDollars, PORTAL_BASE_URL } = require('../lib/send-emails');
@@ -1563,6 +1564,29 @@ async function handleAddLead(req, res) {
   return res.status(201).json({ ok: true, lead: saved });
 }
 
+/* Hard-delete a single lead. Fire-and-forget shape: always returns 200
+   on completion even if the row was already gone, matching the
+   handleDeleteBooking pattern (idempotent admin destructive actions).
+   No booking_events audit row — leads aren't bookings and the
+   booking_events table isn't the right surface. Operator + lead id
+   land in the server log so there's still a paper trail. */
+async function handleDeleteLead(req, res) {
+  if (req.method !== 'POST' && req.method !== 'DELETE') return res.status(405).end();
+  const lead_id = (req.body && req.body.lead_id) || req.query.lead_id;
+  if (lead_id == null || lead_id === '') {
+    return res.status(400).json({ error: 'lead_id required' });
+  }
+  try {
+    await deleteLead(lead_id);
+    console.log('[delete-lead] OK', 'id:', lead_id, '| operator:', req.user.email);
+    return res.status(200).json({ ok: true, deleted_id: lead_id });
+  } catch (err) {
+    console.error('[delete-lead] failed:', err.message,
+      '| id:', lead_id, '| operator:', req.user.email);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
 /* ── Activity log queries ──
    Backing endpoints for the Customer detail "Activity History" section
    and the Edit modal "Activity (N events)" section. Both read-only;
@@ -1632,6 +1656,7 @@ const ROUTES = {
   'mark-lead-contacted':    handleMarkLeadContacted,
   'find-bookings-for-lead': handleFindBookingsForLead,
   'add-lead':               handleAddLead,
+  'delete-lead':            handleDeleteLead,
   'customer-events':        handleGetCustomerEvents,
   'booking-events':         handleGetBookingEvents,
 };

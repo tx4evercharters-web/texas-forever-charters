@@ -2298,6 +2298,34 @@
       </div>
     </div>
 
+    <!-- Delete-lead confirm modal. Replaces native confirm() so the
+         dialog can show the lead's identifying context (name + source +
+         status) so admin can sanity-check before confirming. ESC closes
+         without confirming; the Delete button disables during the
+         in-flight request. -->
+    <div class="modal-overlay" id="delete-lead-overlay" onclick="closeDeleteLeadModal(event)">
+      <div class="modal" style="max-width:480px;">
+        <div class="modal-header" style="background:var(--navy);">
+          <div style="color:#fff;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;">Delete Lead?</div>
+          <button class="modal-close" onclick="closeDeleteLeadModalBtn()">×</button>
+        </div>
+        <div style="padding:20px 24px;">
+          <div id="dl-error" style="display:none;margin-bottom:14px;padding:10px 12px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:6px;color:var(--red);font-size:13px;font-weight:600;"></div>
+          <div style="font-size:15px;color:var(--gray-700);line-height:1.5;margin-bottom:8px;">
+            Delete <strong id="dl-name" style="color:var(--navy);"></strong>?
+          </div>
+          <div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:14px;">
+            This action cannot be undone.
+          </div>
+          <div id="dl-context" style="font-size:12px;color:var(--gray-600);background:var(--gray-50);border:1px solid var(--gray-200);border-radius:6px;padding:10px 12px;line-height:1.8;"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px;">
+            <button class="btn-gray" onclick="closeDeleteLeadModalBtn()">Cancel</button>
+            <button class="btn-red" id="dl-confirm-btn" onclick="confirmDeleteLead()">Delete Lead</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ WAIVERS TAB ══ -->
     <div class="tab-panel" id="tab-waivers">
       <div class="section">
@@ -4975,10 +5003,24 @@
         || '<span style="color:var(--gray-400);font-style:italic;font-size:11px;">not provided</span>';
       /* Every lead gets an action button. Locked leads still open the
          modal — admin can still update notes. The button label reflects
-         whether this is a first log or an edit. */
+         whether this is a first log or an edit. The "⋯" kebab to the
+         right hosts destructive / less-common actions (Delete today;
+         Link-to-booking / Convert / Merge later). Reuses the Bookings
+         table's bk-menu pattern: bkToggleMenu handles positioning,
+         outside-click and ESC close, scope-prefixed DOM id. */
       const hasLog = !!l.contacted_at;
       const actionLabel = hasLog ? 'View / edit' : 'Log contact';
-      const actionCell = '<button class="btn-sm btn-red" onclick="openLeadContactModal(\'' + esc(l.id) + '\')">' + actionLabel + '</button>';
+      const leadScopedId = 'lead-' + esc(l.id);
+      const actionCell =
+        '<div style="display:inline-flex;gap:6px;align-items:center;">' +
+          '<button class="btn-sm btn-red" onclick="openLeadContactModal(\'' + esc(l.id) + '\')">' + actionLabel + '</button>' +
+          '<div class="bk-menu-wrap">' +
+            '<button class="btn-sm btn-gray bk-menu-trigger" onclick="bkToggleMenu(\'' + leadScopedId + '\', event)" title="More actions">⋯</button>' +
+            '<div class="bk-menu" id="bk-menu-' + leadScopedId + '">' +
+              '<button class="bk-menu-item danger" onclick="openDeleteLeadConfirm(\'' + esc(l.id) + '\')">🗑 Delete Lead</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
       const tip = l.captured_at ? new Date(l.captured_at).toLocaleString() : '';
       /* Status cell: prefer the outcome pill when set, fall back to
          the legacy status badge for leads with no logged outcome
@@ -5345,11 +5387,127 @@
          a transient success toast. */
       closeAddLeadModalBtn();
       await loadLeads();
-      showError('✓ Lead added');
+      showSuccess('✓ Lead added');
     } catch (err) {
       alShowError('Could not save lead: ' + (err.message || err));
       saveBtn.disabled = false;
       saveBtn.textContent = 'Save Lead';
+    }
+  }
+
+  /* ── Delete Lead confirm modal ───────────────────────────────────
+     Replaces browser-native confirm() so the dialog can show lead
+     context (name + source + status) for sanity-check before commit.
+     Hard delete via /api/admin?action=delete-lead — no soft-delete /
+     archive / undo. Fire-and-forget on the backend; idempotent. */
+
+  let deletingLeadId = null;
+
+  function leadDisplayName(l) {
+    if (!l) return 'this unnamed lead';
+    return l.full_name || l.customer_email || l.phone || 'this unnamed lead';
+  }
+
+  function openDeleteLeadConfirm(leadId) {
+    /* Close any open kebab first so the modal opens against a clean
+       layer. bkCloseMenus is defined for the bookings kebab pattern;
+       lead kebab reuses the same DOM classes so it picks up the
+       close. */
+    if (typeof bkCloseMenus === 'function') bkCloseMenus();
+
+    const lead = (allLeads || []).find(l => String(l.id) === String(leadId));
+    if (!lead) {
+      showError('Lead not found in current view. Refresh and try again.');
+      return;
+    }
+    deletingLeadId = leadId;
+
+    const nameEl = document.getElementById('dl-name');
+    if (nameEl) nameEl.textContent = leadDisplayName(lead);
+
+    /* Context lines so DJ can verify the right lead. Uses the same
+       formatLeadSource map as the Source column; status falls through
+       leadStatusBadge's label map via direct lookup. */
+    const sourceLabel = formatLeadSource(lead.source);
+    const statusLabel = (() => {
+      const s = (lead.status || 'captured').replace(/_/g, ' ');
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    })();
+    const captured = lead.captured_at
+      ? new Date(lead.captured_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : '—';
+    const ctxEl = document.getElementById('dl-context');
+    if (ctxEl) {
+      ctxEl.innerHTML =
+        '<div><strong>Source:</strong> ' + esc(sourceLabel) + '</div>' +
+        '<div><strong>Status:</strong> ' + esc(statusLabel) + '</div>' +
+        '<div><strong>Captured:</strong> ' + esc(captured) + '</div>' +
+        (lead.customer_email ? '<div><strong>Email:</strong> ' + esc(lead.customer_email) + '</div>' : '') +
+        (lead.phone ? '<div><strong>Phone:</strong> ' + esc(lead.phone) + '</div>' : '');
+    }
+
+    dlHideError();
+    const btn = document.getElementById('dl-confirm-btn');
+    if (btn) { btn.disabled = false; btn.textContent = 'Delete Lead'; }
+
+    document.getElementById('delete-lead-overlay').classList.add('open');
+  }
+
+  function closeDeleteLeadModal(e) {
+    if (e && e.target !== document.getElementById('delete-lead-overlay')) return;
+    closeDeleteLeadModalBtn();
+  }
+  function closeDeleteLeadModalBtn() {
+    document.getElementById('delete-lead-overlay').classList.remove('open');
+    deletingLeadId = null;
+  }
+
+  function dlShowError(msg) {
+    const el = document.getElementById('dl-error');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = '';
+  }
+  function dlHideError() {
+    const el = document.getElementById('dl-error');
+    if (!el) return;
+    el.textContent = '';
+    el.style.display = 'none';
+  }
+
+  async function confirmDeleteLead() {
+    if (!deletingLeadId) return;
+    const btn = document.getElementById('dl-confirm-btn');
+    dlHideError();
+    if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+    try {
+      const result = await api('/api/admin?action=delete-lead', {
+        method: 'POST',
+        body: JSON.stringify({ lead_id: deletingLeadId }),
+      });
+      if (!result) {
+        /* api() returned null — 401 bounce or network error already
+           surfaced through the wrapper. Reset button state in case
+           the user lands back here. */
+        if (btn) { btn.disabled = false; btn.textContent = 'Delete Lead'; }
+        return;
+      }
+      if (result.error) {
+        dlShowError(result.error);
+        if (btn) { btn.disabled = false; btn.textContent = 'Delete Lead'; }
+        return;
+      }
+      /* Success — remove the row from the in-memory cache, close the
+         modal, surface a toast. Skipping a full loadLeads() refresh
+         since the row simply vanishes; no other lead state changed. */
+      const idx = (allLeads || []).findIndex(l => String(l.id) === String(deletingLeadId));
+      if (idx >= 0) allLeads.splice(idx, 1);
+      closeDeleteLeadModalBtn();
+      renderLeads();
+      showSuccess('✓ Lead deleted');
+    } catch (err) {
+      dlShowError('Could not delete lead: ' + (err.message || err));
+      if (btn) { btn.disabled = false; btn.textContent = 'Delete Lead'; }
     }
   }
 
@@ -7927,7 +8085,7 @@
     if (result && result.ok) {
       const c = allCustomers.find(x => String(x.id) === String(id));
       if (c) c.notes = notes;
-      showError('✓ Notes saved');
+      showSuccess('✓ Notes saved');
     } else {
       showError(result?.error || 'Failed to save notes.');
     }
@@ -8736,6 +8894,13 @@
       closeCalCtx();
       bkCloseMenus();
       document.querySelectorAll('.cust-tag-picker-menu.open').forEach(m => m.classList.remove('open'));
+      /* ESC cancels the delete-lead confirm without triggering the
+         destructive action. Other modals (Add Lead, edit booking, etc.)
+         do not yet wire ESC; they close only via overlay-click or the
+         Cancel button. Delete-lead is the only modal where ESC's
+         "no, don't do that" semantic is load-bearing. */
+      const dlOverlay = document.getElementById('delete-lead-overlay');
+      if (dlOverlay && dlOverlay.classList.contains('open')) closeDeleteLeadModalBtn();
     }
   });
 
