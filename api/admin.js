@@ -27,6 +27,7 @@ const {
   listLeads,
   patchLead,
   findBookingsForLead,
+  saveLead,
   findBookingDatesBySessionIds,
 } = require('../lib/storage');
 const { postToResend, sendConfirmationEmails, sendCancellationEmail, sendRefundEmail, sendDamageChargeEmail, sendWaiverLinkEmail, sendPortalLinkEmail, sendAdminActionEmailFailureAlert, sendBlackoutConflictAlert, formatMoneyDollars, PORTAL_BASE_URL } = require('../lib/send-emails');
@@ -1432,6 +1433,136 @@ async function handleMarkLeadContacted(req, res) {
   }
 }
 
+/* Manual lead entry from the admin Leads tab. The "+ Add Lead" button in
+   admin.html opens a modal that POSTs here. Differs from /api/capture-lead
+   (public exit-intent endpoint) in three ways: (1) gated by requireAuth so
+   the operator's email lands in added_by, (2) accepts the admin_* source
+   values for offline-channel captures (phone, walk-up, IG DM, etc.), and
+   (3) allows partial contact info — at least one of full_name /
+   customer_email / phone is required, not all three.
+
+   Requires the schema migration "ALTER TABLE leads ADD COLUMN IF NOT
+   EXISTS added_by TEXT" + dropping NOT NULL on full_name + customer_email,
+   which DJ runs in Supabase SQL Editor before this commit ships. Without
+   those, the insert 500s with a NOT NULL violation. */
+const ALLOWED_ADMIN_LEAD_SOURCES = new Set([
+  'admin_phone_call',
+  'admin_text_message',
+  'admin_instagram_dm',
+  'admin_facebook_message',
+  'admin_email',
+  'admin_in_person',
+  'admin_referral',
+  'admin_other',
+]);
+
+const ALLOWED_ADMIN_LEAD_STATUSES = new Set([
+  'captured',
+  'contacted',
+  'converted',
+  'declined',
+  'following_up',
+  'unreachable',
+  'quoted',
+]);
+
+const LEAD_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function handleAddLead(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const body = req.body || {};
+  const fullName      = String(body.full_name      || '').trim();
+  const customerEmail = String(body.customer_email || '').trim().toLowerCase();
+  const phone         = String(body.phone || '').trim();
+
+  /* At least one identifier required. Trusts the admin form's client-side
+     check but enforces server-side too — a malformed client request must
+     not slip through into a fully-blank lead row. */
+  if (!fullName && !customerEmail && !phone) {
+    return res.status(400).json({ error: 'At least one of full name, email, or phone is required.' });
+  }
+
+  /* Per-field shape validation when the field is provided. Mirrors
+     capture-lead's bounds so manual entries and public captures have the
+     same data quality. */
+  if (fullName && (fullName.length < 2 || fullName.length > 200)) {
+    return res.status(400).json({ error: 'Full name must be 2-200 characters.' });
+  }
+  if (customerEmail && (!LEAD_EMAIL_RE.test(customerEmail) || customerEmail.length > 200)) {
+    return res.status(400).json({ error: 'Email format is invalid.' });
+  }
+  if (phone && phone.length > 50) {
+    return res.status(400).json({ error: 'Phone is too long.' });
+  }
+
+  /* Source defaults to admin_other if missing/invalid. Admin handler is
+     trusted but defensive — a stale frontend could send a value the
+     SOURCE_LABELS map doesn't recognize, and admin_other renders
+     gracefully via formatLeadSource. */
+  const source = ALLOWED_ADMIN_LEAD_SOURCES.has(body.source) ? body.source : 'admin_other';
+
+  /* Status defaults to 'contacted' for manual entries — by the time DJ is
+     typing a row in, the contact already happened. */
+  const status = ALLOWED_ADMIN_LEAD_STATUSES.has(body.status) ? body.status : 'contacted';
+
+  /* Optional charter context. Sanity-check date format, parse party_size
+     defensively. */
+  const rawDate = body.date ? String(body.date).slice(0, 10) : null;
+  const date = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : null;
+
+  const partySizeRaw = body.party_size;
+  let partySize = null;
+  if (partySizeRaw != null && partySizeRaw !== '') {
+    const n = parseInt(partySizeRaw, 10);
+    if (Number.isFinite(n) && n > 0 && n < 1000) partySize = n;
+  }
+
+  /* Build the row. Null over empty-string so PostgREST stores NULL where
+     the field is absent (matters for downstream queries that filter on
+     is.null / not.is.null). contact_notes is the column the lead-contact
+     modal uses; manual entry writes there too so the same UI surface
+     shows the notes consistently. captured_at + status default in DB
+     when omitted, but we set status explicitly above. */
+  const row = {
+    full_name:        fullName || null,
+    customer_email:   customerEmail || null,
+    phone:            phone || null,
+    vessel:           body.vessel     || null,
+    experience:       body.experience || null,
+    date:             date,
+    time_slot:        body.time_slot  || null,
+    duration:         body.duration != null && body.duration !== '' ? String(body.duration) : null,
+    party_size:       partySize,
+    special_requests: body.special_requests ? String(body.special_requests).slice(0, 2000) : null,
+    contact_notes:    body.notes ? String(body.notes).slice(0, 2000) : null,
+    source,
+    status,
+    added_by:         req.user.email,
+  };
+
+  let saved;
+  try {
+    saved = await saveLead(row);
+  } catch (err) {
+    console.error('[add-lead] saveLead failed:', err.message,
+      '| operator:', req.user.email, '| source:', source);
+    return res.status(500).json({ error: 'Could not save lead: ' + err.message });
+  }
+  if (!saved) {
+    console.error('[add-lead] saveLead returned null — unexpected');
+    return res.status(500).json({ error: 'Database save returned no row' });
+  }
+
+  console.log('[add-lead] OK',
+    'id:', saved.id,
+    '| operator:', req.user.email,
+    '| source:', source,
+    '| status:', status);
+
+  return res.status(201).json({ ok: true, lead: saved });
+}
+
 /* ── Activity log queries ──
    Backing endpoints for the Customer detail "Activity History" section
    and the Edit modal "Activity (N events)" section. Both read-only;
@@ -1500,6 +1631,7 @@ const ROUTES = {
   'leads':                  handleListLeads,
   'mark-lead-contacted':    handleMarkLeadContacted,
   'find-bookings-for-lead': handleFindBookingsForLead,
+  'add-lead':               handleAddLead,
   'customer-events':        handleGetCustomerEvents,
   'booking-events':         handleGetBookingEvents,
 };

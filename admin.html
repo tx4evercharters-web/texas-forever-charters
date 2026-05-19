@@ -2037,7 +2037,10 @@
     <div class="tab-panel" id="tab-leads">
       <div class="section">
         <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <div class="section-title">🎯 Leads</div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="section-title">🎯 Leads</div>
+            <button class="btn-sm btn-navy" onclick="openAddLeadModal()">+ Add Lead</button>
+          </div>
           <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
               <div style="display:flex;gap:6px;flex-wrap:wrap;" id="leads-filter-bar">
@@ -2160,6 +2163,136 @@
           <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
             <button class="btn-gray" onclick="closeLeadContactModalBtn()">Cancel</button>
             <button class="btn-red" id="lc-save-btn" onclick="confirmLeadContacted()">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add-lead modal — manual lead entry from the "+ Add Lead" button.
+         POSTs to /api/admin?action=add-lead. Requires at least one of
+         (full_name, customer_email, phone) — enforced both client-side
+         and server-side. Defaults: source=admin_other on missing/invalid
+         value; status=contacted on missing/invalid value. -->
+    <div class="modal-overlay" id="add-lead-overlay" onclick="closeAddLeadModal(event)">
+      <div class="modal" style="max-width:620px;">
+        <div class="modal-header" style="background:var(--navy);">
+          <div style="color:#fff;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;">Add Lead</div>
+          <button class="modal-close" onclick="closeAddLeadModalBtn()">×</button>
+        </div>
+        <div style="padding:20px 24px;">
+          <div id="al-error" style="display:none;margin-bottom:14px;padding:10px 12px;background:var(--red-bg);border:1px solid var(--red-border);border-radius:6px;color:var(--red);font-size:13px;font-weight:600;"></div>
+
+          <!-- Contact info — at least one of these three required. -->
+          <div style="margin-bottom:18px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:12px;">Contact (at least one required)</div>
+            <div class="edit-form-grid">
+              <div class="edit-form-group">
+                <label class="edit-label">Full Name</label>
+                <input class="edit-input" id="al-full-name" type="text" placeholder="Jordan Smith" maxlength="200">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Email</label>
+                <input class="edit-input" id="al-email" type="email" placeholder="jordan@example.com" maxlength="200">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Phone</label>
+                <input class="edit-input" id="al-phone" type="tel" placeholder="(737) 555-1234" maxlength="50">
+              </div>
+            </div>
+          </div>
+
+          <!-- Charter interest — all optional. Loose values OK: leads
+               often have partial / "TBD" charter context at first contact. -->
+          <div style="margin-bottom:18px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:12px;">Charter Interest (optional)</div>
+            <div class="edit-form-grid">
+              <div class="edit-form-group">
+                <label class="edit-label">Vessel</label>
+                <select class="edit-input" id="al-vessel">
+                  <option value="">— Unspecified —</option>
+                  <option value="yacht">YACHT</option>
+                  <option value="pontoon">24FT BENTLEY</option>
+                </select>
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Experience</label>
+                <select class="edit-input" id="al-experience">
+                  <option value="">— Unspecified —</option>
+                  <option>Private Party</option>
+                  <option>Bachelor Party</option>
+                  <option>Bachelorette Party</option>
+                  <option>Birthday Party</option>
+                  <option>Sunset Cruise</option>
+                  <option>Boat Tour</option>
+                  <option>Lake Day</option>
+                  <option>Proposal</option>
+                  <option>Graduation Party</option>
+                  <option>Corporate Outing</option>
+                </select>
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Date</label>
+                <input class="edit-input" id="al-date" type="date">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Time Slot</label>
+                <input class="edit-input" id="al-time-slot" type="text" placeholder="e.g. 11:00 AM or TBD">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Duration (hrs)</label>
+                <input class="edit-input" id="al-duration" type="text" placeholder="e.g. 4">
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Party Size</label>
+                <input class="edit-input" id="al-party-size" type="number" min="1" max="50" placeholder="6">
+              </div>
+            </div>
+            <div class="edit-form-group" style="margin-top:10px;">
+              <label class="edit-label">Special Requests</label>
+              <textarea class="edit-input" id="al-special-requests" rows="2" placeholder="Any context they mentioned about the trip"></textarea>
+            </div>
+          </div>
+
+          <!-- Source + status + internal notes. Source dropdown is the only
+               required field beyond the contact-at-least-one rule. -->
+          <div style="margin-bottom:18px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:var(--navy);letter-spacing:2px;border-bottom:2px solid var(--gray-200);padding-bottom:6px;margin-bottom:12px;">How They Reached Us</div>
+            <div class="edit-form-grid">
+              <div class="edit-form-group">
+                <label class="edit-label">Source *</label>
+                <select class="edit-input" id="al-source">
+                  <option value="admin_phone_call">Phone Call</option>
+                  <option value="admin_text_message">Text Message</option>
+                  <option value="admin_instagram_dm">Instagram DM</option>
+                  <option value="admin_facebook_message">Facebook Message</option>
+                  <option value="admin_email">Email Inquiry</option>
+                  <option value="admin_in_person">In-Person / Walk-Up</option>
+                  <option value="admin_referral">Referral</option>
+                  <option value="admin_other">Other</option>
+                </select>
+              </div>
+              <div class="edit-form-group">
+                <label class="edit-label">Status</label>
+                <select class="edit-input" id="al-status">
+                  <option value="contacted" selected>Contacted</option>
+                  <option value="captured">Captured (no contact yet)</option>
+                  <option value="following_up">Following up</option>
+                  <option value="quoted">Quoted</option>
+                  <option value="declined">Declined</option>
+                  <option value="unreachable">Unreachable</option>
+                  <option value="converted">Converted</option>
+                </select>
+              </div>
+            </div>
+            <div class="edit-form-group" style="margin-top:10px;">
+              <label class="edit-label">Internal Notes</label>
+              <textarea class="edit-input" id="al-notes" rows="3" placeholder="e.g. Called at 2:30pm Tuesday — interested in yacht for July 4th."></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+            <button class="btn-gray" onclick="closeAddLeadModalBtn()">Cancel</button>
+            <button class="btn-navy" id="al-save-btn" onclick="submitAddLead()">Save Lead</button>
           </div>
         </div>
       </div>
@@ -3199,9 +3332,22 @@
      chatbot, admin manual entry) should write their own distinct source
      values and add a label here. */
   const SOURCE_LABELS = {
+    // Public exit-intent capture surfaces (api/capture-lead.js).
     'website_exit_intent':          'Booking Wizard (Exit Intent)',
     'website_exit_intent_mobile':   'Booking Wizard (Exit Intent, Mobile)',
     'website_stripe_cancel_return': 'Stripe Cancel Return',
+    // Admin manual-entry surfaces (api/admin.js handleAddLead). All prefixed
+    // admin_* so they're unambiguously identifiable as manually-entered. The
+    // ALLOWED_ADMIN_LEAD_SOURCES Set on the server is the source of truth;
+    // keep these two in sync when adding a new channel.
+    'admin_phone_call':       'Phone Call',
+    'admin_text_message':     'Text Message',
+    'admin_instagram_dm':     'Instagram DM',
+    'admin_facebook_message': 'Facebook Message',
+    'admin_email':            'Email Inquiry',
+    'admin_in_person':        'In-Person / Walk-Up',
+    'admin_referral':         'Referral',
+    'admin_other':            'Other',
   };
 
   function formatLeadSource(source) {
@@ -4844,10 +4990,21 @@
       const linkedBookingChip = l.linked_booking_session_id
         ? '<a href="#" onclick="event.preventDefault();openEditModal(\'' + esc(l.linked_booking_session_id) + '\')" style="margin-left:6px;font-size:11px;color:var(--color-brand-primary);text-decoration:none;font-weight:600;white-space:nowrap;">→ View booking</a>'
         : '';
+      /* Source cell: primary line is the friendly source label
+         (formatLeadSource maps website_* + admin_* values; unknown
+         sources fall through to title-case). When added_by is
+         populated (manual-entry leads from /api/admin?action=add-lead),
+         a smaller subtitle line shows "Added by <DJ|Dane|...>" via
+         formatActorName (same display map as the Bookings table's
+         Last Touched column). Exit-intent rows leave added_by NULL
+         so the subtitle is omitted. */
+      const addedBySubtitle = l.added_by
+        ? '<div style="font-size:10px;color:var(--gray-500);margin-top:2px;font-weight:400;">Added by ' + esc(formatActorName(l.added_by)) + '</div>'
+        : '';
       return '<tr>' +
         '<td title="' + esc(tip) + '" style="white-space:nowrap;">' + fmtAge(leadAgeMs(l)) + '</td>' +
         '<td>' + statusContent + leadBouncePill(l.bounce_reason) + linkedBookingChip + '</td>' +
-        '<td style="font-size:12px;color:var(--gray-700);white-space:nowrap;">' + esc(formatLeadSource(l.source)) + '</td>' +
+        '<td style="font-size:12px;color:var(--gray-700);">' + esc(formatLeadSource(l.source)) + addedBySubtitle + '</td>' +
         '<td style="font-weight:700;color:var(--navy);">' + esc(l.full_name || '—') + '</td>' +
         '<td>' + (mailtoAnchor(l.customer_email, 'style="color:var(--navy);text-decoration:none;"') || '—') + '</td>' +
         '<td>' + phoneCell + '</td>' +
@@ -5070,6 +5227,129 @@
       await loadLeads();
     } catch (err) {
       showError('Could not save: ' + (err.message || err));
+    }
+  }
+
+  /* ── Add Lead modal ───────────────────────────────────────────────
+     Manual lead entry from the "+ Add Lead" button on the Leads tab.
+     POSTs to /api/admin?action=add-lead, gated by requireAuth — handler
+     reads req.user.email and stores it in the new leads.added_by column.
+     Validation: at least one of (full_name, email, phone) required
+     client-side AND server-side; defense in depth. */
+
+  function openAddLeadModal() {
+    /* Reset every field. Status defaults to 'contacted' (the most common
+       case for manual entry — DJ is typically logging a contact that
+       already happened). Source defaults to first option. */
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    setVal('al-full-name',        '');
+    setVal('al-email',            '');
+    setVal('al-phone',            '');
+    setVal('al-vessel',           '');
+    setVal('al-experience',       '');
+    setVal('al-date',             '');
+    setVal('al-time-slot',        '');
+    setVal('al-duration',         '');
+    setVal('al-party-size',       '');
+    setVal('al-special-requests', '');
+    setVal('al-source',           'admin_phone_call');
+    setVal('al-status',           'contacted');
+    setVal('al-notes',            '');
+    alHideError();
+    const saveBtn = document.getElementById('al-save-btn');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Lead'; }
+    document.getElementById('add-lead-overlay').classList.add('open');
+    // Focus the first field so admin can start typing immediately.
+    setTimeout(() => { const f = document.getElementById('al-full-name'); if (f) f.focus(); }, 50);
+  }
+
+  function closeAddLeadModal(e) {
+    if (e && e.target !== document.getElementById('add-lead-overlay')) return;
+    closeAddLeadModalBtn();
+  }
+  function closeAddLeadModalBtn() {
+    document.getElementById('add-lead-overlay').classList.remove('open');
+  }
+
+  function alShowError(msg) {
+    const el = document.getElementById('al-error');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = '';
+  }
+  function alHideError() {
+    const el = document.getElementById('al-error');
+    if (!el) return;
+    el.textContent = '';
+    el.style.display = 'none';
+  }
+
+  async function submitAddLead() {
+    alHideError();
+    const fullName = (document.getElementById('al-full-name').value || '').trim();
+    const email    = (document.getElementById('al-email').value || '').trim();
+    const phone    = (document.getElementById('al-phone').value || '').trim();
+
+    /* Client-side at-least-one check. Server-side enforces the same
+       rule — this is just for instant feedback. */
+    if (!fullName && !email && !phone) {
+      alShowError('At least one of Full Name, Email, or Phone is required.');
+      return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      alShowError('Email format is invalid.');
+      return;
+    }
+
+    const body = {
+      full_name:        fullName,
+      customer_email:   email,
+      phone:            phone,
+      vessel:           document.getElementById('al-vessel').value || null,
+      experience:       document.getElementById('al-experience').value || null,
+      date:             document.getElementById('al-date').value || null,
+      time_slot:        document.getElementById('al-time-slot').value || null,
+      duration:         document.getElementById('al-duration').value || null,
+      party_size:       document.getElementById('al-party-size').value || null,
+      special_requests: document.getElementById('al-special-requests').value || null,
+      source:           document.getElementById('al-source').value || 'admin_other',
+      status:           document.getElementById('al-status').value || 'contacted',
+      notes:            document.getElementById('al-notes').value || null,
+    };
+
+    const saveBtn = document.getElementById('al-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+    try {
+      const result = await api('/api/admin?action=add-lead', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+      if (!result) {
+        /* api() wrapper returned null — either a 401 (it bounced us to
+           login) or a network error. Both surface to the user via the
+           api wrapper's existing handling; here we just re-enable the
+           button so the modal isn't stuck. */
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Lead';
+        return;
+      }
+      if (result.error) {
+        alShowError(result.error);
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Lead';
+        return;
+      }
+      /* Success path. Close the modal, refresh the leads list (which
+         re-fetches via /api/admin?action=leads and re-renders), surface
+         a transient success toast. */
+      closeAddLeadModalBtn();
+      await loadLeads();
+      showError('✓ Lead added');
+    } catch (err) {
+      alShowError('Could not save lead: ' + (err.message || err));
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Lead';
     }
   }
 
