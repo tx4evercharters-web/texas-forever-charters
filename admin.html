@@ -2037,7 +2037,7 @@
     <div class="tab-panel" id="tab-leads">
       <div class="section">
         <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-          <div class="section-title">🎯 Leads (Exit-Intent Captures)</div>
+          <div class="section-title">🎯 Leads</div>
           <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
               <div style="display:flex;gap:6px;flex-wrap:wrap;" id="leads-filter-bar">
@@ -3188,6 +3188,33 @@
     'djkilpatrick03@gmail.com': 'DJ',
     'dkilpatrick1990@gmail.com': 'Dane',
   };
+
+  /* Leads tab Source column display map. Keys are the literal `source`
+     strings written by api/capture-lead.js's ALLOWED_SOURCES set; values
+     are the friendly labels shown in the admin Leads table. Three current
+     sources, all from the booking-wizard surface, with intent signals
+     worth preserving: desktop exit-intent, mobile exit-intent variant,
+     and Stripe cancel-return (the most-qualified segment — customer
+     reached Checkout before bailing). New capture surfaces (contact form,
+     chatbot, admin manual entry) should write their own distinct source
+     values and add a label here. */
+  const SOURCE_LABELS = {
+    'website_exit_intent':          'Booking Wizard (Exit Intent)',
+    'website_exit_intent_mobile':   'Booking Wizard (Exit Intent, Mobile)',
+    'website_stripe_cancel_return': 'Stripe Cancel Return',
+  };
+
+  function formatLeadSource(source) {
+    if (!source) return '—';
+    if (SOURCE_LABELS[source]) return SOURCE_LABELS[source];
+    /* Fallback: title-case the raw underscore-separated value so a
+       newly-added source still renders sensibly until SOURCE_LABELS
+       is updated. 'admin_manual' → 'Admin Manual'; 'contact_form'
+       → 'Contact Form'. */
+    return String(source).split('_').map(w =>
+      w.charAt(0).toUpperCase() + w.slice(1)
+    ).join(' ');
+  }
 
   function formatActorName(createdBy) {
     if (!createdBy) return 'Unknown';
@@ -4820,6 +4847,7 @@
       return '<tr>' +
         '<td title="' + esc(tip) + '" style="white-space:nowrap;">' + fmtAge(leadAgeMs(l)) + '</td>' +
         '<td>' + statusContent + leadBouncePill(l.bounce_reason) + linkedBookingChip + '</td>' +
+        '<td style="font-size:12px;color:var(--gray-700);white-space:nowrap;">' + esc(formatLeadSource(l.source)) + '</td>' +
         '<td style="font-weight:700;color:var(--navy);">' + esc(l.full_name || '—') + '</td>' +
         '<td>' + (mailtoAnchor(l.customer_email, 'style="color:var(--navy);text-decoration:none;"') || '—') + '</td>' +
         '<td>' + phoneCell + '</td>' +
@@ -4834,6 +4862,7 @@
         '<thead><tr>' +
           '<th>Captured</th>' +
           '<th>Status</th>' +
+          '<th>Source</th>' +
           '<th>Customer</th>' +
           '<th>Email</th>' +
           '<th>Phone</th>' +
